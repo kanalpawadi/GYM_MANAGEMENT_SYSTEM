@@ -1,0 +1,141 @@
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Dumbbell, Menu, X, Phone, User, Calendar } from 'lucide-react';
+import { Button } from '../ui/Button';
+
+export const Navbar: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
+    { name: 'Programs', path: '/programs' },
+    { name: 'Trainers', path: '/trainers' },
+    { name: 'Plans', path: '/plans' },
+    { name: 'Schedule', path: '/schedule' },
+    { name: 'Gallery', path: '/gallery' },
+    { name: 'Transformations', path: '/transformations' },
+    { name: 'Blog', path: '/blog' },
+    { name: 'FAQ', path: '/faq' },
+    { name: 'Contact', path: '/contact' },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
+
+  return (
+    <header className="sticky top-0 z-40 bg-gym-bg/90 backdrop-blur-md border-b border-gym-border">
+      {/* Top Strip */}
+      <div className="bg-gym-surface py-1.5 px-4 border-b border-gym-border text-xs text-gym-muted hidden md:flex justify-between items-center">
+        <div className="flex items-center gap-6">
+          <span className="flex items-center gap-1.5 text-white">
+            <Phone className="w-3.5 h-3.5 text-gym-primary" /> +91 98765 43210
+          </span>
+          <span>📍 Sector 18, Commercial Belt, Metro City, India</span>
+          <span>⏰ Mon - Sat: 5:30 AM - 10:00 PM | Sun: 7 AM - 2 PM</span>
+        </div>
+        <div className="flex items-center gap-4 text-gym-primary font-heading font-semibold tracking-wider uppercase">
+          <span>🔥 FIRST DAY PASS IS FREE</span>
+        </div>
+      </div>
+
+      {/* Main Navbar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="w-10 h-10 rounded-lg bg-gym-primary text-black flex items-center justify-center font-bold shadow-yellow-glow group-hover:scale-105 transition-transform">
+            <Dumbbell className="w-6 h-6 stroke-[2.5]" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-2xl font-heading text-white tracking-wider leading-none">
+              RV-<span className="text-gym-primary">FITNESS</span>
+            </span>
+            <span className="text-[10px] text-gym-muted font-body font-medium uppercase tracking-widest">
+              PREMIUM GYM & CLUB
+            </span>
+          </div>
+        </Link>
+
+        {/* Desktop Nav Links */}
+        <nav className="hidden lg:flex items-center gap-5">
+          {navLinks.map((link) => (
+            <Link
+              key={link.path}
+              to={link.path}
+              className={`text-sm font-heading tracking-wide uppercase transition-colors hover:text-gym-primary ${
+                isActive(link.path) ? 'text-gym-primary font-bold border-b-2 border-gym-primary pb-1' : 'text-gym-muted'
+              }`}
+            >
+              {link.name}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Right Action Buttons */}
+        <div className="hidden lg:flex items-center gap-3">
+          <Link to="/login">
+            <Button variant="ghost" size="sm" leftIcon={<User className="w-4 h-4" />}>
+              Portal Login
+            </Button>
+          </Link>
+          <Link to="/contact">
+            <Button variant="primary" size="sm" leftIcon={<Calendar className="w-4 h-4" />}>
+              Free Trial
+            </Button>
+          </Link>
+        </div>
+
+        {/* Mobile Hamburger Toggle */}
+        <div className="flex lg:hidden items-center gap-2">
+          <Link to="/contact">
+            <Button variant="primary" size="sm" className="text-xs px-3 min-h-[36px]">
+              Trial
+            </Button>
+          </Link>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-2 text-gym-muted hover:text-white rounded-lg bg-gym-surface border border-gym-border"
+            aria-label="Toggle Navigation"
+          >
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer Menu */}
+      {isOpen && (
+        <div className="lg:hidden bg-gym-surface border-b border-gym-border px-4 py-6 flex flex-col gap-4 animate-in slide-in-from-top duration-200">
+          <nav className="flex flex-col gap-3">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setIsOpen(false)}
+                className={`py-2 px-3 rounded-lg text-lg font-heading tracking-wider uppercase transition-colors ${
+                  isActive(link.path)
+                    ? 'bg-gym-primary text-black font-bold'
+                    : 'text-gym-text hover:bg-gym-surfaceHover'
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="pt-4 border-t border-gym-border flex flex-col gap-2">
+            <Link to="/login" onClick={() => setIsOpen(false)}>
+              <Button variant="outline" className="w-full" leftIcon={<User className="w-5 h-5" />}>
+                Member Login
+              </Button>
+            </Link>
+            <Link to="/contact" onClick={() => setIsOpen(false)}>
+              <Button variant="primary" className="w-full" leftIcon={<Calendar className="w-5 h-5" />}>
+                Book Free Trial
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+};

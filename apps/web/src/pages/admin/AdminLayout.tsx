@@ -1,0 +1,135 @@
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, UserPlus, QrCode, DollarSign, BarChart3, Sliders, LogOut, Dumbbell, ShieldCheck, ChevronLeft, Menu } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Button } from '../../components/ui/Button';
+
+export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { profile, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const navItems = [
+    { name: 'Overview KPIs', path: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { name: 'Member Management', path: '/admin/members', icon: <Users className="w-5 h-5" /> },
+    { name: 'Lead CRM Pipeline', path: '/admin/leads', icon: <UserPlus className="w-5 h-5" /> },
+    { name: 'Attendance Scanner', path: '/admin/attendance', icon: <QrCode className="w-5 h-5" /> },
+    { name: 'Financials & GST', path: '/admin/financials', icon: <DollarSign className="w-5 h-5" /> },
+    { name: 'Reports & Analytics', path: '/admin/reports', icon: <BarChart3 className="w-5 h-5" /> },
+    { name: 'Gym Settings', path: '/admin/settings', icon: <Sliders className="w-5 h-5" /> },
+  ];
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  return (
+    <div className="min-h-screen bg-gym-bg flex">
+      {/* Collapsible Sidebar */}
+      <aside
+        className={`${
+          collapsed ? 'w-20' : 'w-64'
+        } bg-gym-surface border-r border-gym-border flex flex-col justify-between transition-all duration-300 sticky top-0 h-screen z-30`}
+      >
+        <div>
+          {/* Logo Brand */}
+          <div className="p-4 border-b border-gym-border flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2 overflow-hidden">
+              <div className="w-10 h-10 rounded-lg bg-gym-primary text-black flex items-center justify-center font-bold shrink-0">
+                <Dumbbell className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              {!collapsed && (
+                <div className="flex flex-col">
+                  <span className="text-xl font-heading text-white tracking-wider">
+                    RV-<span className="text-gym-primary">ADMIN</span>
+                  </span>
+                  <span className="text-[10px] text-gym-primary font-heading uppercase">{profile?.role} TERMINAL</span>
+                </div>
+              )}
+            </Link>
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-1.5 text-gym-muted hover:text-white rounded-lg hover:bg-gym-surfaceHover"
+            >
+              <ChevronLeft className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="p-3 space-y-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-3.5 py-3 rounded-xl font-heading text-sm uppercase tracking-wide transition-all ${
+                    isActive
+                      ? 'bg-gym-primary text-black font-bold shadow-yellow-glow'
+                      : 'text-gym-muted hover:text-white hover:bg-gym-surfaceHover'
+                  }`}
+                  title={item.name}
+                >
+                  <span className="shrink-0">{item.icon}</span>
+                  {!collapsed && <span className="truncate">{item.name}</span>}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Bottom User info & Signout */}
+        <div className="p-4 border-t border-gym-border flex flex-col gap-3">
+          {!collapsed && (
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-gym-primary/20 text-gym-primary flex items-center justify-center font-bold uppercase text-xs border border-gym-primary/40">
+                {profile?.full_name?.charAt(0) || 'A'}
+              </div>
+              <div className="truncate">
+                <h4 className="text-sm font-heading text-white truncate">{profile?.full_name || 'Admin Staff'}</h4>
+                <span className="text-[10px] text-gym-muted uppercase">{profile?.email}</span>
+              </div>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="w-full justify-start text-gym-danger hover:bg-gym-danger/10"
+            leftIcon={<LogOut className="w-4 h-4" />}
+          >
+            {!collapsed && 'Exit Terminal'}
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className="bg-gym-surface/80 backdrop-blur-md border-b border-gym-border py-4 px-6 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-2 text-xs font-heading text-gym-muted uppercase">
+            <span>ADMINISTRATIVE SYSTEM</span>
+            <span>/</span>
+            <span className="text-gym-primary font-bold">{location.pathname.replace('/admin/', '').toUpperCase()}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link to="/admin/attendance">
+              <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>
+                Launch Scanner
+              </Button>
+            </Link>
+            <Link to="/portal/dashboard">
+              <Button variant="outline" size="sm">
+                Member View
+              </Button>
+            </Link>
+          </div>
+        </header>
+
+        <main className="p-6 sm:p-8 flex-1">{children}</main>
+      </div>
+    </div>
+  );
+};
