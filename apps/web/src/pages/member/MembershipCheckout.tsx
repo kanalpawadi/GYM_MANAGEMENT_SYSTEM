@@ -4,23 +4,19 @@ import { CreditCard, Check, Tag, ShieldCheck, Sparkles, CheckCircle2 } from 'luc
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { SITE, PLANS, formatINR } from '../../config/site';
 
 export const MembershipCheckout: React.FC = () => {
-  const [selectedPlanId, setSelectedPlanId] = useState('quarterly');
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('six-month');
   const [couponCode, setCouponCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
   const [couponMsg, setCouponMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [successPaid, setSuccessPaid] = useState<any>(null);
 
-  const plans = [
-    { id: 'monthly', title: 'Monthly Starter', months: 1, basePrice: 1499, original: 1999 },
-    { id: 'quarterly', title: 'Quarterly Fit', months: 3, basePrice: 3999, original: 4999, badge: 'Popular' },
-    { id: 'halfyearly', title: 'Half-Yearly Pro', months: 6, basePrice: 6999, original: 8999 },
-    { id: 'annual', title: 'Annual Elite', months: 12, basePrice: 11999, original: 15999, badge: 'Best Value' },
-  ];
+  const plans = PLANS.map((p) => ({ ...p, basePrice: p.price }));
 
-  const currentPlan = plans.find((p) => p.id === selectedPlanId) || plans[1];
+  const currentPlan = plans.find((p) => p.id === selectedPlanId) || plans[0];
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +34,7 @@ export const MembershipCheckout: React.FC = () => {
   };
 
   const netPrice = Math.max(0, currentPlan.basePrice - discountAmount);
-  const gstAmount = Math.round(netPrice * 0.18);
+  const gstAmount = Math.round(netPrice * SITE.gstRate);
   const totalPayable = netPrice + gstAmount;
 
   const handleRazorpayCheckout = () => {
@@ -61,7 +57,7 @@ export const MembershipCheckout: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Buy & Renew Membership | RV-Fitness Gym</title>
+        <title>Buy & Renew Membership | RV Fitness</title>
       </Helmet>
 
       <div className="max-w-4xl mx-auto flex flex-col gap-8">
@@ -77,7 +73,7 @@ export const MembershipCheckout: React.FC = () => {
             <CheckCircle2 className="w-16 h-16 text-gym-success mx-auto" />
             <h2 className="text-3xl font-heading text-white uppercase">PAYMENT SUCCESSFUL & MEMBERSHIP ACTIVATED!</h2>
             <p className="text-sm text-gym-muted">
-              Thank you! Your payment of <strong>₹{successPaid.amount}</strong> was verified. Your GST Invoice <strong>{successPaid.invoice_no}</strong> has been sent to your email.
+              Thank you! Your payment of <strong>₹{successPaid.amount}</strong> was verified. Your invoice <strong>{successPaid.invoice_no}</strong> has been sent to your email.
             </p>
             <div className="bg-gym-bg border border-gym-border p-4 rounded-xl text-xs space-y-1 max-w-md mx-auto text-left">
               <p>Razorpay Payment ID: <strong className="text-gym-primary">{successPaid.payment_id}</strong></p>
@@ -122,8 +118,7 @@ export const MembershipCheckout: React.FC = () => {
                         <p className="text-xs text-gym-muted">{plan.months} Month{plan.months > 1 ? 's' : ''} Full Access</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs line-through text-gym-muted block">₹{plan.original}</span>
-                        <span className="text-2xl font-heading text-gym-primary">₹{plan.basePrice}</span>
+                        <span className="text-2xl font-heading text-gym-primary">{formatINR(plan.basePrice)}</span>
                       </div>
                     </div>
                   );
@@ -171,10 +166,12 @@ export const MembershipCheckout: React.FC = () => {
                     <span className="text-gym-muted">Net Amount</span>
                     <span className="text-white font-medium">₹{netPrice}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gym-muted">GST (18%)</span>
-                    <span className="text-white font-medium">₹{gstAmount}</span>
-                  </div>
+                  {SITE.gstRate > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gym-muted">GST ({Math.round(SITE.gstRate * 100)}%)</span>
+                      <span className="text-white font-medium">₹{gstAmount}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-3 border-t border-gym-border text-lg font-heading">
                     <span className="text-white uppercase">TOTAL PAYABLE</span>
                     <span className="text-gym-primary text-2xl">₹{totalPayable}</span>

@@ -23,13 +23,13 @@ export const Gallery: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Photo Gallery & Facility Tour | RV-Fitness Gym</title>
-        <meta name="description" content="Take a virtual tour of RV-Fitness Gym: Hammer Strength equipment, Zumba studios, CrossFit arena, and steam bath." />
+        <title>Photo Gallery & Facility Tour | RV Fitness</title>
+        <meta name="description" content="Take a virtual tour of RV Fitness: Hammer Strength equipment, Zumba studios, CrossFit arena, and steam bath." />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">
         <div className="text-center max-w-3xl mx-auto">
-          <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">INSIDE RV-FITNESS</span>
+          <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">INSIDE RV FITNESS</span>
           <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
             GYM <span className="text-gym-primary">GALLERY</span>
           </h1>

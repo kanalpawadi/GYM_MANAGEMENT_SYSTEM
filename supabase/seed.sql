@@ -1,11 +1,10 @@
--- Seed Data for RV-Fitness Gym
+-- Seed Data for RV Fitness, Narsobawadi
 
 -- 1. Membership Plans
 INSERT INTO public.membership_plans (id, title, description, duration_months, original_price, offer_price, features, is_active) VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Monthly Starter', 'Ideal for short-term goals and flexible training.', 1, 1999.00, 1499.00, '["Full Gym Floor Access", "Locker Room & Shower Access", "1 Free Trainer Consultation", "General Fitness Assessment"]'::jsonb, true),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'Quarterly Fit', 'Our most popular plan for building sustainable habits.', 3, 4999.00, 3999.00, '["All Starter Features", "Access to Group Yoga & Zumba", "2 Free Personal Training Sessions", "Steam Bath Access (2x/month)", "Diet Blueprint"]'::jsonb, true),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'Half-Yearly Pro', 'For dedicated fitness enthusiasts seeking real transformations.', 6, 8999.00, 6999.00, '["All Quarterly Features", "Unlimited Group Classes", "Free Gym Merchandise T-Shirt", "1 Freeze Membership (Up to 15 Days)", "Body Composition Tracking"]'::jsonb, true),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'Annual Elite', 'Maximum savings and VIP privileges for 12 months.', 12, 15999.00, 11999.00, '["All Pro Features", "Dedicated Personal Locker", "5 Free PT Sessions", "2 Free Guest Passes / Month", "Priority Class Reservations", "Unlimited Freeze (Up to 30 Days)"]'::jsonb, true);
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Monthly', 'Flexible monthly membership with full gym access.', 1, 1500.00, 1500.00, '["Full gym access", "Cardio & strength equipment", "Locker facility", "RO water"]'::jsonb, true),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', 'Six Month', 'Best value for committed members — save with a 6-month plan.', 6, 7500.00, 7500.00, '["Full gym access", "Cardio & strength equipment", "Locker facility", "RO water", "Diet guidance", "Personalised workout plan"]'::jsonb, true),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'Yearly', 'Maximum savings with a full year of transformation.', 12, 12000.00, 12000.00, '["Full gym access", "Cardio & strength equipment", "Locker facility", "RO water", "Diet guidance", "Personalised workout plan", "Body progress tracking", "Priority trainer support"]'::jsonb, true);
 
 -- 2. Coupons
 INSERT INTO public.coupons (code, discount_percent, discount_amount, valid_till, max_uses, is_active) VALUES
@@ -14,11 +13,11 @@ INSERT INTO public.coupons (code, discount_percent, discount_amount, valid_till,
 
 -- 3. FAQs
 INSERT INTO public.faqs (question, answer, category, display_order) VALUES
-('What are the gym timings?', 'RV-Fitness Gym is open Monday through Saturday from 5:30 AM to 10:00 PM, and Sundays from 7:00 AM to 2:00 PM.', 'General', 1),
+('What are the gym timings?', 'RV Fitness is open Monday through Saturday from 5:30 AM to 10:00 PM, and Sundays from 7:00 AM to 2:00 PM.', 'General', 1),
 ('Is a free trial available?', 'Yes! We offer a complimentary 1-day pass so you can experience our state-of-the-art equipment and class atmosphere before joining.', 'Membership', 2),
 ('Do you provide personal trainers?', 'Yes, we have certified personal trainers specializing in weight loss, muscle gain, posture correction, and contest preparation.', 'Training', 3),
 ('Is there parking space available?', 'Yes, we provide dedicated two-wheeler and four-wheeler parking spaces with 24/7 CCTV surveillance for all members.', 'Facilities', 4),
-('Can I freeze my membership if I travel?', 'Yes, Half-Yearly and Annual plans allow membership freezing for valid reasons like travel or medical recovery.', 'Policies', 5);
+('Can I freeze my membership if I travel?', 'Freeze requests for Six Month and Yearly plans can be discussed with gym management for valid reasons like travel or medical recovery.', 'Policies', 5);
 
 -- 4. Testimonials
 INSERT INTO public.testimonials (member_name, rating, feedback, avatar_url, achievement, is_featured) VALUES
@@ -44,4 +43,4 @@ INSERT INTO public.banners_offers (title, subtitle, coupon_code, discount_text, 
 
 -- 8. Gym Settings
 INSERT INTO public.settings (key, value) VALUES
-('gym_info', '{"name": "RV-Fitness Gym", "phone": "+91 98765 43210", "email": "info@rvfitnessgym.in", "address": "Plot 42, Sector 18, Commercial Belt, Metro City, India - 400705", "gstin": "27AAAAA0000A1Z5"}'::jsonb);
+('gym_info', '{"name": "RV Fitness, Narsobawadi", "founder": "Rushikesh Arvind Vagare", "phone": "+91 96233 72426", "email": "rvfitness.narsobawadi@gmail.com", "address": "Narsobawadi, Maharashtra, India", "gstin": ""}'::jsonb);

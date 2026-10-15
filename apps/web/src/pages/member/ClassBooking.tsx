@@ -26,7 +26,7 @@ export const ClassBooking: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Class & PT Bookings | RV-Fitness Gym</title>
+        <title>Class & PT Bookings | RV Fitness</title>
       </Helmet>
 
       <div className="max-w-4xl mx-auto flex flex-col gap-8">

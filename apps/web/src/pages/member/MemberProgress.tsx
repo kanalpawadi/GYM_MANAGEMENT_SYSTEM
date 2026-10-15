@@ -36,7 +36,7 @@ export const MemberProgress: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Body Metrics & Progress Tracker | RV-Fitness Gym</title>
+        <title>Body Metrics & Progress Tracker | RV Fitness</title>
       </Helmet>
 
       <div className="max-w-4xl mx-auto flex flex-col gap-8">

@@ -23,9 +23,9 @@ export const AdminFinancials: React.FC = () => {
   const [expenseAmount, setExpenseAmount] = useState('');
 
   const [payments, setPayments] = useState([
-    { id: 'pay1', member: 'Rahul Sharma', plan: 'Quarterly Fit', amount: '₹4,719', mode: 'online', gst: 'INV-20260818-8842', date: 'Oct 4, 2026' },
-    { id: 'pay2', member: 'Sneha Reddy', plan: 'Annual Elite', amount: '₹14,158', mode: 'upi', gst: 'INV-20260901-1192', date: 'Oct 1, 2026' },
-    { id: 'pay3', member: 'Vikramaditya S', plan: 'Monthly Starter', amount: '₹1,769', mode: 'cash', gst: 'INV-20260928-5541', date: 'Sep 28, 2026' },
+    { id: 'pay1', member: 'Rahul Sharma', plan: 'Six Month', amount: '₹4,719', mode: 'online', gst: 'INV-20260818-8842', date: 'Oct 4, 2026' },
+    { id: 'pay2', member: 'Sneha Reddy', plan: 'Yearly', amount: '₹14,158', mode: 'upi', gst: 'INV-20260901-1192', date: 'Oct 1, 2026' },
+    { id: 'pay3', member: 'Vikramaditya S', plan: 'Monthly', amount: '₹1,769', mode: 'cash', gst: 'INV-20260928-5541', date: 'Sep 28, 2026' },
   ]);
 
   const [expenses, setExpenses] = useState([
@@ -70,7 +70,7 @@ export const AdminFinancials: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Financials & Billing | RV-Fitness Admin</title>
+        <title>Financials & Billing | RV Fitness Admin</title>
       </Helmet>
 
       <div className="flex flex-col gap-8">

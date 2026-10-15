@@ -32,15 +32,15 @@ export const Transformations: React.FC = () => {
       coach: 'Rahul Verma',
       beforeImg: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
       afterImg: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&w=400&q=80',
-      story: 'Lost 12% body fat while increasing bench press by 30 kg. The coaches at RV-Fitness push you past your perceived limits!',
+      story: 'Lost 12% body fat while increasing bench press by 30 kg. The coaches at RV Fitness push you past your perceived limits!',
     },
   ];
 
   return (
     <>
       <Helmet>
-        <title>Member Transformations & Results | RV-Fitness Gym</title>
-        <meta name="description" content="See real member weight loss and muscle gain transformations achieved at RV-Fitness Gym India." />
+        <title>Member Transformations & Results | RV Fitness</title>
+        <meta name="description" content="See real member weight loss and muscle gain transformations achieved at RV Fitness, Narsobawadi." />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
@@ -50,7 +50,7 @@ export const Transformations: React.FC = () => {
             TRANSFORMATION <span className="text-gym-primary">GALLERY</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
-            Explore verified fitness journeys of RV-Fitness members who achieved dramatic health and body composition changes.
+            Explore verified fitness journeys of RV Fitness members who achieved dramatic health and body composition changes.
           </p>
         </div>
 

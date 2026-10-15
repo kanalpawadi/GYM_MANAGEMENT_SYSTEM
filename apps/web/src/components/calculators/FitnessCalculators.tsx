@@ -167,7 +167,7 @@ export const FitnessCalculators: React.FC = () => {
                 <span className={`text-5xl font-heading my-2 ${bmiResult.color}`}>{bmiResult.score}</span>
                 <span className="text-lg font-heading text-white uppercase">{bmiResult.status}</span>
                 <p className="text-xs text-gym-muted mt-3">
-                  Normal range: 18.5 - 24.9. Join RV-Fitness to reach your optimal weight zone!
+                  Normal range: 18.5 - 24.9. Join RV Fitness to reach your optimal weight zone!
                 </p>
               </>
             ) : (

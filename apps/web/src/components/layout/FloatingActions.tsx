@@ -1,17 +1,18 @@
 import React from 'react';
 import { Phone, MessageCircle } from 'lucide-react';
+import { SITE, telHref, whatsappHref } from '../../config/site';
 
 export const FloatingActions: React.FC = () => {
-  const whatsappUrl = 'https://wa.me/919876543210?text=Hi%20RV-Fitness%20Gym!%20I%20want%20to%20inquire%20about%20membership%20plans%20and%20free%20trials.';
+  const whatsappUrl = whatsappHref();
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
       {/* Phone Call Floating Button */}
       <a
-        href="tel:+919876543210"
+        href={telHref()}
         className="w-12 h-12 rounded-full bg-gym-surface border border-gym-border text-gym-primary flex items-center justify-center shadow-lg hover:scale-110 hover:border-gym-primary transition-all duration-200 group"
-        aria-label="Call RV Gym Reception"
-        title="Call Gym Receptionist"
+        aria-label={`Call ${SITE.name}`}
+        title={`Call ${SITE.name}`}
       >
         <Phone className="w-5 h-5 group-hover:animate-bounce" />
       </a>

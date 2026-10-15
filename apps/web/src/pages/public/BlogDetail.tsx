@@ -13,7 +13,7 @@ export const BlogDetail: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>{post.title} | RV-Fitness Gym Blog</title>
+        <title>{post.title} | RV Fitness Blog</title>
         <meta name="description" content={post.summary} />
       </Helmet>
 

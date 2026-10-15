@@ -29,7 +29,7 @@ export const Signup: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Create Account | RV-Fitness Gym</title>
+        <title>Create Account | RV Fitness</title>
       </Helmet>
 
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
@@ -41,7 +41,7 @@ export const Signup: React.FC = () => {
             <h1 className="text-3xl font-heading text-white uppercase tracking-wide">
               CREATE <span className="text-gym-primary">ACCOUNT</span>
             </h1>
-            <p className="text-xs text-gym-muted mt-1">Join RV-Fitness to track attendance, buy plans, and book sessions.</p>
+            <p className="text-xs text-gym-muted mt-1">Join RV Fitness to track attendance, buy plans, and book sessions.</p>
           </div>
 
           <form onSubmit={handleSignup} className="flex flex-col gap-4">

@@ -38,8 +38,8 @@ export const Schedule: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Weekly Class Schedule | RV-Fitness Gym</title>
-        <meta name="description" content="View weekly class schedule for Zumba, Power Yoga, CrossFit, HIIT, and Strength conditioning at RV-Fitness Gym." />
+        <title>Weekly Class Schedule | RV Fitness</title>
+        <meta name="description" content="View weekly class schedule for Zumba, Power Yoga, CrossFit, HIIT, and Strength conditioning at RV Fitness." />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">
@@ -49,7 +49,7 @@ export const Schedule: React.FC = () => {
             CLASS <span className="text-gym-primary">SCHEDULE</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
-            Filter classes by day of the week and program type. All group classes are included in Quarterly, Half-Yearly, and Annual memberships.
+            Filter classes by day of the week and program type. Ask our trainers at the front desk for the latest batch timings.
           </p>
         </div>
 

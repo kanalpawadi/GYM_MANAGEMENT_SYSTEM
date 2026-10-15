@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { PLANS, formatINR } from '../../config/site';
 import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 
@@ -17,13 +18,13 @@ export const AdminMembers: React.FC = () => {
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberPlan, setNewMemberPlan] = useState('Quarterly Fit');
+  const [newMemberPlan, setNewMemberPlan] = useState('Six Month');
 
   const [members, setMembers] = useState([
-    { id: 'm1', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul@example.com', plan: 'Quarterly Fit', status: 'active', endDate: '18 Nov 2026', paid: '₹4,719' },
-    { id: 'm2', name: 'Sneha Reddy', phone: '9876543211', email: 'sneha@example.com', plan: 'Annual Elite', status: 'active', endDate: '14 May 2027', paid: '₹14,158' },
-    { id: 'm3', name: 'Karan Sharma', phone: '9876543212', email: 'karan@example.com', plan: 'Monthly Starter', status: 'expired', endDate: '02 Oct 2026', paid: '₹1,769' },
-    { id: 'm4', name: 'Amit Verma', phone: '9876543213', email: 'amit@example.com', plan: 'Half-Yearly Pro', status: 'frozen', endDate: '20 Dec 2026', paid: '₹8,258' },
+    { id: 'm1', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul@example.com', plan: 'Six Month', status: 'active', endDate: '18 Nov 2026', paid: '₹4,719' },
+    { id: 'm2', name: 'Sneha Reddy', phone: '9876543211', email: 'sneha@example.com', plan: 'Yearly', status: 'active', endDate: '14 May 2027', paid: '₹14,158' },
+    { id: 'm3', name: 'Karan Sharma', phone: '9876543212', email: 'karan@example.com', plan: 'Monthly', status: 'expired', endDate: '02 Oct 2026', paid: '₹1,769' },
+    { id: 'm4', name: 'Amit Verma', phone: '9876543213', email: 'amit@example.com', plan: 'Six Month', status: 'frozen', endDate: '20 Dec 2026', paid: '₹8,258' },
   ]);
 
   const handleExportCSV = () => {
@@ -49,7 +50,7 @@ export const AdminMembers: React.FC = () => {
       plan: newMemberPlan,
       status: 'active',
       endDate: '06 Jan 2027',
-      paid: '₹3,999',
+      paid: formatINR(PLANS.find((p) => p.title === newMemberPlan)?.price ?? 0),
     };
 
     setMembers([newObj, ...members]);
@@ -68,7 +69,7 @@ export const AdminMembers: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Member Management | RV-Fitness Admin</title>
+        <title>Member Management | RV Fitness Admin</title>
       </Helmet>
 
       <div className="flex flex-col gap-6">
@@ -181,12 +182,7 @@ export const AdminMembers: React.FC = () => {
             />
             <Select
               label="Select Membership Plan"
-              options={[
-                { label: 'Monthly Starter (₹1,499)', value: 'Monthly Starter' },
-                { label: 'Quarterly Fit (₹3,999)', value: 'Quarterly Fit' },
-                { label: 'Half-Yearly Pro (₹6,999)', value: 'Half-Yearly Pro' },
-                { label: 'Annual Elite (₹11,999)', value: 'Annual Elite' },
-              ]}
+              options={PLANS.map((p) => ({ label: `${p.title} (${formatINR(p.price)})`, value: p.title }))}
               value={newMemberPlan}
               onChange={(e) => setNewMemberPlan(e.target.value)}
             />

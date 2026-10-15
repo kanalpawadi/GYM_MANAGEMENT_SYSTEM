@@ -17,7 +17,7 @@ export const AdminReports: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Reports & Automated Crons | RV-Fitness Admin</title>
+        <title>Reports & Automated Crons | RV Fitness Admin</title>
       </Helmet>
 
       <div className="flex flex-col gap-8">
@@ -63,41 +63,31 @@ export const AdminReports: React.FC = () => {
             <div className="space-y-4 text-sm">
               <div>
                 <div className="flex justify-between mb-1">
-                  <span>Quarterly Fit (3 Months)</span>
-                  <span className="font-bold text-gym-primary">48% of Members</span>
+                  <span>Six Month (6 Months)</span>
+                  <span className="font-bold text-white">52% of Members</span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-gym-bg overflow-hidden border border-gym-border">
-                  <div className="h-full bg-gym-primary w-[48%]" />
+                  <div className="h-full bg-amber-400 w-[52%]" />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between mb-1">
-                  <span>Half-Yearly Pro (6 Months)</span>
-                  <span className="font-bold text-white">28% of Members</span>
+                  <span>Yearly (12 Months)</span>
+                  <span className="font-bold text-gym-success">28% of Members</span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-gym-bg overflow-hidden border border-gym-border">
-                  <div className="h-full bg-amber-400 w-[28%]" />
+                  <div className="h-full bg-gym-success w-[28%]" />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between mb-1">
-                  <span>Annual Elite (12 Months)</span>
-                  <span className="font-bold text-gym-success">16% of Members</span>
+                  <span>Monthly (1 Month)</span>
+                  <span className="font-bold text-gym-muted">20% of Members</span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-gym-bg overflow-hidden border border-gym-border">
-                  <div className="h-full bg-gym-success w-[16%]" />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span>Monthly Starter (1 Month)</span>
-                  <span className="font-bold text-gym-muted">8% of Members</span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-gym-bg overflow-hidden border border-gym-border">
-                  <div className="h-full bg-gym-muted w-[8%]" />
+                  <div className="h-full bg-gym-muted w-[20%]" />
                 </div>
               </div>
             </div>

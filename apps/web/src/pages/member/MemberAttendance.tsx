@@ -11,7 +11,7 @@ export const MemberAttendance: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Attendance History & Streak | RV-Fitness Gym</title>
+        <title>Attendance History & Streak | RV Fitness</title>
       </Helmet>
 
       <div className="max-w-4xl mx-auto flex flex-col gap-8">

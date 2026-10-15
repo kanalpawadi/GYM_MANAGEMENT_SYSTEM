@@ -1,17 +1,17 @@
-# 🏋️‍♂️ RV-Fitness Gym Platform
+# 🏋️‍♂️ RV Fitness, Narsobawadi — Gym Platform
 
-A production-grade, dark-first website and full-stack gym management platform for **RV-Fitness Gym** (India). Built with modern high-performance web standards, robust role-based access control (RBAC), and automated GST billing.
+A production-grade, dark-first website and full-stack gym management platform for **RV Fitness, Narsobawadi** (founded by Rushikesh Arvind Vagare). Built with modern high-performance web standards, robust role-based access control (RBAC), and automated GST billing.
 
 ---
 
 ## 🌟 Key Features
 
 ### 🌐 1. Public Website & Fitness Calculators
-- **Modern Dark & Yellow Design System**: Black base (`#0A0A0A`, `#1A1A1A`), yellow highlights (`#FFD400`), typography (`Bebas Neue` & `Poppins`).
+- **Modern Dark & Yellow Design System**: Black base (`#0A0A0A`, `#1A1A1A`), yellow highlights (`#FFD400`), typography (`Poppins` headings & `Lora` body).
 - **13 Complete Pages**: Home, About, Programs, Trainers, Plans, Schedule, Gallery (Lightbox), Transformations, Blog, BlogDetail, FAQ (Searchable Accordion), Contact, Policies, 404.
 - **4 Interactive Fitness Calculators**: BMI Index & Category, TDEE & Calorie Deficit/Surplus Target, Body Fat % (US Navy formula), Ideal Weight (Devine & Robinson formulas).
 - **Lead CRM & Trial Pass Forms**: 10-digit Indian phone validation (`/^[6-9]\d{9}$/`), honeypot spam protection, and automated email confirmation alerts.
-- **Floating Action Toolbar**: Floating WhatsApp CTA (`+91 98765 43210`) and Instant Call Button.
+- **Floating Action Toolbar**: Floating WhatsApp CTA (`+91 96233 72426`) and Instant Call Button.
 
 ### 👤 2. Member Portal
 - **Role-Based Authentication**: Supabase Auth integration with custom user profile triggers and instant 1-click role preview switcher.
@@ -73,3 +73,14 @@ npm run dev:web
 # 4. Launch Next.js API Server (http://localhost:3000/api/v1)
 npm run dev:api
 ```
+
+---
+
+## ✅ Testing & Deployment
+
+```bash
+npm run verify   # typecheck + unit/component/API tests + production builds
+```
+
+- Client details (phone, email, founder, plans, hours, Instagram, GST rate) live in one file: `apps/web/src/config/site.ts`.
+- See [docs/DEPLOY.md](docs/DEPLOY.md) for hosting steps and the pre-launch checklist.

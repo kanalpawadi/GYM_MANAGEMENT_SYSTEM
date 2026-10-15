@@ -13,7 +13,7 @@ export const PaymentHistory: React.FC = () => {
     {
       id: 'p1',
       invoice_no: 'INV-20260818-8842',
-      plan_title: 'Quarterly Fit Membership',
+      plan_title: 'Six Month Membership',
       amount: 3999,
       tax: 720,
       total: 4719,
@@ -25,7 +25,7 @@ export const PaymentHistory: React.FC = () => {
     {
       id: 'p2',
       invoice_no: 'INV-20260515-3312',
-      plan_title: 'Monthly Starter Membership',
+      plan_title: 'Monthly Membership',
       amount: 1499,
       tax: 270,
       total: 1769,
@@ -39,14 +39,13 @@ export const PaymentHistory: React.FC = () => {
   const handleDownloadInvoice = (inv: any) => {
     // Generate text/PDF printable blob stream
     const content = `=====================================================
-                    RV-FITNESS GYM INDIA
-               TAX INVOICE / GST RECEIPT
+                    RV FITNESS, NARSOBAWADI
+                 PAYMENT RECEIPT
 =====================================================
 Invoice No: ${inv.invoice_no}
 Date: ${inv.date}
 Payment ID: ${inv.payment_id}
 Member Name: Rahul Sharma (RV-2026-8842)
-GSTIN: 27AAAAA0000A1Z5
 
 Description                         Amount (INR)
 -----------------------------------------------------
@@ -57,7 +56,7 @@ SGST (9%)                           ₹${inv.tax / 2}.00
 TOTAL PAID                           ₹${inv.total}.00
 Status: SUCCESSFUL / PAID
 
-Thank you for choosing RV-Fitness Gym!
+Thank you for choosing RV Fitness!
 =====================================================`;
 
     const blob = new Blob([content], { type: 'text/plain' });
@@ -71,7 +70,7 @@ Thank you for choosing RV-Fitness Gym!
   return (
     <>
       <Helmet>
-        <title>Payment History & GST Invoices | RV-Fitness Gym</title>
+        <title>Payment History & GST Invoices | RV Fitness</title>
       </Helmet>
 
       <div className="max-w-5xl mx-auto flex flex-col gap-8">

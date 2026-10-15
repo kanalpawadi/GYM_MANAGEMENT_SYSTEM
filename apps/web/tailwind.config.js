@@ -23,8 +23,8 @@ export default {
         },
       },
       fontFamily: {
-        heading: ['"Bebas Neue"', '"Oswald"', 'sans-serif'],
-        body: ['"Poppins"', '"Inter"', 'sans-serif'],
+        heading: ['"Poppins"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        body: ['"Lora"', 'ui-serif', 'Georgia', 'serif'],
       },
       boxShadow: {
         'yellow-glow': '0 0 20px rgba(255, 212, 0, 0.25)',

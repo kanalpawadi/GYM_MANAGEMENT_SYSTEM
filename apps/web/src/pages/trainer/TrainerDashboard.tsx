@@ -44,7 +44,7 @@ export const TrainerDashboard: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Trainer Panel | RV-Fitness Gym</title>
+        <title>Trainer Panel | RV Fitness</title>
       </Helmet>
 
       <div className="min-h-screen bg-gym-bg text-gym-text p-6 max-w-7xl mx-auto flex flex-col gap-8">

@@ -43,8 +43,8 @@ export const Blog: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Fitness & Diet Blog | RV-Fitness Gym</title>
-        <meta name="description" content="Read expert workout plans, Indian diet advice, muscle building tips, and fat loss strategies on the RV-Fitness Gym blog." />
+        <title>Fitness & Diet Blog | RV Fitness</title>
+        <meta name="description" content="Read expert workout plans, Indian diet advice, muscle building tips, and fat loss strategies on the RV Fitness blog." />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">
