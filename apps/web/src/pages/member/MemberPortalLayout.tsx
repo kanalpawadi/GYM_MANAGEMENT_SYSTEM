@@ -43,7 +43,7 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
                   ACTIVE MEMBER
                 </span>
               </div>
-              <p className="text-xs text-gym-muted">ID: <strong className="text-white">RV-2026-8842</strong> | Phone: {profile?.phone || '+91 98765 43210'}</p>
+              <p className="text-xs text-gym-muted">ID: <strong className="text-white">RV-2026-8842</strong> | Phone: {profile?.phone || '—'}</p>
             </div>
           </div>
 

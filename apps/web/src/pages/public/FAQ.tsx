@@ -10,7 +10,7 @@ export const FAQ: React.FC = () => {
 
   const faqs = [
     {
-      q: 'What are the operating hours of RV-Fitness Gym?',
+      q: 'What are the operating hours of RV Fitness?',
       a: 'We are open Monday through Saturday from 5:30 AM to 10:00 PM, and Sundays from 7:00 AM to 2:00 PM.',
       category: 'General',
     },
@@ -31,7 +31,7 @@ export const FAQ: React.FC = () => {
     },
     {
       q: 'Can I freeze my membership if I travel or fall ill?',
-      a: 'Yes. Half-Yearly (up to 15 days) and Annual Elite (up to 30 days) plans allow membership freezing with admin approval.',
+      a: 'Freeze requests for Six Month and Yearly plans can be discussed with the gym management.',
       category: 'Policies',
     },
     {
@@ -40,8 +40,8 @@ export const FAQ: React.FC = () => {
       category: 'Membership',
     },
     {
-      q: 'Are group classes included in the membership fee?',
-      a: 'Yes! All Quarterly, Half-Yearly, and Annual Elite memberships include unlimited access to group Yoga, Zumba, CrossFit, and HIIT sessions.',
+      q: 'What is included in each membership plan?',
+      a: 'Every plan includes full gym access, cardio & strength equipment, locker facility and RO water. The Six Month plan adds diet guidance and a personalised workout plan. The Yearly plan adds body progress tracking and priority trainer support.',
       category: 'General',
     },
   ];
@@ -55,8 +55,8 @@ export const FAQ: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Frequently Asked Questions (FAQ) | RV-Fitness Gym</title>
-        <meta name="description" content="Find answers to common questions regarding RV-Fitness Gym timings, free trials, membership freeze policies, personal training, and group classes." />
+        <title>Frequently Asked Questions (FAQ) | RV Fitness</title>
+        <meta name="description" content="Find answers to common questions regarding RV Fitness timings, free trials, membership freeze policies, personal training, and group classes." />
       </Helmet>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">

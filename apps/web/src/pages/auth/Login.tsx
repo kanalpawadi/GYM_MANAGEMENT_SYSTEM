@@ -41,7 +41,7 @@ export const Login: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Portal Login | RV-Fitness Gym</title>
+        <title>Portal Login | RV Fitness</title>
       </Helmet>
 
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">

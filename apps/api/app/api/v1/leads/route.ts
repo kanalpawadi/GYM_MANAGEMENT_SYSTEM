@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Thank you! Our RV-Fitness consultant will call you within 2 hours.',
+      message: 'Thank you! The RV Fitness team will call you shortly.',
       data,
     });
   } catch (err: any) {

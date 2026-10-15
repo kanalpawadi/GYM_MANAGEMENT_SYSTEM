@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { findPlan } from '@/lib/plans';
 
 const checkoutSchema = z.object({
   plan_id: z.string().min(1),
@@ -19,7 +20,11 @@ export async function POST(request: Request) {
 
     // Razorpay Order Creation simulation
     const orderId = `order_${Math.random().toString(36).substring(2, 12)}`;
-    const amountInPaise = 471900; // ₹4,719.00 inclusive of 18% GST
+    const plan = findPlan(plan_id);
+    if (!plan) {
+      return NextResponse.json({ error: { code: 'PLAN_NOT_FOUND', message: 'Unknown membership plan' } }, { status: 404 });
+    }
+    const amountInPaise = plan.offer_price * 100;
 
     return NextResponse.json({
       success: true,

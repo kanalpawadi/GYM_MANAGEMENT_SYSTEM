@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Dumbbell, Phone, Mail, MapPin, Clock, Send, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Dumbbell, Phone, Mail, MapPin, Clock, Send, CheckCircle2, Instagram } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { SITE, phoneDisplay, telHref, instagramHref } from '../../config/site';
 
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -60,15 +61,25 @@ export const Footer: React.FC = () => {
               <Dumbbell className="w-6 h-6 stroke-[2.5]" />
             </div>
             <span className="text-2xl font-heading text-white tracking-wider">
-              RV-<span className="text-gym-primary">FITNESS</span>
+              RV <span className="text-gym-primary">FITNESS</span>
             </span>
           </Link>
           <p className="text-sm text-gym-muted leading-relaxed pr-4">
-            India's premier high-performance strength, conditioning, and wellness club. Equipped with world-class machinery, expert personal trainers, and high-energy group fitness classes.
+            {SITE.about}
           </p>
           <div className="text-xs text-gym-muted flex flex-col gap-1 border-t border-gym-border/60 pt-3">
-            <span>GSTIN: <strong className="text-white">27AAAAA0000A1Z5</strong></span>
-            <span>Registered Under Govt of India Commercial Establishments Act</span>
+            <span>Founder: <strong className="text-white">{SITE.founder}</strong></span>
+            {SITE.instagram && (
+              <a
+                href={instagramHref()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 hover:text-gym-primary transition-colors w-fit"
+                aria-label={`${SITE.name} on Instagram`}
+              >
+                <Instagram className="w-4 h-4" /> @{SITE.instagram}
+              </a>
+            )}
           </div>
         </div>
 
@@ -78,7 +89,7 @@ export const Footer: React.FC = () => {
             Quick Links
           </h4>
           <ul className="flex flex-col gap-2.5 text-sm">
-            <li><Link to="/about" className="hover:text-gym-primary transition-colors">About RV Gym</Link></li>
+            <li><Link to="/about" className="hover:text-gym-primary transition-colors">About RV Fitness</Link></li>
             <li><Link to="/programs" className="hover:text-gym-primary transition-colors">Fitness Programs</Link></li>
             <li><Link to="/trainers" className="hover:text-gym-primary transition-colors">Certified Trainers</Link></li>
             <li><Link to="/plans" className="hover:text-gym-primary transition-colors">Membership Plans</Link></li>
@@ -110,21 +121,21 @@ export const Footer: React.FC = () => {
           <ul className="flex flex-col gap-3 text-sm">
             <li className="flex items-start gap-2.5">
               <MapPin className="w-5 h-5 text-gym-primary shrink-0 mt-0.5" />
-              <span>Plot 42, Sector 18, Commercial Belt, Metro City, India - 400705</span>
+              <span>{SITE.address}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <Phone className="w-4 h-4 text-gym-primary shrink-0" />
-              <a href="tel:+919876543210" className="hover:text-white">+91 98765 43210</a>
+              <a href={telHref()} className="hover:text-white">{phoneDisplay()}</a>
             </li>
             <li className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-gym-primary shrink-0" />
-              <a href="mailto:info@rvfitnessgym.in" className="hover:text-white">info@rvfitnessgym.in</a>
+              <a href={`mailto:${SITE.email}`} className="hover:text-white break-all">{SITE.email}</a>
             </li>
             <li className="flex items-start gap-2.5 pt-2 border-t border-gym-border/60">
               <Clock className="w-4 h-4 text-gym-primary shrink-0 mt-0.5" />
               <div>
-                <p className="text-white font-medium">Mon - Sat: 5:30 AM - 10:00 PM</p>
-                <p className="text-xs text-gym-muted">Sunday: 7:00 AM - 2:00 PM</p>
+                <p className="text-white font-medium">{SITE.hours.weekdays}</p>
+                <p className="text-xs text-gym-muted">{SITE.hours.sunday}</p>
               </div>
             </li>
           </ul>
@@ -134,7 +145,7 @@ export const Footer: React.FC = () => {
       {/* Bottom Bar & Legal */}
       <div className="bg-gym-bg border-t border-gym-border py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
-          <p>© {new Date().getFullYear()} RV-Fitness Gym. All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} {SITE.fullName}. All Rights Reserved.</p>
           <div className="flex items-center gap-6">
             <Link to="/policies" className="hover:text-gym-primary transition-colors">Privacy Policy</Link>
             <Link to="/policies" className="hover:text-gym-primary transition-colors">Terms of Service</Link>

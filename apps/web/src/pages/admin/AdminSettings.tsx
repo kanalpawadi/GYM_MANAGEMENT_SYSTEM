@@ -4,12 +4,13 @@ import { Sliders, CheckCircle2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { SITE, phoneDisplay } from '../../config/site';
 
 export const AdminSettings: React.FC = () => {
-  const [gymName, setGymName] = useState('RV-Fitness Gym');
-  const [phone, setPhone] = useState('+91 98765 43210');
-  const [email, setEmail] = useState('info@rvfitnessgym.in');
-  const [gstin, setGstin] = useState('27AAAAA0000A1Z5');
+  const [gymName, setGymName] = useState<string>(SITE.fullName);
+  const [phone, setPhone] = useState(phoneDisplay());
+  const [email, setEmail] = useState<string>(SITE.email);
+  const [gstin, setGstin] = useState('');
   const [saved, setSaved] = useState('');
 
   const handleSave = (e: React.FormEvent) => {
@@ -21,7 +22,7 @@ export const AdminSettings: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Gym Settings | RV-Fitness Admin</title>
+        <title>Gym Settings | RV Fitness Admin</title>
       </Helmet>
 
       <div className="max-w-3xl mx-auto flex flex-col gap-8">
@@ -49,7 +50,7 @@ export const AdminSettings: React.FC = () => {
               <Input label="Helpline Phone" value={phone} onChange={(e) => setPhone(e.target.value)} required />
               <Input label="Support Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
-            <Input label="GSTIN Registration Number" value={gstin} onChange={(e) => setGstin(e.target.value)} required />
+            <Input label="GSTIN Registration Number (optional)" value={gstin} onChange={(e) => setGstin(e.target.value)} />
           </Card>
 
           <Button type="submit" variant="primary" className="w-full">

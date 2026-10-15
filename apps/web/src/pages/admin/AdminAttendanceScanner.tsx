@@ -15,7 +15,7 @@ export const AdminAttendanceScanner: React.FC = () => {
         status: 'active',
         name: 'Rahul Sharma',
         memberId: 'RV-2026-8842',
-        plan: 'Quarterly Fit Membership',
+        plan: 'Six Month Membership',
         daysLeft: 42,
         time: new Date().toLocaleTimeString(),
       });
@@ -24,7 +24,7 @@ export const AdminAttendanceScanner: React.FC = () => {
         status: 'expired',
         name: 'Karan Sharma',
         memberId: 'RV-2026-3312',
-        plan: 'Monthly Starter',
+        plan: 'Monthly',
         daysLeft: 0,
         time: new Date().toLocaleTimeString(),
       });
@@ -43,7 +43,7 @@ export const AdminAttendanceScanner: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Reception Attendance Scanner | RV-Fitness Admin</title>
+        <title>Reception Attendance Scanner | RV Fitness Admin</title>
       </Helmet>
 
       <div className="max-w-4xl mx-auto flex flex-col gap-8">

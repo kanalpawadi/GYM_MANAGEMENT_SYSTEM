@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { submitLead } from '../../services/api';
+import { SITE, phoneDisplay, telHref, whatsappHref, mapEmbedSrc } from '../../config/site';
 
 export const Contact: React.FC = () => {
   const [name, setName] = useState('');
@@ -45,18 +46,18 @@ export const Contact: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Contact Us & Location Map | RV-Fitness Gym</title>
-        <meta name="description" content="Contact RV-Fitness Gym India. Phone: +91 98765 43210, Email: info@rvfitnessgym.in. Visit our gym in Sector 18." />
+        <title>{`Contact Us & Location Map | ${SITE.fullName}`}</title>
+        <meta name="description" content={`Contact ${SITE.fullName}. Phone: ${phoneDisplay()}, Email: ${SITE.email}. Visit our gym in ${SITE.location}.`} />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">GET IN TOUCH</span>
           <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
-            CONTACT <span className="text-gym-primary">RV-FITNESS</span>
+            CONTACT <span className="text-gym-primary">RV FITNESS</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
-            Have questions about membership packages, personal training, or corporate group bookings? Send us a message or call reception.
+            Have questions about membership plans, diet guidance or personalised workout plans? Send us a message or call us directly.
           </p>
         </div>
 
@@ -147,7 +148,7 @@ export const Contact: React.FC = () => {
                   <MapPin className="w-5 h-5 text-gym-primary shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Gym Address</h4>
-                    <p>Plot 42, Sector 18, Commercial Belt, Metro City, India - 400705</p>
+                    <p>{SITE.address}</p>
                   </div>
                 </div>
 
@@ -155,7 +156,8 @@ export const Contact: React.FC = () => {
                   <Phone className="w-5 h-5 text-gym-primary shrink-0" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Helpline & WhatsApp</h4>
-                    <a href="tel:+919876543210" className="text-gym-primary font-bold hover:underline">+91 98765 43210</a>
+                    <a href={telHref()} className="text-gym-primary font-bold hover:underline">{phoneDisplay()}</a>
+                    <a href={whatsappHref()} target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white">Chat on WhatsApp</a>
                   </div>
                 </div>
 
@@ -163,7 +165,7 @@ export const Contact: React.FC = () => {
                   <Mail className="w-5 h-5 text-gym-primary shrink-0" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Official Email</h4>
-                    <a href="mailto:info@rvfitnessgym.in" className="hover:text-white">info@rvfitnessgym.in</a>
+                    <a href={`mailto:${SITE.email}`} className="hover:text-white break-all">{SITE.email}</a>
                   </div>
                 </div>
 
@@ -171,8 +173,8 @@ export const Contact: React.FC = () => {
                   <Clock className="w-5 h-5 text-gym-primary shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Opening Hours</h4>
-                    <p>Monday - Saturday: 5:30 AM - 10:00 PM</p>
-                    <p className="text-xs text-gym-muted">Sunday: 7:00 AM - 2:00 PM</p>
+                    <p>{SITE.hours.weekdays}</p>
+                    <p className="text-xs text-gym-muted">{SITE.hours.sunday}</p>
                   </div>
                 </div>
               </div>
@@ -180,8 +182,8 @@ export const Contact: React.FC = () => {
 
             <div className="h-64 rounded-xl overflow-hidden border border-gym-border bg-gym-surface">
               <iframe
-                title="RV Fitness Gym Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3770.7924840801875!2d73.0135!3d19.0305!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDAxJzefOC44Ik4gNzPCsDAwJzQ4LjYiRQ!5e0!3m2!1sen!2sin!4v1650000000000!5m2!1sen!2sin"
+                title={`${SITE.fullName} map`}
+                src={mapEmbedSrc()}
                 width="100%"
                 height="100%"
                 style={{ border: 0, filter: 'grayscale(1) invert(0.9) contrast(1.2)' }}

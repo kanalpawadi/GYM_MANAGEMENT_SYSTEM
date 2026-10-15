@@ -10,7 +10,7 @@ export const MemberDashboard: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Member Dashboard | RV-Fitness Gym</title>
+        <title>Member Dashboard | RV Fitness</title>
       </Helmet>
 
       <div className="flex flex-col gap-8">
@@ -20,7 +20,7 @@ export const MemberDashboard: React.FC = () => {
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-xs font-heading text-gym-muted uppercase">ACTIVE MEMBERSHIP</span>
-                <h3 className="text-2xl font-heading text-gym-primary uppercase mt-1">Quarterly Fit</h3>
+                <h3 className="text-2xl font-heading text-gym-primary uppercase mt-1">Six Month</h3>
                 <p className="text-xs text-gym-success font-medium mt-1">Ends Nov 18, 2026 (42 Days Left)</p>
               </div>
               <div className="w-10 h-10 rounded-lg bg-gym-primary/20 text-gym-primary flex items-center justify-center">

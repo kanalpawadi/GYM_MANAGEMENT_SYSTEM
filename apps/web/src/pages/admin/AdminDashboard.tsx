@@ -19,7 +19,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Admin Overview KPIs | RV-Fitness Gym</title>
+        <title>Admin Overview KPIs | RV Fitness</title>
       </Helmet>
 
       <div className="flex flex-col gap-8">
@@ -152,9 +152,9 @@ export const AdminDashboard: React.FC = () => {
               </h3>
               <div className="space-y-3 text-xs">
                 {[
-                  { name: 'Karan Sharma', plan: 'Monthly Starter', phone: '9876543210', days: 2 },
-                  { name: 'Neha Gupta', plan: 'Quarterly Fit', phone: '9876511111', days: 3 },
-                  { name: 'Vikramaditya S', plan: 'Annual Elite', phone: '9876522222', days: 5 },
+                  { name: 'Karan Sharma', plan: 'Monthly', phone: '9876543210', days: 2 },
+                  { name: 'Neha Gupta', plan: 'Six Month', phone: '9876511111', days: 3 },
+                  { name: 'Vikramaditya S', plan: 'Yearly', phone: '9876522222', days: 5 },
                 ].map((m, i) => (
                   <div key={i} className="p-3 rounded-lg bg-gym-bg border border-gym-border flex justify-between items-center">
                     <div>

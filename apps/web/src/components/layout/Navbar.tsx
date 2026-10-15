@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dumbbell, Menu, X, Phone, User, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { SITE, phoneDisplay, telHref } from '../../config/site';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,40 +30,41 @@ export const Navbar: React.FC = () => {
       <div className="bg-gym-surface py-1.5 px-4 border-b border-gym-border text-xs text-gym-muted hidden md:flex justify-between items-center">
         <div className="flex items-center gap-6">
           <span className="flex items-center gap-1.5 text-white">
-            <Phone className="w-3.5 h-3.5 text-gym-primary" /> +91 98765 43210
+            <Phone className="w-3.5 h-3.5 text-gym-primary" />
+            <a href={telHref()} className="hover:text-gym-primary">{phoneDisplay()}</a>
           </span>
-          <span>📍 Sector 18, Commercial Belt, Metro City, India</span>
-          <span>⏰ Mon - Sat: 5:30 AM - 10:00 PM | Sun: 7 AM - 2 PM</span>
+          <span>📍 {SITE.location}</span>
+          <span>⏰ {SITE.hours.weekdays} | {SITE.hours.sunday}</span>
         </div>
         <div className="flex items-center gap-4 text-gym-primary font-heading font-semibold tracking-wider uppercase">
-          <span>🔥 FIRST DAY PASS IS FREE</span>
+          <span>🔥 {SITE.tagline}</span>
         </div>
       </div>
 
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
+        <Link to="/" className="flex items-center gap-2.5 group shrink-0 mr-4">
           <div className="w-10 h-10 rounded-lg bg-gym-primary text-black flex items-center justify-center font-bold shadow-yellow-glow group-hover:scale-105 transition-transform">
             <Dumbbell className="w-6 h-6 stroke-[2.5]" />
           </div>
           <div className="flex flex-col">
-            <span className="text-2xl font-heading text-white tracking-wider leading-none">
-              RV-<span className="text-gym-primary">FITNESS</span>
+            <span className="text-xl 2xl:text-2xl font-heading font-bold text-white tracking-wide leading-none whitespace-nowrap">
+              RV <span className="text-gym-primary">FITNESS</span>
             </span>
             <span className="text-[10px] text-gym-muted font-body font-medium uppercase tracking-widest">
-              PREMIUM GYM & CLUB
+              {SITE.location}
             </span>
           </div>
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden lg:flex items-center gap-5">
+        <nav className="hidden xl:flex items-center gap-3 2xl:gap-5">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`text-sm font-heading tracking-wide uppercase transition-colors hover:text-gym-primary ${
+              className={`text-xs 2xl:text-sm font-heading tracking-wide uppercase whitespace-nowrap transition-colors hover:text-gym-primary ${
                 isActive(link.path) ? 'text-gym-primary font-bold border-b-2 border-gym-primary pb-1' : 'text-gym-muted'
               }`}
             >
@@ -72,21 +74,21 @@ export const Navbar: React.FC = () => {
         </nav>
 
         {/* Right Action Buttons */}
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden xl:flex items-center gap-2 shrink-0">
           <Link to="/login">
-            <Button variant="ghost" size="sm" leftIcon={<User className="w-4 h-4" />}>
+            <Button variant="ghost" size="sm" className="whitespace-nowrap" leftIcon={<User className="w-4 h-4" />}>
               Portal Login
             </Button>
           </Link>
           <Link to="/contact">
-            <Button variant="primary" size="sm" leftIcon={<Calendar className="w-4 h-4" />}>
+            <Button variant="primary" size="sm" className="whitespace-nowrap" leftIcon={<Calendar className="w-4 h-4" />}>
               Free Trial
             </Button>
           </Link>
         </div>
 
         {/* Mobile Hamburger Toggle */}
-        <div className="flex lg:hidden items-center gap-2">
+        <div className="flex xl:hidden items-center gap-2">
           <Link to="/contact">
             <Button variant="primary" size="sm" className="text-xs px-3 min-h-[36px]">
               Trial
@@ -104,7 +106,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer Menu */}
       {isOpen && (
-        <div className="lg:hidden bg-gym-surface border-b border-gym-border px-4 py-6 flex flex-col gap-4 animate-in slide-in-from-top duration-200">
+        <div className="xl:hidden bg-gym-surface border-b border-gym-border px-4 py-6 flex flex-col gap-4 animate-in slide-in-from-top duration-200">
           <nav className="flex flex-col gap-3">
             {navLinks.map((link) => (
               <Link

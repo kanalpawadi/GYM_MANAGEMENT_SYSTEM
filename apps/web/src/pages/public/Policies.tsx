@@ -10,8 +10,8 @@ export const Policies: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Privacy Policy, Terms & Refund Policy | RV-Fitness Gym</title>
-        <meta name="description" content="Read RV-Fitness Gym India policies on user privacy, terms of service, membership freezing rules, and refund guidelines." />
+        <title>Privacy Policy, Terms & Refund Policy | RV Fitness</title>
+        <meta name="description" content="Read RV Fitness, Narsobawadi policies on user privacy, terms of service, membership freezing rules, and refund guidelines." />
       </Helmet>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-8">
@@ -39,7 +39,7 @@ export const Policies: React.FC = () => {
                 <ShieldCheck className="w-6 h-6 text-gym-primary" /> PRIVACY POLICY
               </h3>
               <p>
-                RV-Fitness Gym values your privacy. We collect personal information such as name, phone number, email address, and emergency contact details solely to manage gym memberships, process Razorpay transactions, and ensure safety on the premises.
+                RV Fitness values your privacy. We collect personal information such as name, phone number, email address, and emergency contact details solely to manage gym memberships, process Razorpay transactions, and ensure safety on the premises.
               </p>
               <h4 className="text-lg font-heading text-white uppercase mt-4">Data Security & Third Parties</h4>
               <p>
@@ -54,7 +54,7 @@ export const Policies: React.FC = () => {
                 <FileText className="w-6 h-6 text-gym-primary" /> TERMS OF SERVICE
               </h3>
               <p>
-                By accessing RV-Fitness Gym premises or using our online booking platform, members agree to adhere to the following rules:
+                By accessing RV Fitness premises or using our online booking platform, members agree to adhere to the following rules:
               </p>
               <ul className="list-disc pl-5 space-y-2 text-gym-muted">
                 <li>Proper athletic footwear and gym attire are mandatory on the exercise floor.</li>
@@ -72,12 +72,11 @@ export const Policies: React.FC = () => {
               </h3>
               <h4 className="text-lg font-heading text-white uppercase mt-2">Refund Policy</h4>
               <p>
-                All membership purchases (Monthly, Quarterly, Half-Yearly, Annual) are non-refundable once activated. In cases of accidental double-payment, refunds are processed within 5-7 working days back to the original source account.
+                All membership purchases (Monthly, Six Month, Yearly) are non-refundable once activated. In cases of accidental double-payment, refunds are processed within 5-7 working days back to the original source account.
               </p>
               <h4 className="text-lg font-heading text-white uppercase mt-4">Freeze Request Policy</h4>
               <p>
-                - <strong>Half-Yearly Plans</strong>: Eligible for 1 freeze request up to 15 calendar days.<br />
-                - <strong>Annual Elite Plans</strong>: Eligible for up to 30 calendar days freeze time.<br />
+                - <strong>Six Month and Yearly Plans</strong>: Freeze requests are reviewed by gym management on a case-by-case basis.<br />
                 Requests must be submitted via the Member Portal or written application to gym management.
               </p>
             </>

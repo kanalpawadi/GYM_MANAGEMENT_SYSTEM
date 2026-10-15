@@ -34,7 +34,7 @@ export const DigitalCard: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Digital Membership Pass | RV-Fitness Gym</title>
+        <title>Digital Membership Pass | RV Fitness</title>
       </Helmet>
 
       <div className="max-w-2xl mx-auto flex flex-col gap-8 items-center text-center">
@@ -87,7 +87,7 @@ export const DigitalCard: React.FC = () => {
 
               <div>
                 <span className="text-xs text-gym-muted uppercase font-heading">PLAN TYPE</span>
-                <p className="text-sm font-medium text-white">Quarterly Fit (Unlimited Floor + Yoga)</p>
+                <p className="text-sm font-medium text-white">Six Month (Full Gym Access + Diet Guidance)</p>
               </div>
 
               <div>

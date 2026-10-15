@@ -18,7 +18,7 @@ export const ForgotPassword: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Reset Password | RV-Fitness Gym</title>
+        <title>Reset Password | RV Fitness</title>
       </Helmet>
 
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">

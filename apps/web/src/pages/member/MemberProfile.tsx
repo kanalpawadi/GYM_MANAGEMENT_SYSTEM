@@ -24,7 +24,7 @@ export const MemberProfile: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>My Profile & Health Notes | RV-Fitness Gym</title>
+        <title>My Profile & Health Notes | RV Fitness</title>
       </Helmet>
 
       <div className="max-w-3xl mx-auto flex flex-col gap-8">

@@ -52,8 +52,8 @@ export const Trainers: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Certified Personal Trainers | RV-Fitness Gym</title>
-        <meta name="description" content="Meet RV-Fitness Gym's certified trainers specializing in bodybuilding, CrossFit, yoga, Zumba, and 1-on-1 personal coaching." />
+        <title>Certified Personal Trainers | RV Fitness</title>
+        <meta name="description" content="Meet RV Fitness's certified trainers specializing in bodybuilding, CrossFit, yoga, Zumba, and 1-on-1 personal coaching." />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">

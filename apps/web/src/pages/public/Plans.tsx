@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Link } from 'react-router-dom';
+import { SITE, PLANS, ALL_PLAN_FEATURES, formatINR } from '../../config/site';
 
 export const Plans: React.FC = () => {
   const [coupon, setCoupon] = useState('');
@@ -22,41 +23,6 @@ export const Plans: React.FC = () => {
     }
   };
 
-  const plans = [
-    {
-      title: 'Monthly Starter',
-      months: 1,
-      basePrice: 1499,
-      originalPrice: 1999,
-      badge: 'Starter',
-      highlight: false,
-    },
-    {
-      title: 'Quarterly Fit',
-      months: 3,
-      basePrice: 3999,
-      originalPrice: 4999,
-      badge: 'Most Popular',
-      highlight: true,
-    },
-    {
-      title: 'Half-Yearly Pro',
-      months: 6,
-      basePrice: 6999,
-      originalPrice: 8999,
-      badge: 'Best Value',
-      highlight: false,
-    },
-    {
-      title: 'Annual Elite',
-      months: 12,
-      basePrice: 11999,
-      originalPrice: 15999,
-      badge: 'VIP Privileges',
-      highlight: false,
-    },
-  ];
-
   const calculateFinal = (price: number) => {
     if (discountPercent > 0) {
       return Math.round(price * (1 - discountPercent / 100));
@@ -67,18 +33,18 @@ export const Plans: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Membership Plans & Pricing | RV-Fitness Gym</title>
-        <meta name="description" content="View RV-Fitness Gym membership plans: Monthly, Quarterly, Half-Yearly, and Annual Elite with zero hidden fees." />
+        <title>{`Membership Plans & Pricing | ${SITE.fullName}`}</title>
+        <meta name="description" content={`Choose the plan that fits your fitness journey at ${SITE.fullName}: ${PLANS.map((p) => `${p.title} ${formatINR(p.price)}`).join(', ')}.`} />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">TRANSPARENT VALUE</span>
           <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
-            MEMBERSHIP <span className="text-gym-primary">PACKAGES</span>
+            MEMBERSHIP <span className="text-gym-primary">PLANS</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
-            No lock-in traps or hidden maintenance fees. All memberships include full gym floor access, locker rooms, and certified trainer orientation.
+            Choose the plan that fits your fitness journey at {SITE.fullName}.
           </p>
         </div>
 
@@ -105,12 +71,12 @@ export const Plans: React.FC = () => {
         </Card>
 
         {/* Plan Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((p, idx) => {
-            const finalPrice = calculateFinal(p.basePrice);
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {PLANS.map((p) => {
+            const finalPrice = calculateFinal(p.price);
             return (
               <Card
-                key={idx}
+                key={p.id}
                 className={`flex flex-col justify-between relative ${
                   p.highlight ? 'border-gym-primary shadow-yellow-lg bg-gym-surface' : ''
                 }`}
@@ -123,21 +89,27 @@ export const Plans: React.FC = () => {
                     <span className="text-xs text-gym-muted">{p.months} Month{p.months > 1 ? 's' : ''}</span>
                   </div>
                   <h3 className="text-2xl font-heading text-white uppercase">{p.title}</h3>
+                  <p className="text-xs text-gym-muted mt-1">{p.description}</p>
                   <div className="my-4">
-                    <span className="text-xs text-gym-muted line-through mr-2">₹{p.originalPrice}</span>
-                    <span className="text-4xl font-heading text-gym-primary">₹{finalPrice}</span>
+                    {discountPercent > 0 && (
+                      <span className="text-xs text-gym-muted line-through mr-2">{formatINR(p.price)}</span>
+                    )}
+                    <span className="text-4xl font-heading text-gym-primary">{formatINR(finalPrice)}</span>
                     {discountPercent > 0 && (
                       <span className="text-xs text-gym-success block font-heading">SAVED 20% WITH COUPON</span>
                     )}
-                    <span className="text-xs text-gym-muted font-body"> + 18% GST</span>
                   </div>
-                  <p className="text-xs text-gym-muted border-t border-gym-border pt-3">
-                    Billed as ₹{finalPrice} upfront for full {p.months} month duration.
-                  </p>
+                  <ul className="space-y-2 border-t border-gym-border pt-3">
+                    {p.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-xs text-gym-muted">
+                        <Check className="w-4 h-4 text-gym-success shrink-0" /> {feature}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
                 <Link to="/login" className="w-full mt-6">
                   <Button variant={p.highlight ? 'primary' : 'secondary'} className="w-full">
-                    Proceed to Join
+                    Join Now
                   </Button>
                 </Link>
               </Card>
@@ -157,30 +129,18 @@ export const Plans: React.FC = () => {
               <thead className="bg-gym-surfaceHover text-gym-primary font-heading text-base uppercase border-b border-gym-border">
                 <tr>
                   <th className="p-4">Feature</th>
-                  <th className="p-4 text-center">Monthly</th>
-                  <th className="p-4 text-center">Quarterly</th>
-                  <th className="p-4 text-center">Half-Yearly</th>
-                  <th className="p-4 text-center">Annual Elite</th>
+                  {PLANS.map((p) => (
+                    <th key={p.id} className="p-4 text-center">{p.title}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gym-border">
-                {[
-                  { name: 'Full Gym & Strength Floor Access', m: true, q: true, h: true, a: true },
-                  { name: 'Locker & Hygiene Shower Access', m: true, q: true, h: true, a: true },
-                  { name: 'General Trainer Orientation', m: true, q: true, h: true, a: true },
-                  { name: 'Group Yoga & Zumba Classes', m: false, q: true, h: true, a: true },
-                  { name: 'Complimentary PT Sessions', m: false, q: '2 Sessions', h: '3 Sessions', a: '5 Sessions' },
-                  { name: 'Steam Sauna Bath Access', m: false, q: '2x / Month', h: '4x / Month', a: 'Unlimited' },
-                  { name: 'Membership Freeze Privilege', m: false, q: false, h: 'Up to 15 Days', a: 'Up to 30 Days' },
-                  { name: 'Free RV Merchandise T-Shirt', m: false, q: false, h: true, a: true },
-                  { name: 'Dedicated Personal Locker', m: false, q: false, h: false, a: true },
-                ].map((row, i) => (
-                  <tr key={i} className="hover:bg-gym-surfaceHover/50">
-                    <td className="p-4 font-medium text-white">{row.name}</td>
-                    <td className="p-4 text-center">{renderCheck(row.m)}</td>
-                    <td className="p-4 text-center">{renderCheck(row.q)}</td>
-                    <td className="p-4 text-center">{renderCheck(row.h)}</td>
-                    <td className="p-4 text-center">{renderCheck(row.a)}</td>
+                {ALL_PLAN_FEATURES.map((feature) => (
+                  <tr key={feature} className="hover:bg-gym-surfaceHover/50">
+                    <td className="p-4 font-medium text-white">{feature}</td>
+                    {PLANS.map((p) => (
+                      <td key={p.id} className="p-4 text-center">{renderCheck(p.features.includes(feature))}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

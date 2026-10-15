@@ -45,14 +45,14 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({
         success: true,
-        message: 'Free trial pass booked! Show your confirmation SMS at the reception.',
+        message: 'Visit booked! The RV Fitness team will call you to confirm.',
         data: { name, phone, preferred_date, preferred_slot },
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: `Free Trial Pass Confirmed for ${preferred_date} (${preferred_slot})!`,
+      message: `Visit booked for ${preferred_date} (${preferred_slot})! The RV Fitness team will call you to confirm.`,
       data,
     });
   } catch (err: any) {

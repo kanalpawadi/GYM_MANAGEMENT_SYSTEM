@@ -58,7 +58,7 @@ export const OfferBanner: React.FC = () => {
             DIWALI FITNESS BLITZ <span className="text-gym-primary">20% OFF</span>
           </h3>
           <p className="text-sm text-gym-muted mt-2 max-w-md">
-            Join RV-Fitness Gym this week and receive a 20% flat discount on all 6-month & 12-month memberships plus a complimentary Gym Bag & Shaker!
+            Join RV Fitness this week and receive a 20% flat discount on all 6-month & 12-month memberships plus a complimentary Gym Bag & Shaker!
           </p>
 
           <div className="bg-gym-bg border border-dashed border-gym-primary p-4 rounded-xl my-5 w-full flex items-center justify-between">

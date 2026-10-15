@@ -10,7 +10,7 @@ export const AdminLeads: React.FC = () => {
     { id: 'l1', name: 'Vikramaditya Roy', phone: '9876543210', status: 'new', date: 'Today', notes: 'Enquired about 1-on-1 personal training.' },
     { id: 'l2', name: 'Simran Kaur', phone: '9876512345', status: 'contacted', date: 'Yesterday', notes: 'Called. Interested in Zumba evening batch.' },
     { id: 'l3', name: 'Rohan Mehta', phone: '9876523456', status: 'trial', date: 'Oct 3', notes: 'Booked 1-day pass for tomorrow morning.' },
-    { id: 'l4', name: 'Pooja Bhatt', phone: '9876534567', status: 'converted', date: 'Oct 1', notes: 'Purchased Quarterly Fit plan via UPI!' },
+    { id: 'l4', name: 'Pooja Bhatt', phone: '9876534567', status: 'converted', date: 'Oct 1', notes: 'Purchased Six Month plan via UPI!' },
   ]);
 
   const stages = [
@@ -35,7 +35,7 @@ export const AdminLeads: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Lead CRM Pipeline | RV-Fitness Admin</title>
+        <title>Lead CRM Pipeline | RV Fitness Admin</title>
       </Helmet>
 
       <div className="flex flex-col gap-6">

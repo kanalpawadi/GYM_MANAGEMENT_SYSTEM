@@ -8,7 +8,7 @@ export const NotFound: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>404 - Page Not Found | RV-Fitness Gym</title>
+        <title>404 - Page Not Found | RV Fitness</title>
       </Helmet>
 
       <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 my-12">
