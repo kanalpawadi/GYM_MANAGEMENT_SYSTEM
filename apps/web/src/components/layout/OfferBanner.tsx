@@ -3,21 +3,23 @@ import { Tag, X, ArrowRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { useContent } from '../../content/ContentContext';
 
 export const OfferBanner: React.FC = () => {
+  const offer = useContent('offer');
   const [showTopBar, setShowTopBar] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     // Show promo modal after 3 seconds if not dismissed previously
     const hasSeenModal = sessionStorage.getItem('rv_offer_seen');
-    if (!hasSeenModal) {
+    if (!hasSeenModal && offer.popupEnabled) {
       const timer = setTimeout(() => {
         setShowModal(true);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [offer.popupEnabled]);
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -27,12 +29,16 @@ export const OfferBanner: React.FC = () => {
   return (
     <>
       {/* Top Banner Bar */}
-      {showTopBar && (
+      {showTopBar && offer.barEnabled && (
         <div className="bg-gradient-to-r from-gym-surface via-gym-primary/20 to-gym-surface border-b border-gym-primary/30 py-2 px-4 text-center text-xs sm:text-sm text-white flex items-center justify-center gap-3 relative">
           <div className="flex items-center gap-2 font-heading tracking-wide uppercase">
             <Sparkles className="w-4 h-4 text-gym-primary animate-pulse" />
-            <span>SPECIAL OFFER: GET FLAT <strong className="text-gym-primary font-bold">20% OFF</strong> ON ANNUAL MEMBERSHIP</span>
-            <span className="hidden sm:inline bg-gym-primary text-black font-bold px-2 py-0.5 rounded text-xs ml-2">USE CODE: RVFIT20</span>
+            <span>
+              {offer.barLead} <strong className="text-gym-primary font-bold">{offer.barHighlight}</strong> {offer.barTail}
+            </span>
+            {offer.couponCode && (
+              <span className="hidden sm:inline bg-gold-gradient text-black font-bold px-2 py-0.5 rounded text-xs ml-2">USE CODE: {offer.couponCode}</span>
+            )}
           </div>
           <Link to="/plans" className="underline font-bold hover:text-gym-primary text-xs uppercase flex items-center gap-1">
             Claim Offer <ArrowRight className="w-3 h-3" />
@@ -53,30 +59,32 @@ export const OfferBanner: React.FC = () => {
           <div className="w-14 h-14 rounded-full bg-gym-primary/20 text-gym-primary flex items-center justify-center mb-4">
             <Tag className="w-7 h-7" />
           </div>
-          <span className="text-xs font-heading tracking-widest text-gym-primary uppercase font-semibold">LIMITED TIME FESTIVE OFFER</span>
+          <span className="text-xs font-heading tracking-widest text-gym-primary uppercase font-semibold">{offer.popupTag}</span>
           <h3 className="text-3xl font-heading text-white uppercase tracking-wide mt-1">
-            DIWALI FITNESS BLITZ <span className="text-gym-primary">20% OFF</span>
+            {offer.popupTitle} <span className="text-gym-primary">{offer.popupHighlight}</span>
           </h3>
           <p className="text-sm text-gym-muted mt-2 max-w-md">
-            Join RV Fitness this week and receive a 20% flat discount on all 6-month & 12-month memberships plus a complimentary Gym Bag & Shaker!
+            {offer.popupText}
           </p>
 
+          {offer.couponCode && (
           <div className="bg-gym-bg border border-dashed border-gym-primary p-4 rounded-xl my-5 w-full flex items-center justify-between">
             <div className="text-left">
               <p className="text-xs text-gym-muted uppercase font-heading">COUPON CODE</p>
-              <p className="text-xl font-heading text-gym-primary tracking-widest">RVFIT20</p>
+              <p className="text-xl font-heading text-gym-primary tracking-widest">{offer.couponCode}</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText('RVFIT20');
-                alert('Coupon code RVFIT20 copied to clipboard!');
+                navigator.clipboard.writeText(offer.couponCode);
+                alert(`Coupon code ${offer.couponCode} copied to clipboard!`);
               }}
             >
               Copy Code
             </Button>
           </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Link to="/plans" className="w-full" onClick={handleCloseModal}>

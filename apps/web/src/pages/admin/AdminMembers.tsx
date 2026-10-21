@@ -5,11 +5,13 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { PLANS, formatINR } from '../../config/site';
+import { formatINR } from '../../config/site';
+import { usePlans } from '../../content/ContentContext';
 import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 
 export const AdminMembers: React.FC = () => {
+  const PLANS = usePlans();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -76,11 +78,11 @@ export const AdminMembers: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">MEMBERSHIP DIRECTORY</span>
-            <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl break-words font-heading text-white uppercase tracking-wide mt-1">
               MEMBER <span className="text-gym-primary">MANAGEMENT</span>
             </h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={handleExportCSV} leftIcon={<Download className="w-4 h-4" />}>
               Export CSV
             </Button>

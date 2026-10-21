@@ -1,18 +1,20 @@
 import React from 'react';
 import { Phone, MessageCircle } from 'lucide-react';
-import { SITE, telHref, whatsappHref } from '../../config/site';
+import { telHref, whatsappHref } from '../../config/site';
+import { useSiteInfo } from '../../content/ContentContext';
 
 export const FloatingActions: React.FC = () => {
-  const whatsappUrl = whatsappHref();
+  const site = useSiteInfo();
+  const whatsappUrl = whatsappHref(`Hi ${site.name}! I want to enquire about membership plans.`, site.phone);
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
       {/* Phone Call Floating Button */}
       <a
-        href={telHref()}
+        href={telHref(site.phone)}
         className="w-12 h-12 rounded-full bg-gym-surface border border-gym-border text-gym-primary flex items-center justify-center shadow-lg hover:scale-110 hover:border-gym-primary transition-all duration-200 group"
-        aria-label={`Call ${SITE.name}`}
-        title={`Call ${SITE.name}`}
+        aria-label={`Call ${site.name}`}
+        title={`Call ${site.name}`}
       >
         <Phone className="w-5 h-5 group-hover:animate-bounce" />
       </a>

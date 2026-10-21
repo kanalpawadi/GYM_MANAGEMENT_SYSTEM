@@ -41,13 +41,13 @@ export const AdminLeads: React.FC = () => {
       <div className="flex flex-col gap-6">
         <div>
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">SALES PIPELINE</span>
-          <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl break-words font-heading text-white uppercase tracking-wide mt-1">
             LEAD CRM <span className="text-gym-primary">KANBAN</span>
           </h1>
         </div>
 
         {/* Kanban Board Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {stages.map((st) => {
             const stageLeads = leads.filter((l) => l.status === st.key);
             return (

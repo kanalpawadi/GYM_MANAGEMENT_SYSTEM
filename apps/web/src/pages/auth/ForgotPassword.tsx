@@ -5,14 +5,24 @@ import { Mail, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { useAuth } from '../../context/AuthContext';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const { resetPassword } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) setSent(true);
+    if (!email) return;
+    setSubmitting(true);
+    setErrorMsg('');
+    const { error } = await resetPassword(email.trim());
+    setSubmitting(false);
+    if (error) setErrorMsg(error);
+    else setSent(true);
   };
 
   return (
@@ -50,7 +60,8 @@ export const ForgotPassword: React.FC = () => {
                 leftIcon={<Mail className="w-4 h-4 text-gym-primary" />}
                 required
               />
-              <Button type="submit" variant="primary">Send Reset Link</Button>
+              {errorMsg && <span className="text-xs text-gym-danger font-medium">{errorMsg}</span>}
+              <Button type="submit" variant="primary" isLoading={submitting}>Send Reset Link</Button>
             </form>
           )}
 

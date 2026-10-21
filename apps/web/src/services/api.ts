@@ -1,5 +1,10 @@
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
+if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL) {
+  // Without this the contact and visit-booking forms post to localhost and fail.
+  console.error('VITE_API_BASE_URL is not set: website forms cannot reach the API.');
+}
+
 export async function fetchPlans() {
   const res = await fetch(`${API_BASE}/plans`);
   if (!res.ok) throw new Error('Failed to fetch membership plans');

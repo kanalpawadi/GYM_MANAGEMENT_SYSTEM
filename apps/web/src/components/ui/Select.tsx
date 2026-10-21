@@ -35,7 +35,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         ref={ref}
         className={twMerge(
           clsx(
-            'w-full bg-gym-surface text-white border border-gym-border rounded-lg px-4 py-2.5 min-h-[44px] text-sm font-body transition-colors focus:outline-none focus:border-gym-primary focus:ring-1 focus:ring-gym-primary disabled:opacity-50',
+            'w-full bg-black text-white border border-gym-border rounded-xl px-4 py-2.5 min-h-[44px] text-sm font-body transition-colors focus:outline-none focus:border-gym-primary focus:ring-1 focus:ring-gym-primary disabled:opacity-50',
             error && 'border-gym-danger focus:border-gym-danger focus:ring-gym-danger',
             className
           )

@@ -22,12 +22,12 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-heading font-medium tracking-wide uppercase transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gym-primary focus:ring-offset-2 focus:ring-offset-gym-bg disabled:opacity-50 disabled:cursor-not-allowed select-none min-h-[44px] rounded-lg';
+  const baseStyles = 'inline-flex items-center justify-center font-heading font-bold tracking-normal transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gym-primary focus:ring-offset-2 focus:ring-offset-gym-bg disabled:opacity-50 disabled:cursor-not-allowed select-none min-h-[44px] rounded-xl';
 
   const variants = {
-    primary: 'bg-gym-primary text-black hover:bg-gym-primaryHover shadow-yellow-glow hover:shadow-yellow-lg active:scale-[0.98]',
+    primary: 'bg-gold-gradient text-black hover:brightness-110 shadow-yellow-glow hover:shadow-yellow-lg active:scale-[0.98]',
     secondary: 'bg-gym-surface text-white hover:bg-gym-surfaceHover border border-gym-border active:scale-[0.98]',
-    outline: 'border-2 border-gym-primary text-gym-primary hover:bg-gym-primary hover:text-black active:scale-[0.98]',
+    outline: 'border border-gym-primary/60 text-gym-primary bg-black/30 hover:bg-gym-primary/10 hover:border-gym-primary active:scale-[0.98]',
     ghost: 'text-gym-muted hover:text-white hover:bg-gym-surfaceHover',
     danger: 'bg-gym-danger text-white hover:bg-red-600 shadow-md active:scale-[0.98]',
   };

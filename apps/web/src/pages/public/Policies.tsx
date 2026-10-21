@@ -17,7 +17,7 @@ export const Policies: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-8">
         <div className="text-center">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">LEGAL & TRANSPARENCY</span>
-          <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
             GYM <span className="text-gym-primary">POLICIES</span>
           </h1>
         </div>

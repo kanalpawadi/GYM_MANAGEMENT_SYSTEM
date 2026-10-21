@@ -5,6 +5,7 @@ import { Flame, Clock, Calendar, QrCode, CreditCard, Award, ArrowRight, BookOpen
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { QRCodeSVG } from 'qrcode.react';
+import { MyTrainerCard } from '../../components/account/MyTrainerCard';
 
 export const MemberDashboard: React.FC = () => {
   return (
@@ -14,6 +15,8 @@ export const MemberDashboard: React.FC = () => {
       </Helmet>
 
       <div className="flex flex-col gap-8">
+        <MyTrainerCard />
+
         {/* KPI Overview Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-gym-primary/40 bg-gradient-to-br from-gym-surface via-gym-surface to-gym-primary/10">

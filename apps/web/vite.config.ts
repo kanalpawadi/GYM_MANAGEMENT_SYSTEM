@@ -13,6 +13,13 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     rollupOptions: {
@@ -32,5 +39,7 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.ts',
     css: false,
+    // Form tests type a lot with user-event; give them headroom when the whole suite runs.
+    testTimeout: 15000,
   },
 });

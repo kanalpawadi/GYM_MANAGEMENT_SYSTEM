@@ -2,13 +2,23 @@ import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Calendar, User, ArrowLeft } from 'lucide-react';
-import { blogPosts } from './Blog';
+import { useContent } from '../../content/ContentContext';
 import { Button } from '../../components/ui/Button';
 
 export const BlogDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const blogPosts = useContent('blog').posts;
   const post = blogPosts.find((p) => p.slug === slug) || blogPosts[0];
+
+  if (!post) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-24 text-center flex flex-col items-center gap-4">
+        <h1 className="text-4xl font-heading text-white uppercase">Article not found</h1>
+        <Link to="/blog"><Button variant="outline">Back to Blog</Button></Link>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -24,7 +34,7 @@ export const BlogDetail: React.FC = () => {
 
         <div>
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">FITNESS ARTICLE</span>
-          <h1 className="text-4xl sm:text-5xl font-heading text-white tracking-wide uppercase mt-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
             {post.title}
           </h1>
           <div className="flex items-center gap-4 text-xs text-gym-muted mt-3 pb-6 border-b border-gym-border">

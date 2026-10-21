@@ -5,9 +5,11 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { submitLead } from '../../services/api';
-import { SITE, phoneDisplay, telHref, whatsappHref, mapEmbedSrc } from '../../config/site';
+import { phoneDisplay, telHref, whatsappHref, mapEmbedSrc } from '../../config/site';
+import { useSiteInfo } from '../../content/ContentContext';
 
 export const Contact: React.FC = () => {
+  const site = useSiteInfo();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -46,14 +48,14 @@ export const Contact: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>{`Contact Us & Location Map | ${SITE.fullName}`}</title>
-        <meta name="description" content={`Contact ${SITE.fullName}. Phone: ${phoneDisplay()}, Email: ${SITE.email}. Visit our gym in ${SITE.location}.`} />
+        <title>{`Contact Us & Location Map | ${site.fullName}`}</title>
+        <meta name="description" content={`Contact ${site.fullName}. Phone: ${phoneDisplay(site.phone)}, Email: ${site.email}. Visit our gym in ${site.location}.`} />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">GET IN TOUCH</span>
-          <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
             CONTACT <span className="text-gym-primary">RV FITNESS</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
@@ -148,7 +150,7 @@ export const Contact: React.FC = () => {
                   <MapPin className="w-5 h-5 text-gym-primary shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Gym Address</h4>
-                    <p>{SITE.address}</p>
+                    <p>{site.address}</p>
                   </div>
                 </div>
 
@@ -156,8 +158,8 @@ export const Contact: React.FC = () => {
                   <Phone className="w-5 h-5 text-gym-primary shrink-0" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Helpline & WhatsApp</h4>
-                    <a href={telHref()} className="text-gym-primary font-bold hover:underline">{phoneDisplay()}</a>
-                    <a href={whatsappHref()} target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white">Chat on WhatsApp</a>
+                    <a href={telHref(site.phone)} className="text-gym-primary font-bold hover:underline">{phoneDisplay(site.phone)}</a>
+                    <a href={whatsappHref(`Hi ${site.name}! I want to enquire about membership plans.`, site.phone)} target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white">Chat on WhatsApp</a>
                   </div>
                 </div>
 
@@ -165,7 +167,7 @@ export const Contact: React.FC = () => {
                   <Mail className="w-5 h-5 text-gym-primary shrink-0" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Official Email</h4>
-                    <a href={`mailto:${SITE.email}`} className="hover:text-white break-all">{SITE.email}</a>
+                    <a href={`mailto:${site.email}`} className="hover:text-white break-all">{site.email}</a>
                   </div>
                 </div>
 
@@ -173,8 +175,8 @@ export const Contact: React.FC = () => {
                   <Clock className="w-5 h-5 text-gym-primary shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-white font-heading text-base uppercase">Opening Hours</h4>
-                    <p>{SITE.hours.weekdays}</p>
-                    <p className="text-xs text-gym-muted">{SITE.hours.sunday}</p>
+                    <p>{site.hours.weekdays}</p>
+                    <p className="text-xs text-gym-muted">{site.hours.sunday}</p>
                   </div>
                 </div>
               </div>
@@ -182,8 +184,8 @@ export const Contact: React.FC = () => {
 
             <div className="h-64 rounded-xl overflow-hidden border border-gym-border bg-gym-surface">
               <iframe
-                title={`${SITE.fullName} map`}
-                src={mapEmbedSrc()}
+                title={`${site.fullName} map`}
+                src={mapEmbedSrc(`${site.name} ${site.location}`)}
                 width="100%"
                 height="100%"
                 style={{ border: 0, filter: 'grayscale(1) invert(0.9) contrast(1.2)' }}

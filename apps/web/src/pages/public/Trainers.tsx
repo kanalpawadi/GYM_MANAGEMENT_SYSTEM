@@ -4,48 +4,12 @@ import { Star, Award, Calendar } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Link } from 'react-router-dom';
+import { useContent } from '../../content/ContentContext';
 
 export const Trainers: React.FC = () => {
   const [filter, setFilter] = useState('All');
 
-  const trainers = [
-    {
-      name: 'Vikram Sharma',
-      specialization: 'CrossFit & Heavy Strength Conditioning',
-      experience: '8 Years Experience',
-      rating: '4.9 ★',
-      category: 'Strength',
-      bio: 'Former national powerlifter & certified Level-3 CrossFit coach. Specialized in explosive strength and injury prevention.',
-      photo: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      name: 'Priya Patel',
-      specialization: 'Ashtanga Yoga & Pilates',
-      experience: '6 Years Experience',
-      rating: '5.0 ★',
-      category: 'Yoga',
-      bio: 'Registered 500-hr RYT yoga master. Passionate about posture correction, flexibility, and stress release.',
-      photo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      name: 'Rahul Verma',
-      specialization: 'Bodybuilding & Personal Transformation',
-      experience: '10 Years Experience',
-      rating: '4.8 ★',
-      category: 'Strength',
-      bio: 'State level bodybuilding champion and contest preparation expert. Has coached over 400+ successful transformations.',
-      photo: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      name: 'Ananya Rao',
-      specialization: 'Zumba Fitness & Functional Endurance',
-      experience: '5 Years Experience',
-      rating: '4.9 ★',
-      category: 'Zumba',
-      bio: 'Licensed Zumba Instructor (ZIN). High energy cardio specialist making workout sessions fun, musical, and fat-burning.',
-      photo: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?auto=format&fit=crop&w=600&q=80',
-    },
-  ];
+  const trainers = useContent('trainers').items;
 
   const filteredTrainers = filter === 'All' ? trainers : trainers.filter((t) => t.category === filter);
 
@@ -59,7 +23,7 @@ export const Trainers: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">EXPERTS IN YOUR CORNER</span>
-          <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
             MEET OUR <span className="text-gym-primary">COACHES</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
@@ -68,14 +32,14 @@ export const Trainers: React.FC = () => {
         </div>
 
         {/* Filter buttons */}
-        <div className="flex justify-center gap-3">
-          {['All', 'Strength', 'Yoga', 'Zumba'].map((cat) => (
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+          {['All', ...Array.from(new Set(trainers.map((t) => t.category).filter(Boolean)))].map((cat) => (
             <button
               key={cat}
               onClick={() => setFilter(cat)}
               className={`px-4 py-2 rounded-lg font-heading text-sm uppercase transition-all ${
                 filter === cat
-                  ? 'bg-gym-primary text-black font-bold shadow-yellow-glow'
+                  ? 'bg-gold-gradient text-black font-bold shadow-yellow-glow'
                   : 'bg-gym-surface text-gym-muted border border-gym-border hover:text-white'
               }`}
             >

@@ -1,4 +1,4 @@
-export type UserRole = 'visitor' | 'member' | 'trainer' | 'receptionist' | 'manager' | 'owner';
+export type UserRole = 'visitor' | 'member' | 'trainer' | 'receptionist' | 'manager' | 'owner' | 'super_admin';
 
 export interface UserProfile {
   id: string;
@@ -13,6 +13,7 @@ export interface UserProfile {
     relation: string;
   };
   health_notes?: string;
+  assigned_trainer_id?: string | null;
   created_at: string;
 }
 

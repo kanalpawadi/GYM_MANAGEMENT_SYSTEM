@@ -4,7 +4,8 @@ import { CreditCard, Check, Tag, ShieldCheck, Sparkles, CheckCircle2 } from 'luc
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { SITE, PLANS, formatINR } from '../../config/site';
+import { SITE, formatINR } from '../../config/site';
+import { usePlans } from '../../content/ContentContext';
 
 export const MembershipCheckout: React.FC = () => {
   const [selectedPlanId, setSelectedPlanId] = useState<string>('six-month');
@@ -14,7 +15,7 @@ export const MembershipCheckout: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [successPaid, setSuccessPaid] = useState<any>(null);
 
-  const plans = PLANS.map((p) => ({ ...p, basePrice: p.price }));
+  const plans = usePlans().map((p) => ({ ...p, basePrice: p.price }));
 
   const currentPlan = plans.find((p) => p.id === selectedPlanId) || plans[0];
 
@@ -110,7 +111,7 @@ export const MembershipCheckout: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <h4 className="text-lg font-heading text-white uppercase">{plan.title}</h4>
                           {plan.badge && (
-                            <span className="text-[10px] bg-gym-primary text-black font-heading px-2 py-0.5 rounded font-bold uppercase">
+                            <span className="text-[10px] bg-gold-gradient text-black font-heading px-2 py-0.5 rounded font-bold uppercase">
                               {plan.badge}
                             </span>
                           )}

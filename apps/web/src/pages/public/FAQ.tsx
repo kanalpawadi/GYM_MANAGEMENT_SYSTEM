@@ -3,48 +3,13 @@ import { Helmet } from 'react-helmet-async';
 import { ChevronDown, Search, HelpCircle } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
+import { useContent } from '../../content/ContentContext';
 
 export const FAQ: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openId, setOpenId] = useState<number | null>(0);
 
-  const faqs = [
-    {
-      q: 'What are the operating hours of RV Fitness?',
-      a: 'We are open Monday through Saturday from 5:30 AM to 10:00 PM, and Sundays from 7:00 AM to 2:00 PM.',
-      category: 'General',
-    },
-    {
-      q: 'Is a free trial pass available for new visitors?',
-      a: 'Yes! We offer a complimentary 1-day pass. Simply fill out the Free Trial form on our website or show your SMS at the front desk.',
-      category: 'Membership',
-    },
-    {
-      q: 'Do you provide personal training and customized diet plans?',
-      a: 'Yes. Our ACE and K11 certified personal trainers craft tailored 1-on-1 workout routines and Indian macronutrient diet blueprints based on your health goals.',
-      category: 'Training',
-    },
-    {
-      q: 'Is parking space available for members?',
-      a: 'Yes, we provide dedicated two-wheeler and four-wheeler parking spaces with 24/7 CCTV surveillance.',
-      category: 'Facilities',
-    },
-    {
-      q: 'Can I freeze my membership if I travel or fall ill?',
-      a: 'Freeze requests for Six Month and Yearly plans can be discussed with the gym management.',
-      category: 'Policies',
-    },
-    {
-      q: 'What payment modes do you accept?',
-      a: 'We accept Razorpay online payments (Credit/Debit cards, NetBanking), UPI (Google Pay, PhonePe, Paytm), cash at reception, and credit cards.',
-      category: 'Membership',
-    },
-    {
-      q: 'What is included in each membership plan?',
-      a: 'Every plan includes full gym access, cardio & strength equipment, locker facility and RO water. The Six Month plan adds diet guidance and a personalised workout plan. The Yearly plan adds body progress tracking and priority trainer support.',
-      category: 'General',
-    },
-  ];
+  const faqs = useContent('faq').items;
 
   const filteredFaqs = faqs.filter(
     (f) =>
@@ -62,7 +27,7 @@ export const FAQ: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">
         <div className="text-center">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">GOT QUESTIONS?</span>
-          <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
             FREQUENTLY ASKED <span className="text-gym-primary">QUESTIONS</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">

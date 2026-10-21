@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
+import { ContentProvider } from './content/ContentContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
+import { ADMIN_ROLES, CONTENT_EDITOR_ROLES, PORTAL_ROLES, STAFF_ROLES, TRAINER_PANEL_ROLES } from './config/roles';
 
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -30,6 +32,7 @@ import { NotFound } from './pages/public/NotFound';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
+import { ResetPassword } from './pages/auth/ResetPassword';
 
 // Member Portal Pages & Layout
 import { MemberPortalLayout } from './pages/member/MemberPortalLayout';
@@ -41,6 +44,7 @@ import { MemberAttendance } from './pages/member/MemberAttendance';
 import { ClassBooking } from './pages/member/ClassBooking';
 import { MemberProgress } from './pages/member/MemberProgress';
 import { MemberProfile } from './pages/member/MemberProfile';
+import { MemberPlans } from './pages/member/MemberPlans';
 
 // Admin Pages & Layout
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -51,6 +55,8 @@ import { AdminAttendanceScanner } from './pages/admin/AdminAttendanceScanner';
 import { AdminFinancials } from './pages/admin/AdminFinancials';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminContent } from './pages/admin/AdminContent';
 
 // Trainer Panel Page
 import { TrainerDashboard } from './pages/trainer/TrainerDashboard';
@@ -69,16 +75,18 @@ export const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <AuthProvider>
+          <ContentProvider>
           <BrowserRouter>
             <Routes>
               {/* MEMBER PORTAL PROTECTED ROUTES */}
               <Route
                 path="/portal/*"
                 element={
-                  <ProtectedRoute allowedRoles={['member', 'trainer', 'receptionist', 'manager', 'owner']}>
+                  <ProtectedRoute allowedRoles={PORTAL_ROLES}>
                     <MemberPortalLayout>
                       <Routes>
                         <Route path="dashboard" element={<MemberDashboard />} />
+                        <Route path="plans" element={<MemberPlans />} />
                         <Route path="digital-card" element={<DigitalCard />} />
                         <Route path="checkout" element={<MembershipCheckout />} />
                         <Route path="payments" element={<PaymentHistory />} />
@@ -97,7 +105,7 @@ export const App: React.FC = () => {
               <Route
                 path="/trainer/*"
                 element={
-                  <ProtectedRoute allowedRoles={['trainer', 'manager', 'owner']}>
+                  <ProtectedRoute allowedRoles={TRAINER_PANEL_ROLES}>
                     <Routes>
                       <Route path="dashboard" element={<TrainerDashboard />} />
                       <Route path="*" element={<Navigate to="/trainer/dashboard" replace />} />
@@ -110,7 +118,7 @@ export const App: React.FC = () => {
               <Route
                 path="/admin/*"
                 element={
-                  <ProtectedRoute allowedRoles={['receptionist', 'manager', 'owner']}>
+                  <ProtectedRoute allowedRoles={STAFF_ROLES}>
                     <AdminLayout>
                       <Routes>
                         <Route path="dashboard" element={<AdminDashboard />} />
@@ -120,6 +128,22 @@ export const App: React.FC = () => {
                         <Route path="financials" element={<AdminFinancials />} />
                         <Route path="reports" element={<AdminReports />} />
                         <Route path="settings" element={<AdminSettings />} />
+                        <Route
+                          path="users"
+                          element={
+                            <ProtectedRoute allowedRoles={ADMIN_ROLES}>
+                              <AdminUsers />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="content"
+                          element={
+                            <ProtectedRoute allowedRoles={CONTENT_EDITOR_ROLES}>
+                              <AdminContent />
+                            </ProtectedRoute>
+                          }
+                        />
                         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                       </Routes>
                     </AdminLayout>
@@ -153,6 +177,7 @@ export const App: React.FC = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
 
                         <Route path="*" element={<NotFound />} />
                       </Routes>
@@ -164,6 +189,7 @@ export const App: React.FC = () => {
               />
             </Routes>
           </BrowserRouter>
+          </ContentProvider>
         </AuthProvider>
       </HelmetProvider>
     </QueryClientProvider>

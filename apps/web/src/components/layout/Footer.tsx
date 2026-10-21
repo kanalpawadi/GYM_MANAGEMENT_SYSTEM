@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { Dumbbell, Phone, Mail, MapPin, Clock, Send, CheckCircle2, Instagram } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { SITE, phoneDisplay, telHref, instagramHref } from '../../config/site';
+import { phoneDisplay, telHref, instagramHref } from '../../config/site';
+import { useSiteInfo } from '../../content/ContentContext';
 
 export const Footer: React.FC = () => {
+  const site = useSiteInfo();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -57,7 +59,7 @@ export const Footer: React.FC = () => {
         {/* Brand Summary */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-lg bg-gym-primary text-black flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-lg bg-gold-gradient text-black flex items-center justify-center font-bold">
               <Dumbbell className="w-6 h-6 stroke-[2.5]" />
             </div>
             <span className="text-2xl font-heading text-white tracking-wider">
@@ -65,19 +67,19 @@ export const Footer: React.FC = () => {
             </span>
           </Link>
           <p className="text-sm text-gym-muted leading-relaxed pr-4">
-            {SITE.about}
+            {site.about}
           </p>
           <div className="text-xs text-gym-muted flex flex-col gap-1 border-t border-gym-border/60 pt-3">
-            <span>Founder: <strong className="text-white">{SITE.founder}</strong></span>
-            {SITE.instagram && (
+            <span>Founder: <strong className="text-white">{site.founder}</strong></span>
+            {site.instagram && (
               <a
-                href={instagramHref()}
+                href={instagramHref(site.instagram)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 hover:text-gym-primary transition-colors w-fit"
-                aria-label={`${SITE.name} on Instagram`}
+                aria-label={`${site.name} on Instagram`}
               >
-                <Instagram className="w-4 h-4" /> @{SITE.instagram}
+                <Instagram className="w-4 h-4" /> @{site.instagram}
               </a>
             )}
           </div>
@@ -121,21 +123,21 @@ export const Footer: React.FC = () => {
           <ul className="flex flex-col gap-3 text-sm">
             <li className="flex items-start gap-2.5">
               <MapPin className="w-5 h-5 text-gym-primary shrink-0 mt-0.5" />
-              <span>{SITE.address}</span>
+              <span>{site.address}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <Phone className="w-4 h-4 text-gym-primary shrink-0" />
-              <a href={telHref()} className="hover:text-white">{phoneDisplay()}</a>
+              <a href={telHref(site.phone)} className="hover:text-white">{phoneDisplay(site.phone)}</a>
             </li>
             <li className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-gym-primary shrink-0" />
-              <a href={`mailto:${SITE.email}`} className="hover:text-white break-all">{SITE.email}</a>
+              <a href={`mailto:${site.email}`} className="hover:text-white break-all">{site.email}</a>
             </li>
             <li className="flex items-start gap-2.5 pt-2 border-t border-gym-border/60">
               <Clock className="w-4 h-4 text-gym-primary shrink-0 mt-0.5" />
               <div>
-                <p className="text-white font-medium">{SITE.hours.weekdays}</p>
-                <p className="text-xs text-gym-muted">{SITE.hours.sunday}</p>
+                <p className="text-white font-medium">{site.hours.weekdays}</p>
+                <p className="text-xs text-gym-muted">{site.hours.sunday}</p>
               </div>
             </li>
           </ul>
@@ -145,7 +147,7 @@ export const Footer: React.FC = () => {
       {/* Bottom Bar & Legal */}
       <div className="bg-gym-bg border-t border-gym-border py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
-          <p>© {new Date().getFullYear()} {SITE.fullName}. All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} {site.fullName}. All Rights Reserved.</p>
           <div className="flex items-center gap-6">
             <Link to="/policies" className="hover:text-gym-primary transition-colors">Privacy Policy</Link>
             <Link to="/policies" className="hover:text-gym-primary transition-colors">Terms of Service</Link>

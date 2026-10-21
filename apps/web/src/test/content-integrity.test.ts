@@ -32,15 +32,19 @@ describe('content integrity', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('loads the Poppins and Lora fonts', () => {
+  it('loads the Plus Jakarta Sans font', () => {
     const html = readFileSync(join(WEB_ROOT, 'index.html'), 'utf-8');
-    expect(html).toContain('family=Lora');
-    expect(html).toContain('family=Poppins');
+    expect(html).toContain('family=Plus+Jakarta+Sans');
   });
 
-  it('uses Poppins for headings and Lora for body text', async () => {
+  it('uses Plus Jakarta Sans for headings and body text', async () => {
     const config = (await import('../../tailwind.config.js')).default as any;
-    expect(config.theme.extend.fontFamily.heading[0]).toBe('"Poppins"');
-    expect(config.theme.extend.fontFamily.body[0]).toBe('"Lora"');
+    expect(config.theme.extend.fontFamily.heading[0]).toBe('"Plus Jakarta Sans"');
+    expect(config.theme.extend.fontFamily.body[0]).toBe('"Plus Jakarta Sans"');
+  });
+
+  it('uses the gold theme colour', async () => {
+    const config = (await import('../../tailwind.config.js')).default as any;
+    expect(config.theme.extend.colors.gym.primary).toBe('#D4AF37');
   });
 });

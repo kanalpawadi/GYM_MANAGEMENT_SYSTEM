@@ -5,9 +5,13 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Link } from 'react-router-dom';
-import { SITE, PLANS, ALL_PLAN_FEATURES, formatINR } from '../../config/site';
+import { formatINR } from '../../config/site';
+import { usePlans, useSiteInfo } from '../../content/ContentContext';
 
 export const Plans: React.FC = () => {
+  const site = useSiteInfo();
+  const plans = usePlans();
+  const allFeatures = Array.from(new Set(plans.flatMap((p) => p.features)));
   const [coupon, setCoupon] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
   const [couponMessage, setCouponMessage] = useState('');
@@ -33,18 +37,18 @@ export const Plans: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>{`Membership Plans & Pricing | ${SITE.fullName}`}</title>
-        <meta name="description" content={`Choose the plan that fits your fitness journey at ${SITE.fullName}: ${PLANS.map((p) => `${p.title} ${formatINR(p.price)}`).join(', ')}.`} />
+        <title>{`Membership Plans & Pricing | ${site.fullName}`}</title>
+        <meta name="description" content={`Choose the plan that fits your fitness journey at ${site.fullName}: ${plans.map((p) => `${p.title} ${formatINR(p.price)}`).join(', ')}.`} />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">TRANSPARENT VALUE</span>
-          <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
-            MEMBERSHIP <span className="text-gym-primary">PLANS</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
+            MEMBERSHIP <span className="text-gym-primary">plans</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
-            Choose the plan that fits your fitness journey at {SITE.fullName}.
+            Choose the plan that fits your fitness journey at {site.fullName}.
           </p>
         </div>
 
@@ -72,7 +76,7 @@ export const Plans: React.FC = () => {
 
         {/* Plan Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PLANS.map((p) => {
+          {plans.map((p) => {
             const finalPrice = calculateFinal(p.price);
             return (
               <Card
@@ -129,16 +133,16 @@ export const Plans: React.FC = () => {
               <thead className="bg-gym-surfaceHover text-gym-primary font-heading text-base uppercase border-b border-gym-border">
                 <tr>
                   <th className="p-4">Feature</th>
-                  {PLANS.map((p) => (
+                  {plans.map((p) => (
                     <th key={p.id} className="p-4 text-center">{p.title}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gym-border">
-                {ALL_PLAN_FEATURES.map((feature) => (
+                {allFeatures.map((feature) => (
                   <tr key={feature} className="hover:bg-gym-surfaceHover/50">
                     <td className="p-4 font-medium text-white">{feature}</td>
-                    {PLANS.map((p) => (
+                    {plans.map((p) => (
                       <td key={p.id} className="p-4 text-center">{renderCheck(p.features.includes(feature))}</td>
                     ))}
                   </tr>

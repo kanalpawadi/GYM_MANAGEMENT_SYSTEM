@@ -32,3 +32,9 @@ class ResizeObserverStub {
   disconnect() {}
 }
 (globalThis as any).ResizeObserver ??= ResizeObserverStub;
+
+// jsdom has no object URLs (used for photo previews before upload).
+if (!URL.createObjectURL) {
+  URL.createObjectURL = () => 'blob:preview';
+  URL.revokeObjectURL = () => {};
+}

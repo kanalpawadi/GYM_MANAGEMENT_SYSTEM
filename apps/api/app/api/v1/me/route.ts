@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 
 const mockMemberProfile = {
-  id: 'demo-member-id',
+  id: '00000000-0000-4000-8000-000000000001',
   full_name: 'Rahul Sharma',
   email: 'member@rvfitnessgym.in',
   phone: '9876543210',
   role: 'member',
-  avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  avatar_url: '/images/gym/rushikesh-bw.jpg',
   emergency_contact: { name: 'Sunita Sharma', phone: '9876500000', relation: 'Mother' },
   health_notes: 'Mild lower back sensitivity.',
 };

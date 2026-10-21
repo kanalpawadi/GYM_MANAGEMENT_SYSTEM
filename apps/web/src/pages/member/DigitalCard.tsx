@@ -25,7 +25,7 @@ export const DigitalCard: React.FC = () => {
   }, []);
 
   const qrPayload = JSON.stringify({
-    member_id: profile?.id || 'demo-member-id',
+    member_id: profile?.id || '00000000-0000-4000-8000-000000000001',
     name: profile?.full_name || 'Rahul Sharma',
     token: `RV_PASS_HASH_${timestamp}`,
     created_at: new Date(timestamp).toISOString(),
@@ -52,7 +52,7 @@ export const DigitalCard: React.FC = () => {
         <Card className="w-full border-2 border-gym-primary bg-gradient-to-b from-gym-surface via-gym-bg to-gym-surface p-8 shadow-yellow-lg relative overflow-hidden">
           <div className="flex justify-between items-center pb-6 border-b border-gym-border mb-6">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gym-primary text-black flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-lg bg-gold-gradient text-black flex items-center justify-center font-bold">
                 <Dumbbell className="w-5 h-5 stroke-[2.5]" />
               </div>
               <span className="text-xl font-heading text-white tracking-wider">

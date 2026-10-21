@@ -55,7 +55,10 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2 }}
-            className={`relative w-full ${maxWidthClasses[maxWidth]} bg-gym-surface border border-gym-border rounded-xl shadow-2xl p-6 z-10 overflow-hidden text-white`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+            className={`relative w-full ${maxWidthClasses[maxWidth]} bg-gym-surface border border-gym-border rounded-3xl shadow-2xl p-6 z-10 max-h-[90vh] overflow-y-auto text-white`}
           >
             <div className="flex items-center justify-between pb-4 border-b border-gym-border mb-4">
               {title ? (

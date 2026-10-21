@@ -4,37 +4,10 @@ import { Trophy, ArrowRight, Quote } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Link } from 'react-router-dom';
+import { useContent } from '../../content/ContentContext';
 
 export const Transformations: React.FC = () => {
-  const transformations = [
-    {
-      name: 'Rahul Sharma',
-      duration: '6 Months',
-      weightChange: '-18 kg Fat Loss',
-      coach: 'Vikram Sharma',
-      beforeImg: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=400&q=80',
-      afterImg: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80',
-      story: 'I was 98 kg with severe lower back pain. Coach Vikram designed a low-impact calorie deficit routine. Today I am at 80 kg with zero back pain!',
-    },
-    {
-      name: 'Sneha Reddy',
-      duration: '4 Months',
-      weightChange: '+5 kg Lean Muscle',
-      coach: 'Priya Patel',
-      beforeImg: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80',
-      afterImg: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      story: 'Struggled with posture and low strength. Through Ashtanga Yoga and weight training, my stamina and posture have drastically improved.',
-    },
-    {
-      name: 'Amit Verma',
-      duration: '8 Months',
-      weightChange: 'Body Recomposition',
-      coach: 'Rahul Verma',
-      beforeImg: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-      afterImg: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&w=400&q=80',
-      story: 'Lost 12% body fat while increasing bench press by 30 kg. The coaches at RV Fitness push you past your perceived limits!',
-    },
-  ];
+  const transformations = useContent('transformations').items;
 
   return (
     <>
@@ -46,7 +19,7 @@ export const Transformations: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">REAL PEOPLE. REAL RESULTS.</span>
-          <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
             TRANSFORMATION <span className="text-gym-primary">GALLERY</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
@@ -66,7 +39,7 @@ export const Transformations: React.FC = () => {
                   </div>
                   <div className="relative">
                     <img src={item.afterImg} alt={`${item.name} After`} className="w-full h-48 object-cover rounded-lg border-2 border-gym-primary" />
-                    <span className="absolute bottom-2 right-2 bg-gym-primary text-black font-heading text-xs px-2 py-0.5 rounded font-bold">AFTER</span>
+                    <span className="absolute bottom-2 right-2 bg-gold-gradient text-black font-heading text-xs px-2 py-0.5 rounded font-bold">AFTER</span>
                   </div>
                 </div>
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Chainable Supabase query mock: from().insert().select().single() / from().select().eq().order()
 const db = vi.hoisted(() => ({ result: { data: null as unknown, error: null as unknown } }));
@@ -14,6 +14,8 @@ import { POST as postLead } from './leads/route';
 import { POST as postTrial } from './trial-bookings/route';
 import { GET as getPlans } from './plans/route';
 import { POST as postCheckout } from './memberships/checkout/route';
+import { POST as postWebhook } from './payments/webhook/route';
+import crypto from 'crypto';
 
 const jsonRequest = (body: unknown) =>
   new Request('http://localhost/api', {
@@ -59,6 +61,15 @@ describe('POST /leads', () => {
   });
 });
 
+describe('POST /leads when the database fails', () => {
+  it('returns an error instead of a fake success', async () => {
+    db.result = { data: null, error: { message: 'db down' } };
+    const res = await postLead(jsonRequest({ name: 'Asha Patil', phone: '9623372426' }));
+    expect(res.status).toBe(503);
+    expect((await res.json()).error.code).toBe('SAVE_FAILED');
+  });
+});
+
 describe('POST /trial-bookings', () => {
   const valid = { name: 'Rahul', phone: '9822012345', preferred_date: '2030-01-15', preferred_slot: 'Morning (6 AM - 10 AM)' };
 
@@ -73,11 +84,11 @@ describe('POST /trial-bookings', () => {
     expect(res.status).toBe(400);
   });
 
-  it('still confirms when the database is unavailable', async () => {
+  it('tells the visitor when the booking could not be saved', async () => {
     db.result = { data: null, error: { message: 'db down' } };
     const res = await postTrial(jsonRequest(valid));
-    expect(res.status).toBe(200);
-    expect((await res.json()).message).toMatch(/Visit booked/);
+    expect(res.status).toBe(503);
+    expect((await res.json()).error.message).toMatch(/couldn't book your visit/);
   });
 });
 
@@ -104,5 +115,41 @@ describe('POST /memberships/checkout', () => {
   it('rejects unknown plans', async () => {
     const res = await postCheckout(jsonRequest({ plan_id: 'nope' }));
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /payments/webhook', () => {
+  const body = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity: { id: 'pay_1', order_id: 'order_1', amount: 150000 } } } });
+  const sign = (secret: string) => crypto.createHmac('sha256', secret).update(body).digest('hex');
+  const webhookRequest = (signature?: string) =>
+    new Request('http://localhost/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(signature ? { 'x-razorpay-signature': signature } : {}) },
+      body,
+    });
+
+  beforeEach(() => vi.stubEnv('RAZORPAY_WEBHOOK_SECRET', 'test-secret'));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('accepts an event with a valid Razorpay signature', async () => {
+    const res = await postWebhook(webhookRequest(sign('test-secret')));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ received: true });
+  });
+
+  it('rejects an event with no signature', async () => {
+    const res = await postWebhook(webhookRequest());
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects an event signed with the wrong secret', async () => {
+    const res = await postWebhook(webhookRequest(sign('attacker-secret')));
+    expect(res.status).toBe(400);
+  });
+
+  it('refuses all events when the secret is not configured', async () => {
+    vi.stubEnv('RAZORPAY_WEBHOOK_SECRET', '');
+    const res = await postWebhook(webhookRequest(sign('test-secret')));
+    expect(res.status).toBe(500);
   });
 });

@@ -41,7 +41,7 @@ export const Tabs: React.FC<TabsProps> = ({
               <span
                 className={clsx(
                   'text-xs px-2 py-0.5 rounded-full font-body font-semibold',
-                  isActive ? 'bg-gym-primary text-black' : 'bg-gym-border text-gym-muted'
+                  isActive ? 'bg-gold-gradient text-black' : 'bg-gym-border text-gym-muted'
                 )}
               >
                 {tab.count}

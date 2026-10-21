@@ -26,11 +26,11 @@ export const AdminDashboard: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">EXECUTIVE OVERVIEW</span>
-            <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl break-words font-heading text-white uppercase tracking-wide mt-1">
               GYM MANAGEMENT <span className="text-gym-primary">METRICS</span>
             </h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link to="/admin/members">
               <Button variant="outline" size="sm" leftIcon={<UserPlus className="w-4 h-4" />}>
                 Add New Member
@@ -135,10 +135,10 @@ export const AdminDashboard: React.FC = () => {
                   <XAxis dataKey="month" stroke="#B3B3B3" fontSize={12} />
                   <YAxis stroke="#B3B3B3" fontSize={12} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1A1A1A', borderColor: '#FFD400', borderRadius: '8px' }}
-                    itemStyle={{ color: '#FFD400' }}
+                    contentStyle={{ backgroundColor: '#18181B', borderColor: '#D4AF37', borderRadius: '8px' }}
+                    itemStyle={{ color: '#D4AF37' }}
                   />
-                  <Bar dataKey="revenue" fill="#FFD400" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="revenue" fill="#D4AF37" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

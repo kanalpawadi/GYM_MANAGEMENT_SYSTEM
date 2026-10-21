@@ -1,114 +1,187 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile, UserRole } from '../types';
+import { demoProfiles, isDemoAuthEnabled } from './demoProfiles';
+import { STAFF_ROLES } from '../config/roles';
+
+export interface SignUpInput {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+}
+
+type AuthResult = { error: string | null };
 
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<AuthResult>;
+  signUp: (input: SignUpInput) => Promise<AuthResult & { needsConfirmation: boolean }>;
+  resetPassword: (email: string) => Promise<AuthResult>;
+  updatePassword: (password: string) => Promise<AuthResult>;
+  /** Dev-only: impersonate a role without a Supabase account. No-op in production builds. */
   loginDemoUser: (role: UserRole) => void;
   logout: () => Promise<void>;
+  /** Re-reads the signed-in user's profile (after editing it). */
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock profiles for quick role switching and testing
-const mockDemoProfiles: Record<UserRole, UserProfile> = {
-  member: {
-    id: 'demo-member-id',
-    full_name: 'Rahul Sharma',
-    email: 'member@rvfitnessgym.in',
-    phone: '9876543210',
-    role: 'member',
-    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-    emergency_contact: { name: 'Sunita Sharma', phone: '9876500000', relation: 'Mother' },
-    health_notes: 'Mild lower back sensitivity. Prefer high volume over 1RM loading.',
-    created_at: new Date().toISOString(),
-  },
-  trainer: {
-    id: 'demo-trainer-id',
-    full_name: 'Vikram Sharma',
-    email: 'trainer@rvfitnessgym.in',
-    phone: '9876543211',
-    role: 'trainer',
-    avatar_url: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&w=200&q=80',
-    created_at: new Date().toISOString(),
-  },
-  receptionist: {
-    id: 'demo-receptionist-id',
-    full_name: 'Pooja Verma',
-    email: 'reception@rvfitnessgym.in',
-    phone: '9876543212',
-    role: 'receptionist',
-    created_at: new Date().toISOString(),
-  },
-  manager: {
-    id: 'demo-manager-id',
-    full_name: 'Karan Kapoor',
-    email: 'manager@rvfitnessgym.in',
-    phone: '9876543213',
-    role: 'manager',
-    created_at: new Date().toISOString(),
-  },
-  owner: {
-    id: 'demo-owner-id',
-    full_name: 'Rajesh Verma (Owner)',
-    email: 'owner@rvfitnessgym.in',
-    phone: '9876543214',
-    role: 'owner',
-    created_at: new Date().toISOString(),
-  },
-  visitor: {
-    id: 'demo-visitor-id',
-    full_name: 'Guest Visitor',
-    email: 'visitor@rvfitnessgym.in',
-    role: 'visitor',
-    created_at: new Date().toISOString(),
-  },
-};
+const DEMO_ROLE_KEY = 'rv_demo_role';
+
+function readDemoRole(): UserRole | null {
+  if (!isDemoAuthEnabled()) return null;
+  try {
+    const role = localStorage.getItem(DEMO_ROLE_KEY) as UserRole | null;
+    return role && role in demoProfiles ? role : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Where a signed-in user lands by default, based on their role. */
+export function homePathForRole(role: UserRole): string {
+  if (role === 'trainer') return '/trainer/dashboard';
+  if (STAFF_ROLES.includes(role)) return '/admin/dashboard';
+  return '/portal/dashboard';
+}
+
+async function fetchProfile(userId: string): Promise<UserProfile | null> {
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) {
+    console.error('Failed to load profile', error.message);
+    return null;
+  }
+  return (data as UserProfile | null) ?? null;
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(() => {
-    // Restore demo user from localStorage if saved
-    const savedRole = localStorage.getItem('rv_demo_role') as UserRole;
-    return savedRole ? mockDemoProfiles[savedRole] : mockDemoProfiles.member;
-  });
-  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [demoRole, setDemoRole] = useState<UserRole | null>(readDemoRole);
+  const [loading, setLoading] = useState(true);
+  // Guards against out-of-order profile responses when the session changes quickly.
+  const latestUserId = useRef<string | null>(null);
 
-  useEffect(() => {
-    // Listen for real Supabase auth state changes
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+  const applySession = useCallback(async (next: Session | null) => {
+    setSession(next);
+    const userId = next?.user.id ?? null;
+    latestUserId.current = userId;
+    if (!userId) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const loaded = await fetchProfile(userId);
+    if (latestUserId.current !== userId) return;
+    setProfile(loaded);
+    setLoading(false);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) applySession(data.session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === 'INITIAL_SESSION') return; // handled by getSession above
+      // Defer: awaiting Supabase calls inside this callback can deadlock the auth client.
+      setTimeout(() => {
+        if (active) applySession(next);
+      }, 0);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [applySession]);
+
+  const signIn = async (email: string, password: string): Promise<AuthResult> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error?.message ?? null };
+  };
+
+  const signUp = async ({ email, password, fullName, phone }: SignUpInput) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName, phone },
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
+    });
+    return { error: error?.message ?? null, needsConfirmation: !error && !data.session };
+  };
+
+  const resetPassword = async (email: string): Promise<AuthResult> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error: error?.message ?? null };
+  };
+
+  const updatePassword = async (password: string): Promise<AuthResult> => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error: error?.message ?? null };
+  };
+
+  const refreshProfile = async () => {
+    const userId = latestUserId.current;
+    if (!userId) return;
+    const loaded = await fetchProfile(userId);
+    if (latestUserId.current === userId && loaded) setProfile(loaded);
+  };
+
   const loginDemoUser = (role: UserRole) => {
-    localStorage.setItem('rv_demo_role', role);
-    setProfile(mockDemoProfiles[role]);
+    if (!isDemoAuthEnabled()) return;
+    try {
+      localStorage.setItem(DEMO_ROLE_KEY, role);
+    } catch {
+      // ignore storage failures; the demo role still applies for this tab
+    }
+    setDemoRole(role);
   };
 
   const logout = async () => {
-    localStorage.removeItem('rv_demo_role');
+    try {
+      localStorage.removeItem(DEMO_ROLE_KEY);
+    } catch {
+      // ignore
+    }
+    setDemoRole(null);
     await supabase.auth.signOut();
-    setUser(null);
+    latestUserId.current = null;
     setSession(null);
     setProfile(null);
   };
 
+  const effectiveProfile = profile ?? (demoRole && isDemoAuthEnabled() ? demoProfiles[demoRole] : null);
+
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, loginDemoUser, logout }}>
+    <AuthContext.Provider
+      value={{
+        user: session?.user ?? null,
+        profile: effectiveProfile,
+        session,
+        loading,
+        signIn,
+        signUp,
+        resetPassword,
+        updatePassword,
+        loginDemoUser,
+        logout,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -45,7 +45,7 @@ export const Schedule: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-10">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">LIVE TIMETABLE</span>
-          <h1 className="text-5xl font-heading text-white tracking-wide uppercase mt-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
             CLASS <span className="text-gym-primary">SCHEDULE</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
@@ -61,7 +61,7 @@ export const Schedule: React.FC = () => {
               onClick={() => setSelectedDay(day)}
               className={`px-5 py-2.5 rounded-lg font-heading text-base uppercase whitespace-nowrap transition-all ${
                 selectedDay === day
-                  ? 'bg-gym-primary text-black font-bold shadow-yellow-glow'
+                  ? 'bg-gold-gradient text-black font-bold shadow-yellow-glow'
                   : 'bg-gym-surface text-gym-muted border border-gym-border hover:text-white'
               }`}
             >

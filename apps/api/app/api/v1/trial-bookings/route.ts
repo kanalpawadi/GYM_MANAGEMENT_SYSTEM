@@ -43,11 +43,12 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      return NextResponse.json({
-        success: true,
-        message: 'Visit booked! The RV Fitness team will call you to confirm.',
-        data: { name, phone, preferred_date, preferred_slot },
-      });
+      // Don't pretend it worked: the booking would be lost.
+      console.error('Trial booking insertion error:', error);
+      return NextResponse.json(
+        { error: { code: 'SAVE_FAILED', message: "We couldn't book your visit right now. Please try again in a minute or call the gym." } },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({

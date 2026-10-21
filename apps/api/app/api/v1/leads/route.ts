@@ -46,13 +46,12 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      // Don't pretend it worked: the enquiry would be lost.
       console.error('Lead insertion error:', error);
-      // Fallback response for dev mode
-      return NextResponse.json({
-        success: true,
-        message: 'Lead received successfully! Our team will call you shortly.',
-        data: { id: 'mock-lead-id', name, phone },
-      });
+      return NextResponse.json(
+        { error: { code: 'SAVE_FAILED', message: "We couldn't send your enquiry right now. Please try again in a minute or call the gym." } },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({

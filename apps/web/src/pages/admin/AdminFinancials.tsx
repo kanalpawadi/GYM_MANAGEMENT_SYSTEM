@@ -77,11 +77,11 @@ export const AdminFinancials: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">BILLING & EXPENSES</span>
-            <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl break-words font-heading text-white uppercase tracking-wide mt-1">
               FINANCIAL <span className="text-gym-primary">LEDGER & GST</span>
             </h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowAddExpenseModal(true)} leftIcon={<Plus className="w-4 h-4" />}>
               Record Expense
             </Button>

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Dumbbell, Menu, X, Phone, User, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { SITE, phoneDisplay, telHref } from '../../config/site';
+import { phoneDisplay, telHref } from '../../config/site';
+import { useSiteInfo } from '../../content/ContentContext';
 
 export const Navbar: React.FC = () => {
+  const site = useSiteInfo();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
@@ -31,13 +33,13 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-6">
           <span className="flex items-center gap-1.5 text-white">
             <Phone className="w-3.5 h-3.5 text-gym-primary" />
-            <a href={telHref()} className="hover:text-gym-primary">{phoneDisplay()}</a>
+            <a href={telHref(site.phone)} className="hover:text-gym-primary">{phoneDisplay(site.phone)}</a>
           </span>
-          <span>📍 {SITE.location}</span>
-          <span>⏰ {SITE.hours.weekdays} | {SITE.hours.sunday}</span>
+          <span>📍 {site.location}</span>
+          <span>⏰ {site.hours.weekdays} | {site.hours.sunday}</span>
         </div>
         <div className="flex items-center gap-4 text-gym-primary font-heading font-semibold tracking-wider uppercase">
-          <span>🔥 {SITE.tagline}</span>
+          <span>🔥 {site.tagline}</span>
         </div>
       </div>
 
@@ -45,7 +47,7 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0 mr-4">
-          <div className="w-10 h-10 rounded-lg bg-gym-primary text-black flex items-center justify-center font-bold shadow-yellow-glow group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-lg bg-gold-gradient text-black flex items-center justify-center font-bold shadow-yellow-glow group-hover:scale-105 transition-transform">
             <Dumbbell className="w-6 h-6 stroke-[2.5]" />
           </div>
           <div className="flex flex-col">
@@ -53,19 +55,19 @@ export const Navbar: React.FC = () => {
               RV <span className="text-gym-primary">FITNESS</span>
             </span>
             <span className="text-[10px] text-gym-muted font-body font-medium uppercase tracking-widest">
-              {SITE.location}
+              {site.location}
             </span>
           </div>
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden xl:flex items-center gap-3 2xl:gap-5">
+        <nav className="hidden xl:flex items-center gap-0.5 2xl:gap-2">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`text-xs 2xl:text-sm font-heading tracking-wide uppercase whitespace-nowrap transition-colors hover:text-gym-primary ${
-                isActive(link.path) ? 'text-gym-primary font-bold border-b-2 border-gym-primary pb-1' : 'text-gym-muted'
+              className={`text-xs 2xl:text-sm font-heading font-semibold whitespace-nowrap px-2 py-1.5 rounded-lg border transition-colors hover:text-gym-primary ${
+                isActive(link.path) ? 'text-gym-primary bg-gym-primary/10 border-gym-primary/40' : 'text-gray-200 border-transparent'
               }`}
             >
               {link.name}
@@ -113,9 +115,9 @@ export const Navbar: React.FC = () => {
                 key={link.path}
                 to={link.path}
                 onClick={() => setIsOpen(false)}
-                className={`py-2 px-3 rounded-lg text-lg font-heading tracking-wider uppercase transition-colors ${
+                className={`py-2 px-3 rounded-xl text-lg font-heading font-semibold transition-colors ${
                   isActive(link.path)
-                    ? 'bg-gym-primary text-black font-bold'
+                    ? 'bg-gold-gradient text-black font-bold'
                     : 'text-gym-text hover:bg-gym-surfaceHover'
                 }`}
               >

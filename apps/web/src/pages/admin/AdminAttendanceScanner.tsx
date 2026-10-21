@@ -49,7 +49,7 @@ export const AdminAttendanceScanner: React.FC = () => {
       <div className="max-w-4xl mx-auto flex flex-col gap-8">
         <div>
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">FRONT DESK TERMINAL</span>
-          <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl break-words font-heading text-white uppercase tracking-wide mt-1">
             ATTENDANCE <span className="text-gym-primary">QR SCANNER</span>
           </h1>
         </div>
