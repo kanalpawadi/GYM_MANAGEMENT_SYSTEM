@@ -19,6 +19,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
+  /** Why a signed-in user has no profile (shown on the Login page). */
+  profileError: string | null;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   /** Sign in or sign up with a Google account (Supabase OAuth). New users start as members. */
   signInWithGoogle: () => Promise<AuthResult>;
@@ -62,11 +64,28 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
   return (data as UserProfile | null) ?? null;
 }
 
+/**
+ * A signed-in user with no profile row (e.g. first Google sign-in where the
+ * sign-up trigger skipped it) gets one created as a member by the database.
+ */
+async function ensureProfile(userId: string): Promise<{ profile: UserProfile | null; error: string | null }> {
+  const { error } = await supabase.rpc('ensure_my_profile');
+  if (error) {
+    const msg = error.message ?? '';
+    if (/ensure_my_profile|schema cache|does not exist/i.test(msg)) {
+      return { profile: null, error: 'Your account was created, but the gym database needs its latest update (migration 08) before you can sign in. Please contact the gym.' };
+    }
+    return { profile: null, error: msg || 'Could not set up your member profile. Please contact the front desk.' };
+  }
+  return { profile: await fetchProfile(userId), error: null };
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [demoRole, setDemoRole] = useState<UserRole | null>(readDemoRole);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
   // Guards against out-of-order profile responses when the session changes quickly.
   const latestUserId = useRef<string | null>(null);
 
@@ -76,13 +95,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     latestUserId.current = userId;
     if (!userId) {
       setProfile(null);
+      setProfileError(null);
       setLoading(false);
       return;
     }
     setLoading(true);
-    const loaded = await fetchProfile(userId);
+    let loaded = await fetchProfile(userId);
+    let problem: string | null = null;
+    if (!loaded && latestUserId.current === userId) {
+      ({ profile: loaded, error: problem } = await ensureProfile(userId));
+    }
     if (latestUserId.current !== userId) return;
     setProfile(loaded);
+    setProfileError(loaded ? null : problem ?? 'Your account has no member profile yet. Please contact the front desk.');
     setLoading(false);
   }, []);
 
@@ -183,6 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     latestUserId.current = null;
     setSession(null);
     setProfile(null);
+    setProfileError(null);
   };
 
   const effectiveProfile = profile ?? (demoRole && isDemoAuthEnabled() ? demoProfiles[demoRole] : null);
@@ -194,6 +220,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile: effectiveProfile,
         session,
         loading,
+        profileError,
         signIn,
         signInWithGoogle,
         signUp,

@@ -8,16 +8,18 @@ import { Button } from '../../components/ui/Button';
 import { homePathForRole, useAuth } from '../../context/AuthContext';
 import { GoogleButton, OrDivider } from '../../components/account/GoogleButton';
 import { isDemoAuthEnabled } from '../../context/demoProfiles';
+import { oauthErrorFromUrl } from '../../utils/authErrors';
 import { UserRole } from '../../types';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const { signIn, loginDemoUser, profile, session, loading } = useAuth();
+  const { signIn, loginDemoUser, profile, profileError, session, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  // An error sent back by Google / Supabase after the sign-in redirect.
+  const [errorMsg, setErrorMsg] = useState(() => oauthErrorFromUrl(location.search, location.hash) ?? '');
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
   const showDemoSwitcher = isDemoAuthEnabled();
 
@@ -28,10 +30,16 @@ export const Login: React.FC = () => {
   }, [loading, profile, from, navigate]);
 
   useEffect(() => {
-    if (!loading && session && !profile) {
-      setErrorMsg('Your account has no member profile yet. Please contact the front desk.');
+    if (!loading && session && !profile && profileError) setErrorMsg(profileError);
+  }, [loading, session, profile, profileError]);
+
+  // Clear the error from the address bar so a refresh doesn't show it again.
+  useEffect(() => {
+    if (/error/.test(location.search + location.hash)) {
+      navigate({ pathname: location.pathname }, { replace: true, state: location.state });
     }
-  }, [loading, session, profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +106,7 @@ export const Login: React.FC = () => {
               </Link>
             </div>
 
-            {errorMsg && <span className="text-xs text-gym-danger font-medium">{errorMsg}</span>}
+            {errorMsg && <span role="alert" className="text-xs text-gym-danger font-medium">{errorMsg}</span>}
 
             <Button type="submit" variant="primary" isLoading={submitting || (loading && !!session)} rightIcon={<ArrowRight className="w-4 h-4" />}>
               Sign In to Portal

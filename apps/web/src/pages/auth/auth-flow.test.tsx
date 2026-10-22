@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
-import { addUser, makeProfile, resetSupabaseMock, signInAs, supabaseMock } from '../../test/supabaseMock';
+import { addUser, failNextRpc, makeProfile, resetSupabaseMock, signInAs, signInWithoutProfile, supabaseMock } from '../../test/supabaseMock';
 import { Login } from './Login';
 import { Signup } from './Signup';
 import { ForgotPassword } from './ForgotPassword';
@@ -24,11 +24,16 @@ const Landing = () => {
   );
 };
 
+const splitRoute = (route: string) => {
+  const url = new URL(route, 'http://test.local');
+  return { pathname: url.pathname, search: url.search, hash: url.hash };
+};
+
 function renderAuth(route: string, initialState?: unknown) {
   return render(
     <HelmetProvider>
       <AuthProvider>
-        <MemoryRouter initialEntries={[{ pathname: route, state: initialState }]}>
+        <MemoryRouter initialEntries={[{ ...splitRoute(route), state: initialState }]}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
@@ -58,6 +63,37 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('Login', () => {
+  it('explains a Google error sent back to /login and clears it from the address', async () => {
+    renderAuth('/login?error=server_error&error_description=Database+error+saving+new+user');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/run the latest database update \(migration 08\)/i);
+  });
+
+  it('explains a wrong Google client secret from the URL hash', async () => {
+    renderAuth('/login#error=server_error&error_description=Unable+to+exchange+external+code');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Client ID or Secret in Supabase is wrong/i);
+  });
+
+  it('first Google sign-in without a profile row creates a member profile and opens the portal', async () => {
+    signInWithoutProfile('google-uid');
+    renderAuth('/login');
+    expect(await screen.findByText('landed on /portal/dashboard as member')).toBeInTheDocument();
+    expect(supabaseMock.rpc).toHaveBeenCalledWith('ensure_my_profile');
+  });
+
+  it('shows why a Google account could not get a profile', async () => {
+    signInWithoutProfile('google-uid');
+    failNextRpc('ensure_my_profile', 'Another RV Fitness account already uses orphan@example.com. Please sign in with your email and password.');
+    renderAuth('/login');
+    expect(await screen.findByText(/already uses orphan@example.com/)).toBeInTheDocument();
+  });
+
+  it('asks for migration 08 when the repair function is missing', async () => {
+    signInWithoutProfile('google-uid');
+    failNextRpc('ensure_my_profile', 'Could not find the function public.ensure_my_profile without parameters in the schema cache');
+    renderAuth('/login');
+    expect(await screen.findByText(/needs its latest update \(migration 08\)/)).toBeInTheDocument();
+  });
+
   it('signs in with Supabase and routes a member to the portal', async () => {
     addUser(makeProfile('member', { email: 'asha@example.com' }), 's3cret-pass');
     renderAuth('/login');

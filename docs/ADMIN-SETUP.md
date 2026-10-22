@@ -22,8 +22,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 5. `05_photos_and_progress.sql`: profile photos (`avatars` bucket), the My Trainer card, and private body-progress photos (`progress-photos` bucket).
 6. `06_fix_signup_trigger.sql`: safer sign-up when a phone number is already used.
 7. `07_role_chain_and_gym_ops.sql`: role chain, profile fields, premium/normal members, plan requests and approval, discount, invoices, QR and selfie attendance, website-edit approval, notifications, water tracking.
+8. `08_google_signin_profiles.sql`: Google sign-in creates a member profile with the Google name and photo, and repairs accounts that signed in but got no profile.
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` and `07`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06`, `07` and `08`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -100,6 +101,20 @@ Members and staff can use **Continue with Google** on the Login and Sign Up page
 4. **Check the site addresses.** In Supabase → **Authentication → URL Configuration**, your website's `/login` page must be in the redirect URLs.
 
 Until this is done, the Google button says "Google sign-in is not set up yet" and people use email and password.
+
+### If Google sign-in shows an error
+The Login page now says what went wrong. Match the message:
+
+| Message on the Login page | Fix |
+|---|---|
+| "…the gym needs to run the latest database update (migration 08)" | Run `supabase/migrations/08_google_signin_profiles.sql` in the Supabase SQL editor. |
+| "…the Google Client ID or Secret in Supabase is wrong" | Copy the **Client secret** again from Google Cloud → Credentials into Supabase → Providers → Google, with no spaces. Make sure the Client ID and secret come from the same OAuth client. |
+| "Google sign-in was cancelled…" when nobody cancelled | Google Cloud → **OAuth consent screen**: press **Publish app**, or add the person under **Test users**. |
+| "…opened in a different browser. Please tap Continue with Google again" | Finish the sign-in in the same browser tab. Also check the Site URL below. |
+| "Another RV Fitness account already uses …" | That email already has an email/password account. Sign in with email and password. |
+| You land back on the **home page** or **localhost** instead of the portal | Supabase → **Authentication → URL Configuration**: set **Site URL** to your live website. Under **Redirect URLs** add `https://<your-site>/login` and `http://localhost:5173/login`. |
+
+Google Cloud **Authorised redirect URIs** must contain only the Supabase callback (`https://<your-project>.supabase.co/auth/v1/callback`), not your website address.
 
 ## 10. Role chain: who can change what
 **Super Admin > Gym Owner > Manager > Receptionist > Trainer > Member.**

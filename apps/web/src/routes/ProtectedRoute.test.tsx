@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { ProtectedRoute } from './ProtectedRoute';
-import { makeProfile, resetSupabaseMock, signInAs, signInWithoutProfile } from '../test/supabaseMock';
+import { failNextRpc, makeProfile, resetSupabaseMock, signInAs, signInWithoutProfile } from '../test/supabaseMock';
 import { App } from '../App';
 
 vi.mock('../lib/supabase', async () => ({ supabase: (await import('../test/supabaseMock')).supabaseMock }));
@@ -115,8 +115,15 @@ describe('ProtectedRoute', () => {
     expect(await screen.findByText('home page at /')).toBeInTheDocument();
   });
 
-  it('treats a session without a profile row as signed out', async () => {
+  it('creates a missing profile as a member (first Google sign-in)', async () => {
     signInWithoutProfile();
+    renderGuarded('/portal/dashboard');
+    expect(await screen.findByText('member portal at /portal/dashboard')).toBeInTheDocument();
+  });
+
+  it('treats a session without a profile row as signed out when it cannot be created', async () => {
+    signInWithoutProfile();
+    failNextRpc('ensure_my_profile', 'Another RV Fitness account already uses orphan@example.com.');
     renderGuarded('/portal/dashboard');
     expect(await screen.findByText(/login page at \/login/)).toBeInTheDocument();
   });

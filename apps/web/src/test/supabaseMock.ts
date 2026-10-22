@@ -67,6 +67,11 @@ export function failNextUpload(bucket: string, message: string) {
   state.failures[`storage:${bucket}`] = message;
 }
 
+/** Makes the next call to database function `fn` fail with `message`. */
+export function failNextRpc(fn: string, message: string) {
+  state.failures[`rpc:${fn}`] = message;
+}
+
 /** Registers an account that can sign in with email/password. */
 export function addUser(profile: UserProfile, password = 'correct-horse') {
   state.users[profile.email] = { password, profile };
@@ -271,6 +276,20 @@ export function resetSupabaseMock() {
     const uid = state.session?.user.id;
     const ok = (data: unknown) => ({ data, error: null });
     const fail = (message: string) => ({ data: null, error: { message } });
+    const forced = state.failures[`rpc:${fn}`];
+    if (forced) {
+      delete state.failures[`rpc:${fn}`];
+      return fail(forced);
+    }
+    if (fn === 'ensure_my_profile') {
+      if (!uid) return fail('Please sign in first');
+      const email = state.session!.user.email;
+      if (!table('profiles').some((p) => p.id === uid)) {
+        if (table('profiles').some((p) => p.email === email)) return fail(`Another RV Fitness account already uses ${email}.`);
+        table('profiles').push({ id: uid, full_name: email.split('@')[0], email, role: 'member', created_at: new Date().toISOString() });
+      }
+      return ok(uid);
+    }
     if (fn === 'get_my_trainer') {
       const me = table('profiles').find((p) => p.id === uid);
       const trainer = me?.assigned_trainer_id ? table('profiles').find((p) => p.id === me.assigned_trainer_id) : null;
