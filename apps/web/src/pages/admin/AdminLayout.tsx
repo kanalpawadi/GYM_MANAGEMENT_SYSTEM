@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, UserPlus, QrCode, DollarSign, BarChart3, Sliders, LogOut, ShieldCheck, ChevronLeft, PenSquare, KeyRound, Inbox, Dumbbell, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, UserPlus, QrCode, DollarSign, BarChart3, Sliders, LogOut, ShieldCheck, ChevronLeft, PenSquare, KeyRound, Inbox, Dumbbell, Globe, MessageCircle, Megaphone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { ChangePasswordModal } from '../../components/account/ChangePasswordModal';
@@ -8,6 +8,7 @@ import { ProfilePhotoPicker } from '../../components/account/ProfilePhotoPicker'
 import { NotificationBell } from '../../components/account/NotificationBell';
 import { ROLE_LABELS, canEditContent, isAdminRole } from '../../config/roles';
 import { BrandLogo } from '../../components/ui/BrandLogo';
+import { useUnreadMessages } from '../../components/chat/useUnreadMessages';
 
 export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, logout } = useAuth();
@@ -16,11 +17,14 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
   // Start with the icon-only sidebar on phones and tablets so the page has room.
   const [collapsed, setCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const [showPassword, setShowPassword] = useState(false);
+  const unread = useUnreadMessages();
 
   const navItems = [
     { name: 'Overview', path: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { name: 'Members', path: '/admin/members', icon: <Users className="w-5 h-5" /> },
     { name: 'Approvals', path: '/admin/requests', icon: <Inbox className="w-5 h-5" /> },
+    { name: unread ? `Messages (${unread})` : 'Messages', path: '/admin/messages', icon: <MessageCircle className="w-5 h-5" /> },
+    { name: 'Notice Board', path: '/admin/notices', icon: <Megaphone className="w-5 h-5" /> },
     { name: 'Attendance Scanner', path: '/admin/attendance', icon: <QrCode className="w-5 h-5" /> },
     { name: 'Leads & Visits', path: '/admin/leads', icon: <UserPlus className="w-5 h-5" /> },
     { name: 'Financials', path: '/admin/financials', icon: <DollarSign className="w-5 h-5" /> },

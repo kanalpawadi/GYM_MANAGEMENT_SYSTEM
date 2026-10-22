@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Flame, Award, Activity, QrCode, CreditCard, Utensils, Receipt, CalendarCheck } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { MyTrainerCard } from '../../components/account/MyTrainerCard';
+import { NoticeBoard } from '../../components/notices/NoticeBoard';
 import { TodayPlanPopup } from '../../components/engagement/TodayPlanPopup';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceRow, Membership, attendanceStreak, currentMembership, daysLeft, listAttendance, listMemberships, localDay } from '../../services/gym';
@@ -62,6 +63,8 @@ export const MemberDashboard: React.FC = () => {
         </div>
 
         {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
+
+        <NoticeBoard compact allHref="/portal/notices" />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Card hoverEffect={false} aria-label="Membership">

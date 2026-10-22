@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, QrCode, Utensils } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, QrCode, Utensils } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -144,6 +144,11 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            {member.id !== me.id && (
+              <Link to={`${backTo.startsWith('/trainer') ? '/trainer' : '/admin'}/messages?with=${member.id}`}>
+                <Button variant="outline" size="sm" leftIcon={<MessageCircle className="w-4 h-4" />}>Message</Button>
+              </Link>
+            )}
             {roleRank(me.role) >= 2 && member.role === 'member' && (
               <Button
                 variant="primary"

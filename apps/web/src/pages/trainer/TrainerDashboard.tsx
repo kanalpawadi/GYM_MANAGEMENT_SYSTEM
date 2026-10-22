@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Dumbbell, Users, Utensils, CheckCircle2, KeyRound, LineChart, Search, Crown, ExternalLink, Globe, QrCode } from 'lucide-react';
+import { Dumbbell, Users, Utensils, CheckCircle2, KeyRound, LineChart, Search, Crown, ExternalLink, Globe, QrCode, MessageCircle, Megaphone } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -15,10 +15,12 @@ import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, isStaffRole } from '../../config/roles';
 import { ProgressEntry, listProgress, listTrainees } from '../../services/portal';
 import { ProgressTimeline } from '../../components/progress/ProgressTimeline';
+import { useUnreadMessages } from '../../components/chat/useUnreadMessages';
 import type { UserProfile } from '../../types';
 
 export const TrainerDashboard: React.FC = () => {
   const { profile, logout } = useAuth();
+  const unread = useUnreadMessages();
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -92,6 +94,14 @@ export const TrainerDashboard: React.FC = () => {
             <NotificationBell />
             <Link to="/trainer/scan">
               <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>Scan Attendance</Button>
+            </Link>
+            <Link to="/trainer/messages">
+              <Button variant="outline" size="sm" leftIcon={<MessageCircle className="w-4 h-4" />}>
+                {unread ? `Messages (${unread})` : 'Messages'}
+              </Button>
+            </Link>
+            <Link to="/trainer/notices">
+              <Button variant="outline" size="sm" leftIcon={<Megaphone className="w-4 h-4" />}>Notices</Button>
             </Link>
             <Link to="/">
               <Button variant="ghost" size="sm" leftIcon={<Globe className="w-4 h-4" />}>Website</Button>

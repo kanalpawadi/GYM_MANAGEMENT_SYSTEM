@@ -310,6 +310,35 @@ export function resetSupabaseMock() {
       Object.assign(m, { approval_status: args.p_approve ? 'approved' : 'rejected', approval_note: args.p_note ?? null });
       return ok({ ...m });
     }
+    // Chat (migration 10): members talk to trainers/staff, never to other members.
+    const between = (a: string, b: string) => (m: Row) => (m.sender_id === a && m.recipient_id === b) || (m.sender_id === b && m.recipient_id === a);
+    if (fn === 'chat_contacts') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (!me) return ok([]);
+      const rows = table('profiles')
+        .filter((p) => p.id !== uid && p.role !== 'visitor' && !(me.role === 'member' && p.role === 'member'))
+        .filter((p) => me.role !== 'member' || p.id === me.assigned_trainer_id || ['receptionist', 'manager', 'owner'].includes(p.role) || table('messages').some(between(uid!, p.id)))
+        .map((p) => {
+          const thread = table('messages').filter(between(uid!, p.id)).sort((x, y) => x.created_at.localeCompare(y.created_at));
+          const last = thread[thread.length - 1];
+          return {
+            id: p.id, full_name: p.full_name, role: p.role, avatar_url: p.avatar_url ?? null, member_code: p.member_code ?? null,
+            last_body: last?.body ?? null, last_at: last?.created_at ?? null, last_from_me: last ? last.sender_id === uid : null,
+            unread: thread.filter((m) => m.sender_id === p.id && !m.read_at).length,
+          };
+        })
+        .sort((x, y) => (y.last_at ?? '').localeCompare(x.last_at ?? '') || x.full_name.localeCompare(y.full_name));
+      return ok(rows);
+    }
+    if (fn === 'chat_thread') {
+      return ok(table('messages').filter(between(uid!, args.p_other)).sort((x, y) => x.created_at.localeCompare(y.created_at)).map((m) => ({ ...m })));
+    }
+    if (fn === 'mark_chat_read') {
+      const unread = table('messages').filter((m) => m.sender_id === args.p_other && m.recipient_id === uid && !m.read_at);
+      unread.forEach((m) => (m.read_at = new Date().toISOString()));
+      return ok(unread.length);
+    }
+    if (fn === 'my_unread_messages') return ok(table('messages').filter((m) => m.recipient_id === uid && !m.read_at).length);
     if (fn === 'get_my_trainer') {
       const me = table('profiles').find((p) => p.id === uid);
       const trainer = me?.assigned_trainer_id ? table('profiles').find((p) => p.id === me.assigned_trainer_id) : null;

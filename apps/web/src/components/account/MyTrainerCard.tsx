@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, MessageCircle, Mail, UserCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Phone, MessageCircle, Mail, UserCheck, MessagesSquare } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Avatar } from './Avatar';
 import { TrainerContact, getMyTrainer } from '../../services/portal';
@@ -39,6 +40,12 @@ export const MyTrainerCard: React.FC = () => {
           <div className="flex flex-col gap-2 min-w-0">
             <h3 className="text-2xl font-heading text-white uppercase">{trainer.full_name}</h3>
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 text-xs">
+              <Link
+                to={`/portal/messages?with=${trainer.id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-gradient text-black font-bold"
+              >
+                <MessagesSquare className="w-3.5 h-3.5" /> Chat in app
+              </Link>
               {trainer.phone && (
                 <>
                   <a href={telHref(trainer.phone)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gym-border text-white hover:border-gym-primary">

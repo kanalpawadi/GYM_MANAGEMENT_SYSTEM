@@ -24,8 +24,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 7. `07_role_chain_and_gym_ops.sql`: role chain, profile fields, premium/normal members, plan requests and approval, discount, invoices, QR and selfie attendance, website-edit approval, notifications, water tracking.
 8. `08_google_signin_profiles.sql`: Google sign-in creates a member profile with the Google name and photo, and repairs accounts that signed in but got no profile.
 9. `09_member_registration_approval.sql`: new members fill a registration form and wait for the owner's approval before they can open their dashboard (section 17).
+10. `10_chat_and_notices.sql`: one-to-one chat and the notice board (section 18).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06`, `07`, `08` and `09`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `10`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -205,4 +206,33 @@ Good to know:
   - Staff, and members with any membership, payment, plan request or check-in, stay approved.
   - Members who had only signed in are asked to register.
 - The database enforces all of this, so it cannot be skipped from the browser.
+
+## 18. Chat and notice board
+### One-to-one chat
+Where to find it:
+- **Members:** Portal → **Messages**, or **Chat in app** on the My Trainer card
+- **Trainers:** Trainer Panel → **Messages**
+- **Staff:** Admin → **Messages**
+- From a member's dashboard, **Message** opens a chat with that member.
+
+Who can chat with whom:
+- Members see their own trainer plus the owner, manager and receptionist. They can also reply to anyone who messaged them first.
+- Trainers and staff can chat with any approved member and with each other.
+- Members cannot message other members. Members waiting for registration approval cannot chat yet.
+
+Privacy:
+- Chats are private. Only the two people in a chat can read it, not even the owner or Super Admin.
+- Messages cannot be edited or deleted.
+
+How it works:
+- Unread counts show in the menu, and **Seen** shows when your last message has been read.
+- New messages appear within a few seconds.
+- For instant delivery, check that Supabase → **Database → Replication / Publications → supabase_realtime** includes the `messages` table. Migration 10 adds it for you.
+
+### Notice board
+- **Post:** trainers and staff (receptionist, manager, owner, Super Admin) use Portal/Trainer Panel/Admin → **Notice Board**. They write a title and the notice, and can **Pin to top** or set a **Show until** date.
+- **Read:** everyone sees notices, including members, trainers and staff. The newest current notices also show on the member dashboard.
+- **Notify:** everyone gets a bell notification when a new notice is posted.
+- **Edit and delete:** trainers can unpin or delete their own notices. Managers, the owner and Super Admin can manage any notice.
+- **Expiry:** expired notices disappear for members. Staff still see them, faded, so they can delete them.
 

@@ -44,6 +44,8 @@ import { MemberAttendance } from './pages/member/MemberAttendance';
 import { MemberProgress } from './pages/member/MemberProgress';
 import { MemberProfile } from './pages/member/MemberProfile';
 import { Registration } from './pages/member/Registration';
+import { MessagesPage } from './pages/common/MessagesPage';
+import { NoticesPage } from './pages/common/NoticesPage';
 import { MemberPlans } from './pages/member/MemberPlans';
 
 // Admin Pages & Layout
@@ -103,6 +105,8 @@ export const App: React.FC = () => {
                         <Route path="attendance" element={<MemberAttendance />} />
                         <Route path="progress" element={<MemberProgress />} />
                         <Route path="profile" element={<MemberProfile />} />
+                        <Route path="messages" element={<MessagesPage />} />
+                        <Route path="notices" element={<NoticesPage />} />
                         <Route path="*" element={<Navigate to="/portal/dashboard" replace />} />
                       </Routes>
                     </MemberPortalLayout>
@@ -119,6 +123,8 @@ export const App: React.FC = () => {
                       <Route path="dashboard" element={<TrainerDashboard />} />
                       <Route path="members/:memberId" element={<div className="min-h-screen bg-gym-bg p-4 sm:p-6"><MemberDetail backTo="/trainer/dashboard" /></div>} />
                       <Route path="scan" element={<div className="min-h-screen bg-gym-bg p-4 sm:p-6"><MemberDetailBack /><AttendanceScanner /></div>} />
+                      <Route path="messages" element={<div className="min-h-screen bg-gym-bg p-4 sm:p-6"><div className="max-w-6xl mx-auto"><MessagesPage backTo="/trainer/dashboard" backLabel="Back to trainer panel" /></div></div>} />
+                      <Route path="notices" element={<div className="min-h-screen bg-gym-bg p-4 sm:p-6"><NoticesPage backTo="/trainer/dashboard" backLabel="Back to trainer panel" /></div>} />
                       <Route path="*" element={<Navigate to="/trainer/dashboard" replace />} />
                     </Routes>
                   </ProtectedRoute>
@@ -136,6 +142,8 @@ export const App: React.FC = () => {
                         <Route path="members" element={<AdminMembers />} />
                         <Route path="members/:memberId" element={<MemberDetail backTo="/admin/members" />} />
                         <Route path="requests" element={<AdminRequests />} />
+                        <Route path="messages" element={<MessagesPage />} />
+                        <Route path="notices" element={<NoticesPage />} />
                         <Route path="leads" element={<AdminLeads />} />
                         <Route path="attendance" element={<AttendanceScanner />} />
                         <Route path="financials" element={<AdminFinancials />} />
