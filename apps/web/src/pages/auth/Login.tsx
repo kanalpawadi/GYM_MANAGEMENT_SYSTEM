@@ -10,6 +10,7 @@ import { GoogleButton, OrDivider } from '../../components/account/GoogleButton';
 import { isDemoAuthEnabled } from '../../context/demoProfiles';
 import { oauthErrorFromUrl } from '../../utils/authErrors';
 import { UserRole } from '../../types';
+import { BrandLogo } from '../../components/ui/BrandLogo';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -64,9 +65,7 @@ export const Login: React.FC = () => {
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md border-gym-primary/40 bg-gym-surface shadow-2xl">
           <div className="text-center mb-6">
-            <div className="w-14 h-14 rounded-xl bg-gold-gradient text-black flex items-center justify-center mx-auto mb-3 shadow-yellow-glow">
-              <Dumbbell className="w-8 h-8 stroke-[2.5]" />
-            </div>
+            <BrandLogo className="w-20 h-20 mx-auto mb-3 shadow-yellow-glow" />
             <h1 className="text-3xl font-heading text-white uppercase tracking-wide">
               PORTAL <span className="text-gym-primary">LOGIN</span>
             </h1>

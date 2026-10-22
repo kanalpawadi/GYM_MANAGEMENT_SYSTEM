@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Dumbbell, Menu, X, Phone, User, Calendar } from 'lucide-react';
+import { Menu, X, Phone, User, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { phoneDisplay, telHref } from '../../config/site';
 import { useSiteInfo } from '../../content/ContentContext';
 import { homePathForRole, useOptionalAuth } from '../../context/AuthContext';
+import { BrandLogo } from '../ui/BrandLogo';
 
 export const Navbar: React.FC = () => {
   const site = useSiteInfo();
@@ -51,9 +52,7 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0 mr-4">
-          <div className="w-10 h-10 rounded-lg bg-gold-gradient text-black flex items-center justify-center font-bold shadow-yellow-glow group-hover:scale-105 transition-transform">
-            <Dumbbell className="w-6 h-6 stroke-[2.5]" />
-          </div>
+          <BrandLogo className="w-12 h-12 shadow-yellow-glow group-hover:scale-105 transition-transform" />
           <div className="flex flex-col">
             <span className="text-xl 2xl:text-2xl font-heading font-bold text-white tracking-wide leading-none whitespace-nowrap">
               RV <span className="text-gym-primary">FITNESS</span>

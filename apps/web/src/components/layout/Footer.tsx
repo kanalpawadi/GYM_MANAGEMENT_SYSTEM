@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Dumbbell, Phone, Mail, MapPin, Clock, Send, CheckCircle2, Instagram } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Send, CheckCircle2, Instagram } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { phoneDisplay, telHref, instagramHref } from '../../config/site';
 import { useSiteInfo } from '../../content/ContentContext';
+import { BrandLogo } from '../ui/BrandLogo';
 
 export const Footer: React.FC = () => {
   const site = useSiteInfo();
@@ -59,9 +60,7 @@ export const Footer: React.FC = () => {
         {/* Brand Summary */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-lg bg-gold-gradient text-black flex items-center justify-center font-bold">
-              <Dumbbell className="w-6 h-6 stroke-[2.5]" />
-            </div>
+            <BrandLogo className="w-14 h-14" />
             <span className="text-2xl font-heading text-white tracking-wider">
               RV <span className="text-gym-primary">FITNESS</span>
             </span>

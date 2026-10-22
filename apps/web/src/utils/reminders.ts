@@ -41,7 +41,7 @@ export function disableReminders() {
 }
 
 async function show(title: string, body: string, tag: string) {
-  const options = { body, tag, icon: '/favicon.svg', badge: '/favicon.svg' };
+  const options = { body, tag, icon: '/logo-192.png', badge: '/favicon.png' };
   try {
     const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined;
     if (reg) await reg.showNotification(title, options);

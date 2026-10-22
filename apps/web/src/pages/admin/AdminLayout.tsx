@@ -7,6 +7,7 @@ import { ChangePasswordModal } from '../../components/account/ChangePasswordModa
 import { ProfilePhotoPicker } from '../../components/account/ProfilePhotoPicker';
 import { NotificationBell } from '../../components/account/NotificationBell';
 import { ROLE_LABELS, canEditContent, isAdminRole } from '../../config/roles';
+import { BrandLogo } from '../../components/ui/BrandLogo';
 
 export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, logout } = useAuth();
@@ -51,9 +52,7 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
           {/* Logo Brand */}
           <div className={`p-4 border-b border-gym-border flex items-center ${collapsed ? 'flex-col gap-2' : 'justify-between'}`}>
             <Link to="/" className="flex items-center gap-2 overflow-hidden">
-              <div className="w-10 h-10 rounded-lg bg-gold-gradient text-black flex items-center justify-center font-bold shrink-0">
-                <Dumbbell className="w-6 h-6 stroke-[2.5]" />
-              </div>
+              <BrandLogo className="w-10 h-10" />
               {!collapsed && (
                 <div className="flex flex-col">
                   <span className="text-xl font-heading text-white tracking-wider">
