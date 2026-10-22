@@ -73,10 +73,10 @@ describe('Login', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Client ID or Secret in Supabase is wrong/i);
   });
 
-  it('first Google sign-in without a profile row creates a member profile and opens the portal', async () => {
+  it('first Google sign-in without a profile row creates a member profile and asks them to register', async () => {
     signInWithoutProfile('google-uid');
     renderAuth('/login');
-    expect(await screen.findByText('landed on /portal/dashboard as member')).toBeInTheDocument();
+    expect(await screen.findByText('landed on /register as member')).toBeInTheDocument();
     expect(supabaseMock.rpc).toHaveBeenCalledWith('ensure_my_profile');
   });
 

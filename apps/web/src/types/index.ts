@@ -21,8 +21,14 @@ export interface UserProfile {
   medicines?: string | null;
   membership_tier?: 'normal' | 'premium';
   member_code?: string | null;
+  /** New members register and wait for the owner's approval (migration 09). */
+  approval_status?: ApprovalStatus;
+  approval_note?: string | null;
+  registration_submitted_at?: string | null;
   created_at: string;
 }
+
+export type ApprovalStatus = 'incomplete' | 'pending' | 'approved' | 'rejected';
 
 export interface MembershipPlan {
   id: string;

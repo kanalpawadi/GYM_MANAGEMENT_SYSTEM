@@ -23,8 +23,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 6. `06_fix_signup_trigger.sql`: safer sign-up when a phone number is already used.
 7. `07_role_chain_and_gym_ops.sql`: role chain, profile fields, premium/normal members, plan requests and approval, discount, invoices, QR and selfie attendance, website-edit approval, notifications, water tracking.
 8. `08_google_signin_profiles.sql`: Google sign-in creates a member profile with the Google name and photo, and repairs accounts that signed in but got no profile.
+9. `09_member_registration_approval.sql`: new members fill a registration form and wait for the owner's approval before they can open their dashboard (section 17).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06`, `07` and `08`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06`, `07`, `08` and `09`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -181,3 +182,27 @@ The Super Admin decides in Gym Settings → **Owner's website changes need appro
 - **Reminders.** **Remind me** turns on Google-style browser notifications for meal times and water (every 2 hours, 7 AM–9 PM).
   - They work while the site is open, or installed on the phone's home screen.
   - Notifications while the browser is fully closed need a push service, which is not set up yet.
+
+## 17. New member registration and approval
+Every new account, whether email or Google, must be approved by the gym owner before it can use the member portal.
+
+1. **Register.** On first sign-in, the member sees **Member Registration** and fills in their details:
+   - name
+   - mobile number and date of birth (required)
+   - blood group, height, weight
+   - medicines and health notes
+
+   They press **Submit for Approval**.
+2. **Wait.** The member sees **Waiting for approval**. They can edit their details, check the status, or visit the website, but cannot open the dashboard, request a plan or check in.
+3. **Approve.** The owner (and Super Admin) gets a notification. They open **Admin → Approvals → New member registrations** and press one of:
+   - **Approve Member:** the member's dashboard opens straight away and they get a welcome notification.
+   - **Ask to Fix Details:** write a note. The member sees it, corrects the form and sends it again.
+
+Good to know:
+- Only the owner and Super Admin can approve. Managers, receptionists and trainers cannot.
+- When you make someone a trainer or other staff in **Users & Roles**, they don't need member approval.
+- **Existing accounts when you run migration 09:**
+  - Staff, and members with any membership, payment, plan request or check-in, stay approved.
+  - Members who had only signed in are asked to register.
+- The database enforces all of this, so it cannot be skipped from the browser.
+

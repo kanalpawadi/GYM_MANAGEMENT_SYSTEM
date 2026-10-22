@@ -43,6 +43,7 @@ import { PaymentHistory } from './pages/member/PaymentHistory';
 import { MemberAttendance } from './pages/member/MemberAttendance';
 import { MemberProgress } from './pages/member/MemberProgress';
 import { MemberProfile } from './pages/member/MemberProfile';
+import { Registration } from './pages/member/Registration';
 import { MemberPlans } from './pages/member/MemberPlans';
 
 // Admin Pages & Layout
@@ -159,6 +160,16 @@ export const App: React.FC = () => {
                         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                       </Routes>
                     </AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* FIRST SIGN-IN: REGISTRATION FORM, THEN WAIT FOR THE OWNER'S APPROVAL */}
+              <Route
+                path="/register"
+                element={
+                  <ProtectedRoute allowedRoles={['member']} allowUnapproved>
+                    <Registration />
                   </ProtectedRoute>
                 }
               />

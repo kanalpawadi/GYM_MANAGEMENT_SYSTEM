@@ -286,9 +286,29 @@ export function resetSupabaseMock() {
       const email = state.session!.user.email;
       if (!table('profiles').some((p) => p.id === uid)) {
         if (table('profiles').some((p) => p.email === email)) return fail(`Another RV Fitness account already uses ${email}.`);
-        table('profiles').push({ id: uid, full_name: email.split('@')[0], email, role: 'member', created_at: new Date().toISOString() });
+        table('profiles').push({ id: uid, full_name: email.split('@')[0], email, role: 'member', approval_status: 'incomplete', created_at: new Date().toISOString() });
       }
       return ok(uid);
+    }
+    if (fn === 'submit_registration') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (!me) return fail('Account not found');
+      if (me.role !== 'member' || me.approval_status === 'approved') return fail('Your registration is already approved');
+      if (!/^[6-9]\d{9}$/.test(args.p_phone ?? '')) return fail('Enter a valid 10-digit mobile number');
+      Object.assign(me, {
+        full_name: args.p_full_name, phone: args.p_phone, dob: args.p_dob, blood_group: args.p_blood_group, height_cm: args.p_height_cm,
+        weight_kg: args.p_weight_kg, medicines: args.p_medicines, health_notes: args.p_health_notes,
+        approval_status: 'pending', approval_note: null, registration_submitted_at: new Date().toISOString(),
+      });
+      return ok({ ...me });
+    }
+    if (fn === 'decide_registration') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (!['owner', 'super_admin'].includes(me?.role)) return fail('Only the gym owner can approve new members');
+      const m = table('profiles').find((p) => p.id === args.p_member);
+      if (!m || m.approval_status !== 'pending') return fail('This registration is no longer waiting for approval');
+      Object.assign(m, { approval_status: args.p_approve ? 'approved' : 'rejected', approval_note: args.p_note ?? null });
+      return ok({ ...m });
     }
     if (fn === 'get_my_trainer') {
       const me = table('profiles').find((p) => p.id === uid);

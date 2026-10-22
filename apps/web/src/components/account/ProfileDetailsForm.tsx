@@ -15,10 +15,14 @@ const textarea =
 interface Props {
   target: UserProfile;
   onSaved?: () => void | Promise<void>;
+  /** Registration: phone and date of birth are required and `onSubmit` sends the form instead of saving the profile. */
+  registration?: boolean;
+  onSubmit?: (patch: ProfilePatch) => Promise<void>;
+  submitLabel?: string;
 }
 
 /** Personal and health details. Used by members (own profile) and by staff/trainers (role chain). */
-export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved }) => {
+export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registration = false, onSubmit, submitLabel = 'Save Details' }) => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [dob, setDob] = useState('');
@@ -50,6 +54,8 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved }) => {
     setError('');
     setSaved('');
     if (!fullName.trim()) return setError('Please enter the full name.');
+    if (registration && !phone.trim()) return setError('Please enter your mobile number.');
+    if (registration && !dob) return setError('Please enter your date of birth.');
     if (phone && !PHONE.test(phone.trim())) return setError('Enter a valid 10-digit Indian mobile number.');
     if (dob && (age == null || age < 5)) return setError('Please check the date of birth.');
     const h = num(height);
@@ -68,8 +74,10 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved }) => {
     };
     setSaving(true);
     try {
-      await updateProfile(target.id, patch);
+      if (onSubmit) await onSubmit(patch);
+      else await updateProfile(target.id, patch);
       await onSaved?.();
+      if (onSubmit) return;
       setSaved('Details saved.');
       setTimeout(() => setSaved(''), 4000);
     } catch (err: any) {
@@ -94,8 +102,8 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved }) => {
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-          <Input label="Contact Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10-digit mobile" />
-          <Input label="Date of Birth" type="date" value={dob} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDob(e.target.value)} />
+          <Input label="Contact Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10-digit mobile" required={registration} />
+          <Input label="Date of Birth" type="date" value={dob} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDob(e.target.value)} required={registration} />
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-gym-muted">Age</span>
             <span className="min-h-[44px] flex items-center px-4 rounded-xl border border-gym-border bg-black/40 text-white text-sm" aria-label="Age">
@@ -137,7 +145,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved }) => {
         </label>
       </Card>
 
-      <Button type="submit" variant="primary" isLoading={saving}>Save Details</Button>
+      <Button type="submit" variant="primary" isLoading={saving}>{submitLabel}</Button>
     </form>
   );
 };

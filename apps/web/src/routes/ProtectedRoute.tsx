@@ -2,13 +2,16 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { homePathForRole, useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
+import { needsRegistration } from '../config/roles';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
+  /** The registration page itself: members who are not approved yet may open it. */
+  allowUnapproved?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles, allowUnapproved = false }) => {
   const { profile, loading } = useAuth();
   const location = useLocation();
 
@@ -29,6 +32,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     // Signed in but not allowed here (e.g. a member opening /admin): send to their own area.
     if (profile.role === 'visitor') return <Navigate to="/" replace />;
     return <Navigate to={homePathForRole(profile.role)} replace />;
+  }
+
+  // New members see only the registration / waiting page until the owner approves them.
+  if (!allowUnapproved && needsRegistration(profile)) {
+    return <Navigate to="/register" replace />;
   }
 
   return <>{children}</>;

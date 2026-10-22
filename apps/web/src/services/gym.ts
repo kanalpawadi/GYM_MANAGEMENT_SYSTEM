@@ -179,6 +179,50 @@ export async function decidePlanRequest(
   ) as PlanRequest;
 }
 
+// ---- New member registration & approval -----------------------------------------------
+
+export interface RegistrationDetails {
+  full_name: string;
+  phone: string;
+  dob: string;
+  blood_group?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  medicines?: string | null;
+  health_notes?: string | null;
+}
+
+/** Member sends their registration form; it waits for the owner's approval. */
+export async function submitRegistration(d: RegistrationDetails): Promise<UserProfile> {
+  return unwrap(
+    await supabase.rpc('submit_registration', {
+      p_full_name: d.full_name,
+      p_phone: d.phone,
+      p_dob: d.dob,
+      p_blood_group: d.blood_group ?? null,
+      p_height_cm: d.height_cm ?? null,
+      p_weight_kg: d.weight_kg ?? null,
+      p_medicines: d.medicines ?? null,
+      p_health_notes: d.health_notes ?? null,
+    }),
+  ) as UserProfile;
+}
+
+export async function listPendingRegistrations(): Promise<UserProfile[]> {
+  return (unwrap(
+    await supabase
+      .from('profiles')
+      .select(`${MEMBER_COLUMNS}, approval_status, registration_submitted_at`)
+      .eq('role', 'member')
+      .eq('approval_status', 'pending')
+      .order('registration_submitted_at', { ascending: true }),
+  ) ?? []) as UserProfile[];
+}
+
+export async function decideRegistration(memberId: string, approve: boolean, note?: string): Promise<UserProfile> {
+  return unwrap(await supabase.rpc('decide_registration', { p_member: memberId, p_approve: approve, p_note: note ?? null })) as UserProfile;
+}
+
 // ---- Payments & invoices ---------------------------------------------------------------
 
 export interface Payment {

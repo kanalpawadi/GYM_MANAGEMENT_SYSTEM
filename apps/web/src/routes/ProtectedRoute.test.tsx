@@ -26,6 +26,7 @@ function renderGuarded(route: string) {
         <Routes>
           <Route path="/login" element={<Where label="login page" />} />
           <Route path="/" element={<Where label="home page" />} />
+          <Route path="/register" element={<Where label="registration page" />} />
           <Route
             path="/admin/*"
             element={
@@ -115,8 +116,20 @@ describe('ProtectedRoute', () => {
     expect(await screen.findByText('home page at /')).toBeInTheDocument();
   });
 
-  it('creates a missing profile as a member (first Google sign-in)', async () => {
+  it('creates a missing profile as a member (first Google sign-in) and sends them to register', async () => {
     signInWithoutProfile();
+    renderGuarded('/portal/dashboard');
+    expect(await screen.findByText('registration page at /register')).toBeInTheDocument();
+  });
+
+  it.each(['incomplete', 'pending', 'rejected'] as const)('keeps a %s member out of the portal', async (approval_status) => {
+    signInAs(makeProfile('member', { approval_status }));
+    renderGuarded('/portal/dashboard');
+    expect(await screen.findByText('registration page at /register')).toBeInTheDocument();
+  });
+
+  it('lets an approved member into the portal', async () => {
+    signInAs(makeProfile('member', { approval_status: 'approved' }));
     renderGuarded('/portal/dashboard');
     expect(await screen.findByText('member portal at /portal/dashboard')).toBeInTheDocument();
   });

@@ -9,6 +9,7 @@ import { homePathForRole, useAuth } from '../../context/AuthContext';
 import { GoogleButton, OrDivider } from '../../components/account/GoogleButton';
 import { isDemoAuthEnabled } from '../../context/demoProfiles';
 import { oauthErrorFromUrl } from '../../utils/authErrors';
+import { needsRegistration } from '../../config/roles';
 import { UserRole } from '../../types';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 
@@ -27,7 +28,7 @@ export const Login: React.FC = () => {
   // Once a session and its profile are loaded, send the user where they were headed.
   useEffect(() => {
     if (loading || !profile) return;
-    navigate(from ?? homePathForRole(profile.role), { replace: true });
+    navigate(needsRegistration(profile) ? '/register' : from ?? homePathForRole(profile.role), { replace: true });
   }, [loading, profile, from, navigate]);
 
   useEffect(() => {

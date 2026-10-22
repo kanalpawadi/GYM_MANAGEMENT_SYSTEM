@@ -42,6 +42,13 @@ export const isStaffRole = (role?: UserRole | null) => roleRank(role) >= 3;
 /** Owner and Super Admin: discount, geofence and other gym-wide settings. */
 export const isOwnerLevel = (role?: UserRole | null) => roleRank(role) >= 5;
 
+/**
+ * A member who has not been approved by the gym yet must register / wait on /register.
+ * Missing status (database before migration 09) counts as approved.
+ */
+export const needsRegistration = (profile?: { role: UserRole; approval_status?: string | null } | null) =>
+  !!profile && profile.role === 'member' && !!profile.approval_status && profile.approval_status !== 'approved';
+
 /** Roles the signed-in user may hand out on the Users screen (always below their own). */
 export function assignableRoles(actor?: UserRole | null): UserRole[] {
   if (actor === 'super_admin') return ['member', 'trainer', 'receptionist', 'manager', 'owner', 'super_admin'];

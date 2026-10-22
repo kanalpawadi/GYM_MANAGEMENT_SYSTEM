@@ -7,11 +7,15 @@ import { Button } from '../../components/ui/Button';
 import { Avatar } from '../../components/account/Avatar';
 import { formatINR, phoneDisplay } from '../../config/site';
 import { PlanRequest, decidePlanRequest, listPlanRequests } from '../../services/gym';
+import { useAuth } from '../../context/AuthContext';
+import { isOwnerLevel } from '../../config/roles';
+import { RegistrationApprovals } from './RegistrationApprovals';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** Owner / staff approve plan renewals and changes that members request. */
 export const AdminRequests: React.FC = () => {
+  const { profile } = useAuth();
   const [requests, setRequests] = useState<PlanRequest[]>([]);
   const [view, setView] = useState<'pending' | 'done'>('pending');
   const [loading, setLoading] = useState(true);
@@ -51,7 +55,7 @@ export const AdminRequests: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Plan Requests | RV Fitness Admin</title>
+        <title>Approvals | RV Fitness Admin</title>
       </Helmet>
 
       <div className="flex flex-col gap-6">
@@ -62,6 +66,10 @@ export const AdminRequests: React.FC = () => {
           </h1>
           <p className="text-xs text-gym-muted mt-1">Members request a renewal or a plan change. A plan starts only after you approve it.</p>
         </div>
+
+        {isOwnerLevel(profile?.role) && <RegistrationApprovals />}
+
+        <h2 className="text-xl font-heading text-white">Plan renewals & changes</h2>
 
         <div className="flex rounded-xl border border-gym-border overflow-hidden w-fit" role="tablist">
           {(
