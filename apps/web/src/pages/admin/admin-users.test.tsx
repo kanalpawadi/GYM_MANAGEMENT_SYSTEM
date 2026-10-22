@@ -59,8 +59,15 @@ describe('Admin navigation by role', () => {
     expect(screen.getByText(/super admin terminal/i)).toBeInTheDocument();
   });
 
-  it('shows Users & Roles but not Website Editor to the gym owner', async () => {
+  it('shows Users & Roles and Website Editor to the gym owner', async () => {
     signInAs(makeProfile('owner'));
+    renderAdmin('/admin/dashboard');
+    expect(await screen.findByRole('link', { name: /users & roles/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /website editor/i })).toBeInTheDocument();
+  });
+
+  it('hides the Website Editor from a manager', async () => {
+    signInAs(makeProfile('manager'));
     renderAdmin('/admin/dashboard');
     expect(await screen.findByRole('link', { name: /users & roles/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /website editor/i })).not.toBeInTheDocument();
@@ -74,8 +81,14 @@ describe('Admin navigation by role', () => {
     expect(screen.queryByRole('link', { name: /users & roles/i })).not.toBeInTheDocument();
   });
 
-  it('sends a gym owner away from the website editor URL', async () => {
+  it('lets the gym owner open the website editor URL', async () => {
     signInAs(makeProfile('owner'));
+    renderAdmin('/admin/content');
+    expect(await screen.findByText('website editor')).toBeInTheDocument();
+  });
+
+  it('sends a manager away from the website editor URL', async () => {
+    signInAs(makeProfile('manager'));
     renderAdmin('/admin/content');
     expect(await screen.findByText('dashboard')).toBeInTheDocument();
     expect(screen.queryByText('website editor')).not.toBeInTheDocument();

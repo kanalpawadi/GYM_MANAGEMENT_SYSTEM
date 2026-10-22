@@ -1,6 +1,16 @@
 import '@testing-library/jest-dom/vitest';
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { resetSupabaseMock } from './supabaseMock';
+import { resetGymSettingsCache } from '../content/useGymSettings';
+
+// Every test talks to the in-memory fake Supabase, never the real project.
+vi.mock('../lib/supabase', async () => ({ supabase: (await import('./supabaseMock')).supabaseMock }));
+
+beforeEach(() => {
+  resetSupabaseMock();
+  resetGymSettingsCache();
+});
 
 afterEach(() => {
   cleanup();

@@ -20,6 +20,11 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 3. `03_super_admin_role.sql`: adds the Super Admin role. Run it on its own.
 4. `04_roles_plans_content.sql`: role rules, trainer assignment, diet/workout plans, website content table, image bucket.
 5. `05_photos_and_progress.sql`: profile photos (`avatars` bucket), the My Trainer card, and private body-progress photos (`progress-photos` bucket).
+6. `06_fix_signup_trigger.sql`: safer sign-up when a phone number is already used.
+7. `07_role_chain_and_gym_ops.sql`: role chain, profile fields, premium/normal members, plan requests and approval, discount, invoices, QR and selfie attendance, website-edit approval, notifications, water tracking.
+
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` and `07`.
+> Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
 1. Sign up on the website with your own email and confirm it.
@@ -79,3 +84,85 @@ To let the Gym Owner edit content too:
 
 ## 8. Demo role switcher
 The one-click role buttons on the Login page only appear in local development (`npm run dev`). They are removed from production builds.
+
+## 9. Google sign-in (one-time setup)
+Members and staff can use **Continue with Google** on the Login and Sign Up pages. New Google users start as Members.
+
+1. **Create a Google sign-in key.**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services → Credentials → Create credentials → OAuth client ID**.
+   - Application type: **Web application**.
+2. **Add the redirect address.** Under **Authorised redirect URIs**, add the callback URL shown in Supabase:
+   - Supabase → **Authentication → Providers → Google**
+   - it looks like `https://<your-project>.supabase.co/auth/v1/callback`
+3. **Paste the keys into Supabase.**
+   - Copy the **Client ID** and **Client secret** into Supabase → **Authentication → Providers → Google**.
+   - Turn Google on and save.
+4. **Check the site addresses.** In Supabase → **Authentication → URL Configuration**, your website's `/login` page must be in the redirect URLs.
+
+Until this is done, the Google button says "Google sign-in is not set up yet" and people use email and password.
+
+## 10. Role chain: who can change what
+**Super Admin > Gym Owner > Manager > Receptionist > Trainer > Member.**
+
+Anyone can open and change the dashboards of people below them:
+- **Super Admin:** everyone, including the owner.
+- **Owner:** managers, receptionists, trainers and members.
+- **Trainers:** members' profiles, diet and workout plans, progress and attendance.
+
+How to open someone's dashboard:
+- Admin → Members → **Open**
+- Admin → Users & Roles → **Open dashboard**
+- Trainer Panel → **Open**
+
+Database rules enforce the same chain, so nobody can change someone at or above their level.
+
+## 11. Plans: requests, approval, payments and invoices
+1. **Request.** The member opens **Portal → Renew / Change Plan**, picks a plan and how they will pay (desk or online), and sends a request.
+   - The price is decided by the database, including any discount.
+2. **Approve.** The owner or staff open **Admin → Plan Requests** and choose one of:
+   - **Approve · Paid Cash** / **Approve · Paid UPI**: the membership starts and a paid invoice is created.
+   - **Approve · Payment Due**: the membership starts and the payment shows as due until you mark it paid (Financials or the member's page).
+   - **Decline**, with an optional note.
+3. **Notify.** The member gets a notification (bell icon) either way.
+4. **Invoices.** Every paid payment has an invoice page with **Print / Save as PDF** and **Download HTML**.
+
+Online card/UPI payment needs Razorpay; until it is connected, online-preference requests are approved with **Payment Due**.
+
+## 12. Discount switch
+Admin → Gym Settings → **Discount**. Only the owner or Super Admin can change it.
+
+When it is on:
+- the website shows the offer strip and pop-up
+- every plan shows the discounted price
+- plan requests are charged the discounted price
+
+## 13. Premium and normal members
+Change a member's type on their dashboard (Overview → **Member type**). Only staff can change it.
+
+- **Premium:** gets a personal diet and workout plan from their trainer.
+- **Normal:** sees the gym's **common plan**, set in the Trainer Panel → **Common Diet / Common Workout**.
+
+## 14. Attendance
+- **QR scan:** the member opens **Portal → Digital QR Card**. The trainer or front desk opens **Scanner** (Admin or Trainer Panel) and scans it.
+  - The code changes every 30 seconds, so screenshots stop working.
+  - If there's no QR, search the member by name, phone or member ID and press **Check in**.
+- **Selfie check-in:** Admin → Gym Settings → **Selfie check-in (geofencing)**.
+  1. Stand inside the gym and tap **Use my current location**.
+  2. Set the allowed distance (for example 100 m) and save.
+  3. Turn it on.
+
+  Members can then check in with a selfie from **Portal → Attendance** when no trainer is free.
+- **Limits:** phone locations can be faked with special apps. The selfie is kept so staff can review check-ins.
+
+## 15. Website edits by the owner
+The owner has the Website Editor too.
+
+The Super Admin decides in Gym Settings → **Owner's website changes need approval**:
+- **Off:** the owner's changes go live immediately.
+- **On:** the owner's saves become "submitted for approval", and the Super Admin sees them at the top of the Website Editor with **Review / Approve / Decline**.
+
+## 16. Daily plan pop-up and reminders
+- **The pop-up.** When a member opens their dashboard, a once-a-day card shows today's meals, today's workout and a water tracker.
+- **Reminders.** **Remind me** turns on Google-style browser notifications for meal times and water (every 2 hours, 7 AM–9 PM).
+  - They work while the site is open, or installed on the phone's home screen.
+  - Notifications while the browser is fully closed need a push service, which is not set up yet.

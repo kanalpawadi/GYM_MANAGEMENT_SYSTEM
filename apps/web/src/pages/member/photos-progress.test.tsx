@@ -18,6 +18,13 @@ const asha = makeProfile('member', { id: 'asha', full_name: 'Asha Patil', email:
 const png = (name = 'me.png') => new File(['img'], name, { type: 'image/png' });
 const page = (el: React.ReactElement) => renderPortal(<Routes><Route path="*" element={el} /></Routes>);
 
+/** Choosing a photo opens the crop window; confirm it. */
+async function chooseAndCrop(user: ReturnType<typeof userEvent.setup>, file: File) {
+  await user.upload(await screen.findByLabelText('Upload profile photo'), file);
+  const dialog = await screen.findByRole('dialog', { name: /crop your photo/i });
+  await user.click(within(dialog).getByRole('button', { name: /use photo/i }));
+}
+
 beforeEach(() => {
   resetSupabaseMock();
   localStorage.clear();
@@ -29,7 +36,7 @@ describe('Profile photo', () => {
     signInAs(asha);
     page(<MemberPortalLayout><MemberProfile /></MemberPortalLayout>);
     const user = userEvent.setup();
-    await user.upload(await screen.findByLabelText('Upload profile photo'), png());
+    await chooseAndCrop(user, png());
 
     expect(uploads()[0]).toMatchObject({ bucket: 'avatars' });
     expect(uploads()[0].path).toMatch(/^asha\/.+\.png$/);
@@ -46,9 +53,10 @@ describe('Profile photo', () => {
     await user.upload(await screen.findByLabelText('Upload profile photo'), new File(['x'], 'cv.pdf', { type: 'application/pdf' }));
     expect(await screen.findByText(/choose a jpg, png or webp/i)).toBeInTheDocument();
 
-    const big = new File([new Uint8Array(4 * 1024 * 1024)], 'big.jpg', { type: 'image/jpeg' });
-    await user.upload(screen.getByLabelText('Upload profile photo'), big);
-    expect(await screen.findByText(/larger than 3 mb/i)).toBeInTheDocument();
+    const huge = new File([new Uint8Array(16 * 1024 * 1024)], 'huge.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText('Upload profile photo'), huge);
+    expect(await screen.findByText(/larger than 15 mb/i)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /crop your photo/i })).not.toBeInTheDocument();
     expect(uploads()).toHaveLength(0);
   });
 
@@ -57,7 +65,7 @@ describe('Profile photo', () => {
     page(<MemberProfile />);
     failNextUpload('avatars', 'new row violates row-level security policy');
     const user = userEvent.setup();
-    await user.upload(await screen.findByLabelText('Upload profile photo'), png());
+    await chooseAndCrop(user, png());
     expect(await screen.findByRole('alert')).toHaveTextContent(/row-level security/);
   });
 
@@ -65,7 +73,7 @@ describe('Profile photo', () => {
     signInAs(makeProfile('trainer', { id: 'coach-2', full_name: 'Coach Neha' }));
     page(<TrainerDashboard />);
     const user = userEvent.setup();
-    await user.upload(await screen.findByLabelText('Upload profile photo'), png('neha.jpg'));
+    await chooseAndCrop(user, png('neha.jpg'));
     expect(uploads()[0].path).toMatch(/^coach-2\//);
     expect(await screen.findByAltText("Coach Neha's photo")).toBeInTheDocument();
   });
@@ -79,23 +87,34 @@ describe('Profile photo', () => {
 });
 
 describe('My Profile details', () => {
-  it('loads and saves name, phone, emergency contact and health notes', async () => {
+  it('loads and saves contact, date of birth, blood group, height, weight and medicines', async () => {
     signInAs({ ...asha, phone: '9822012345', health_notes: 'Knee pain' });
     page(<MemberProfile />);
     const user = userEvent.setup();
     expect(await screen.findByDisplayValue('9822012345')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Knee pain')).toBeInTheDocument();
+    // Emergency contact is no longer asked for.
+    expect(screen.queryByLabelText(/contact person name/i)).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/contact person name/i), 'Sunita Patil');
-    await user.type(screen.getByLabelText(/contact phone number/i), '9822099999');
-    await user.type(screen.getByLabelText(/relation/i), 'Mother');
-    await user.click(screen.getByRole('button', { name: /save profile changes/i }));
+    const dob = screen.getByLabelText(/date of birth/i);
+    await user.clear(dob);
+    await user.type(dob, '1995-05-01');
+    expect(screen.getByLabelText('Age')).toHaveTextContent(/\d+ years/);
+    await user.selectOptions(screen.getByLabelText(/blood group/i), 'O+');
+    await user.type(screen.getByLabelText(/height/i), '172');
+    await user.type(screen.getByLabelText(/weight/i), '70.5');
+    await user.type(screen.getByLabelText(/medicines currently taking/i), 'None');
+    await user.click(screen.getByRole('button', { name: /save details/i }));
 
-    expect(await screen.findByText(/profile and emergency contact saved/i)).toBeInTheDocument();
+    expect(await screen.findByText(/details saved/i)).toBeInTheDocument();
     expect(table('profiles').find((p) => p.id === 'asha')).toMatchObject({
       phone: '9822012345',
+      dob: '1995-05-01',
+      blood_group: 'O+',
+      height_cm: 172,
+      weight_kg: 70.5,
+      medicines: 'None',
       health_notes: 'Knee pain',
-      emergency_contact: { name: 'Sunita Patil', phone: '9822099999', relation: 'Mother' },
     });
   });
 
@@ -103,9 +122,18 @@ describe('My Profile details', () => {
     signInAs(asha);
     page(<MemberProfile />);
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/mobile number/i), '12345');
-    await user.click(screen.getByRole('button', { name: /save profile changes/i }));
+    await user.type(await screen.findByLabelText(/contact number/i), '12345');
+    await user.click(screen.getByRole('button', { name: /save details/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/valid 10-digit/i);
+  });
+
+  it('rejects an impossible height', async () => {
+    signInAs(asha);
+    page(<MemberProfile />);
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText(/height/i), '900');
+    await user.click(screen.getByRole('button', { name: /save details/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/height should be between/i);
   });
 
   it('explains a duplicate phone number in plain words', async () => {
@@ -113,8 +141,8 @@ describe('My Profile details', () => {
     page(<MemberProfile />);
     failNextWrite('profiles', 'duplicate key value violates unique constraint "profiles_phone_key"');
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/mobile number/i), '9822012345');
-    await user.click(screen.getByRole('button', { name: /save profile changes/i }));
+    await user.type(await screen.findByLabelText(/contact number/i), '9822012345');
+    await user.click(screen.getByRole('button', { name: /save details/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent('This mobile number is already used by another account.');
   });
 });

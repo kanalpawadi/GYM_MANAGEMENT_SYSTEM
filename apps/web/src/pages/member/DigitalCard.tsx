@@ -1,35 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { QRCodeSVG } from 'qrcode.react';
-import { ShieldCheck, RefreshCw, Dumbbell, User, Phone, Calendar } from 'lucide-react';
+import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Avatar } from '../../components/account/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { Membership, currentMembership, daysLeft, getMyQrToken, listMemberships } from '../../services/gym';
 
+const REFRESH_SECONDS = 25;
+const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/** Member's entry pass. The QR changes every 30 seconds so a screenshot can't be reused. */
 export const DigitalCard: React.FC = () => {
   const { profile } = useAuth();
-  const [timestamp, setTimestamp] = useState(Date.now());
-  const [secondsLeft, setSecondsLeft] = useState(30);
+  const [token, setToken] = useState('');
+  const [error, setError] = useState('');
+  const [membership, setMembership] = useState<Membership | null>(null);
+  const [seconds, setSeconds] = useState(REFRESH_SECONDS);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          setTimestamp(Date.now());
-          return 30;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
+  const refresh = useCallback(() => {
+    getMyQrToken()
+      .then((t) => {
+        setToken(t);
+        setError('');
+        setSeconds(REFRESH_SECONDS);
+      })
+      .catch((err: Error) => setError(err.message));
   }, []);
 
-  const qrPayload = JSON.stringify({
-    member_id: profile?.id || '00000000-0000-4000-8000-000000000001',
-    name: profile?.full_name || 'Rahul Sharma',
-    token: `RV_PASS_HASH_${timestamp}`,
-    created_at: new Date(timestamp).toISOString(),
-  });
+  useEffect(() => {
+    if (!profile) return;
+    refresh();
+    listMemberships(profile.id).then((rows) => setMembership(currentMembership(rows))).catch(() => undefined);
+  }, [profile, refresh]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setSeconds((s) => {
+        if (s <= 1) {
+          refresh();
+          return REFRESH_SECONDS;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [refresh]);
+
+  const left = daysLeft(membership);
+  const active = membership && left != null && left >= 0;
 
   return (
     <>
@@ -37,70 +56,68 @@ export const DigitalCard: React.FC = () => {
         <title>Digital Membership Pass | RV Fitness</title>
       </Helmet>
 
-      <div className="max-w-2xl mx-auto flex flex-col gap-8 items-center text-center">
-        <div>
+      <div className="max-w-2xl mx-auto flex flex-col gap-6">
+        <div className="text-center">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">CONTACTLESS ENTRY</span>
-          <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading text-white uppercase tracking-wide mt-1">
             DIGITAL <span className="text-gym-primary">MEMBERSHIP CARD</span>
           </h1>
-          <p className="text-sm text-gym-muted mt-1">
-            Present this rotating security QR code at reception webcam terminal to log check-in.
-          </p>
+          <p className="text-xs text-gym-muted mt-1">Show this QR to a trainer or the front desk to mark your attendance.</p>
         </div>
 
-        {/* Digital Membership Pass Container */}
-        <Card className="w-full border-2 border-gym-primary bg-gradient-to-b from-gym-surface via-gym-bg to-gym-surface p-8 shadow-yellow-lg relative overflow-hidden">
-          <div className="flex justify-between items-center pb-6 border-b border-gym-border mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gold-gradient text-black flex items-center justify-center font-bold">
-                <Dumbbell className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <span className="text-xl font-heading text-white tracking-wider">
-                RV-<span className="text-gym-primary">FITNESS VIP PASS</span>
-              </span>
-            </div>
-            <span className="bg-gym-success/20 text-gym-success font-heading text-xs px-3 py-1 rounded-full border border-gym-success/40 uppercase">
-              ● ACTIVE
+        <Card hoverEffect={false} className="border-gym-primary/50 flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-heading text-white">
+              RV <span className="text-gym-primary">FITNESS</span> PASS
+            </span>
+            <span className={`text-xs font-heading px-2.5 py-1 rounded-full border ${active ? 'text-gym-success border-gym-success/40 bg-gym-success/10' : 'text-gym-danger border-gym-danger/40 bg-gym-danger/10'}`}>
+              {active ? 'ACTIVE' : 'NO ACTIVE PLAN'}
             </span>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-8 justify-center my-4">
-            {/* QR Code */}
-            <div className="bg-white p-5 rounded-2xl border-4 border-gym-primary shadow-2xl flex flex-col items-center">
-              <QRCodeSVG value={qrPayload} size={180} level="H" bgColor="#FFFFFF" fgColor="#0A0A0A" />
-              <div className="flex items-center gap-1.5 text-[11px] text-black font-heading font-bold mt-2">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-gym-primary" /> ROTATING TOKEN IN {secondsLeft}s
-              </div>
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="bg-white p-3 rounded-2xl shrink-0" aria-label="Your QR pass">
+              {token ? (
+                <QRCodeSVG value={token} size={176} level="M" />
+              ) : (
+                <div className="w-[176px] h-[176px] flex items-center justify-center text-xs text-gray-500 text-center px-3">{error || 'Loading...'}</div>
+              )}
+              <p className="text-[11px] text-gray-600 text-center mt-2 flex items-center justify-center gap-1">
+                <RefreshCw className="w-3 h-3" /> New code in {seconds}s
+              </p>
             </div>
-
-            {/* Member Details */}
-            <div className="text-left space-y-3 font-body text-sm w-full md:w-auto">
-              <div>
-                <span className="text-xs text-gym-muted uppercase font-heading">MEMBER NAME</span>
-                <p className="text-xl font-heading text-white uppercase">{profile?.full_name || 'Rahul Sharma'}</p>
+            <div className="flex flex-col gap-3 w-full min-w-0">
+              <div className="flex items-center gap-3">
+                <Avatar src={profile?.avatar_url} name={profile?.full_name} size="lg" />
+                <div className="min-w-0">
+                  <p className="text-lg font-heading text-white break-words">{profile?.full_name}</p>
+                  <p className="text-sm text-gym-primary font-heading">{profile?.member_code || '—'}</p>
+                </div>
               </div>
-
-              <div>
-                <span className="text-xs text-gym-muted uppercase font-heading">MEMBER ID</span>
-                <p className="text-base font-heading text-gym-primary tracking-wider">RV-2026-8842</p>
-              </div>
-
-              <div>
-                <span className="text-xs text-gym-muted uppercase font-heading">PLAN TYPE</span>
-                <p className="text-sm font-medium text-white">Six Month (Full Gym Access + Diet Guidance)</p>
-              </div>
-
-              <div>
-                <span className="text-xs text-gym-muted uppercase font-heading">VALID TILL</span>
-                <p className="text-sm font-medium text-gym-success">November 18, 2026</p>
-              </div>
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className="text-xs text-gym-muted uppercase">Plan</dt>
+                  <dd className="text-white">{membership?.plan_title || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gym-muted uppercase">Valid till</dt>
+                  <dd className={active ? 'text-gym-success' : 'text-gym-danger'}>{membership ? fmt(membership.end_date) : '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gym-muted uppercase">Blood group</dt>
+                  <dd className="text-white">{profile?.blood_group || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gym-muted uppercase">Member type</dt>
+                  <dd className="text-white capitalize">{profile?.membership_tier || 'normal'}</dd>
+                </div>
+              </dl>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gym-border text-xs text-gym-muted flex flex-col sm:flex-row justify-between items-center gap-2">
-            <span>Emergency Contact: <strong>Sunita Sharma (9876500000)</strong></span>
-            <span className="flex items-center gap-1 text-gym-primary"><ShieldCheck className="w-4 h-4" /> Cryptographically Verified</span>
-          </div>
+          <p className="text-xs text-gym-muted flex items-center gap-1.5 border-t border-gym-border pt-3">
+            <ShieldCheck className="w-4 h-4 text-gym-primary" /> Secure pass: the code changes every 30 seconds, so screenshots stop working.
+          </p>
         </Card>
       </div>
     </>

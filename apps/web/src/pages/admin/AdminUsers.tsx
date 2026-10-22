@@ -6,7 +6,8 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Avatar } from '../../components/account/Avatar';
 import { useAuth } from '../../context/AuthContext';
-import { ROLE_LABELS, assignableRoles, canManageUser } from '../../config/roles';
+import { Link } from 'react-router-dom';
+import { ROLE_LABELS, assignableRoles, canManageData, canManageUser } from '../../config/roles';
 import { assignTrainer, listUsers, updateUserRole } from '../../services/portal';
 import type { UserProfile, UserRole } from '../../types';
 
@@ -140,6 +141,11 @@ export const AdminUsers: React.FC = () => {
                           <span>
                             {u.full_name}
                             {u.id === profile?.id && <span className="ml-2 text-[10px] text-gym-primary">(YOU)</span>}
+                            {u.id !== profile?.id && canManageData(profile, u) && (
+                              <Link to={`/admin/members/${u.id}`} className="block text-[11px] text-gym-primary normal-case font-body hover:underline" aria-label={`Open ${u.full_name}`}>
+                                Open dashboard →
+                              </Link>
+                            )}
                           </span>
                         </div>
                       </td>

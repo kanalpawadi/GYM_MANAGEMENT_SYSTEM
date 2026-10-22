@@ -28,6 +28,14 @@ export const DEFAULT_CONTENT = {
     heroTitleTail: 'DEFINE YOURSELF.',
     heroText: `${SITE.tagline} ${SITE.name} is a space where effort meets intent — built for those who refuse to settle.`,
     heroImage: '/images/gym/rushikesh-hero.jpg',
+    heroSlides: [
+      { image: '/images/gym/rushikesh-hero.jpg', caption: 'Train with purpose' },
+      { image: '/images/gym/rushikesh-side-bicep.jpg', caption: 'Build real strength' },
+      { image: '/images/gym/rushikesh-posing-logo.jpg', caption: 'RV Fitness, Narsobawadi' },
+      { image: '/images/gym/rushikesh-warrior.jpg', caption: 'Discipline creates results' },
+      { image: '/images/gym/rushikesh-gym-trophies.jpg', caption: 'Championship coaching' },
+      { image: '/images/gym/rushikesh-bw.jpg', caption: 'Your transformation starts here' },
+    ] as { image: string; caption: string }[],
     highlights: HIGHLIGHTS.map((h) => ({ ...h })),
     philosophyText: `${SITE.name} is a space where effort meets intent — built for those who refuse to settle.`,
   },
@@ -222,16 +230,23 @@ export const DEFAULT_CONTENT = {
 
   offer: {
     barEnabled: true,
-    barLead: 'SPECIAL OFFER: GET FLAT',
-    barHighlight: '20% OFF',
-    barTail: 'ON ANNUAL MEMBERSHIP',
-    couponCode: 'RVFIT20',
     popupEnabled: true,
-    popupTag: 'LIMITED TIME FESTIVE OFFER',
-    popupTitle: 'DIWALI FITNESS BLITZ',
-    popupHighlight: '20% OFF',
-    popupText:
-      'Join RV Fitness this week and receive a 20% flat discount on all 6-month & 12-month memberships plus a complimentary Gym Bag & Shaker!',
+    popupTag: 'LIMITED TIME OFFER',
+    popupText: 'Join RV Fitness now and get the discount on every membership plan. Visit the gym or sign up online to claim it.',
+  },
+
+  schedule: {
+    items: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].flatMap((day: string) => [
+      { day, time: '05:30 AM - 10:00 AM', title: 'Morning Training', category: 'Strength', trainer: '', room: 'Main Floor' },
+      { day, time: '05:00 PM - 10:00 PM', title: 'Evening Training', category: 'Strength', trainer: '', room: 'Main Floor' },
+    ]).concat([{ day: 'Sunday', time: '07:00 AM - 02:00 PM', title: 'Sunday Open Gym', category: 'Open Gym', trainer: '', room: 'Main Floor' }]) as {
+      day: string;
+      time: string;
+      title: string;
+      category: string;
+      trainer: string;
+      room: string;
+    }[],
   },
 
   blog: {
@@ -324,6 +339,17 @@ export const SECTIONS: SectionDef[] = [
     description: 'Big banner at the top of the home page and the "Why RV Fitness" cards.',
     fields: [
       { key: 'heroImage', label: 'Banner background image', type: 'image' },
+      {
+        key: 'heroSlides',
+        label: 'Sliding photos next to the headline (5–6 work best)',
+        type: 'list',
+        itemLabel: 'Photo',
+        titleKey: 'caption',
+        fields: [
+          { key: 'image', label: 'Photo', type: 'image' },
+          { key: 'caption', label: 'Caption (optional)', type: 'text' },
+        ],
+      },
       { key: 'heroTitleLead', label: 'Headline – first part', type: 'text' },
       { key: 'heroTitleHighlight', label: 'Headline – yellow part', type: 'text' },
       { key: 'heroTitleTail', label: 'Headline – last part', type: 'text' },
@@ -486,18 +512,35 @@ export const SECTIONS: SectionDef[] = [
   {
     key: 'offer',
     label: 'Offer Banner',
-    description: 'The strip at the top of every page and the offer pop-up.',
+    description:
+      'The discount strip and pop-up appear only while the discount is ON (Admin → Gym Settings → Discount). The percentage and offer name come from there.',
     fields: [
-      { key: 'barEnabled', label: 'Show the top strip', type: 'boolean' },
-      { key: 'barLead', label: 'Strip – first part', type: 'text' },
-      { key: 'barHighlight', label: 'Strip – yellow part', type: 'text' },
-      { key: 'barTail', label: 'Strip – last part', type: 'text' },
-      { key: 'couponCode', label: 'Coupon code (leave empty to hide)', type: 'text' },
-      { key: 'popupEnabled', label: 'Show the pop-up', type: 'boolean' },
+      { key: 'barEnabled', label: 'Show the strip at the top of every page', type: 'boolean' },
+      { key: 'popupEnabled', label: 'Show the pop-up once per visit', type: 'boolean' },
       { key: 'popupTag', label: 'Pop-up small heading', type: 'text' },
-      { key: 'popupTitle', label: 'Pop-up title', type: 'text' },
-      { key: 'popupHighlight', label: 'Pop-up title – yellow part', type: 'text' },
       { key: 'popupText', label: 'Pop-up text', type: 'textarea' },
+    ],
+  },
+  {
+    key: 'schedule',
+    label: 'Class Schedule',
+    description: 'Sessions on the Schedule page. Day must be Monday–Sunday; category is used for the filter buttons.',
+    fields: [
+      {
+        key: 'items',
+        label: 'Sessions',
+        type: 'list',
+        itemLabel: 'Session',
+        titleKey: 'title',
+        fields: [
+          { key: 'day', label: 'Day (e.g. Monday)', type: 'text' },
+          { key: 'time', label: 'Time (e.g. 06:30 AM - 07:30 AM)', type: 'text' },
+          { key: 'title', label: 'Session name', type: 'text' },
+          { key: 'category', label: 'Category (e.g. Strength, Yoga)', type: 'text' },
+          { key: 'trainer', label: 'Coach (optional)', type: 'text' },
+          { key: 'room', label: 'Location (optional)', type: 'text' },
+        ],
+      },
     ],
   },
   {

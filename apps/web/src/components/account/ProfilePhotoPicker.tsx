@@ -3,6 +3,7 @@ import { Camera, Loader2 } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { uploadAvatar } from '../../services/portal';
+import { PhotoCropper } from './PhotoCropper';
 
 /** The signed-in user's photo with a camera button to upload a new one. */
 export const ProfilePhotoPicker: React.FC<{ size?: 'md' | 'lg' | 'xl'; showError?: boolean }> = ({ size = 'xl', showError = true }) => {
@@ -10,8 +11,20 @@ export const ProfilePhotoPicker: React.FC<{ size?: 'md' | 'lg' | 'xl'; showError
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState<File | null>(null);
+
+  // Choosing a photo opens the crop window first; the cropped photo is uploaded.
+  const chooseFile = (file?: File) => {
+    if (inputRef.current) inputRef.current.value = '';
+    if (!file) return;
+    setError('');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return setError('Please choose a JPG, PNG or WebP photo.');
+    if (file.size > 15 * 1024 * 1024) return setError('Photo is larger than 15 MB. Please choose a smaller one.');
+    setPending(file);
+  };
 
   const handleFile = async (file?: File) => {
+    setPending(null);
     if (!file || !profile) return;
     setError('');
     setUploading(true);
@@ -46,9 +59,10 @@ export const ProfilePhotoPicker: React.FC<{ size?: 'md' | 'lg' | 'xl'; showError
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
           aria-label="Upload profile photo"
-          onChange={(e) => handleFile(e.target.files?.[0])}
+          onChange={(e) => chooseFile(e.target.files?.[0])}
         />
       </div>
+      <PhotoCropper file={pending} onCancel={() => setPending(null)} onCrop={handleFile} />
       {showError && error && <span role="alert" className="text-xs text-gym-danger max-w-[220px] text-center">{error}</span>}
     </div>
   );

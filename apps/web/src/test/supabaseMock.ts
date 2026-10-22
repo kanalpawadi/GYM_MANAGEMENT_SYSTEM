@@ -89,6 +89,12 @@ export function signInWithoutProfile(id = 'orphan-uid') {
 
 let idCounter = 0;
 
+const PLAN_CATALOG: Record<string, { title: string; months: number; price: number }> = {
+  monthly: { title: 'Monthly', months: 1, price: 1500 },
+  'six-month': { title: 'Six Month', months: 6, price: 7500 },
+  yearly: { title: 'Yearly', months: 12, price: 12000 },
+};
+
 class Query implements PromiseLike<{ data: any; error: any }> {
   private filters: ((row: Row) => boolean)[] = [];
   private op: 'select' | 'insert' | 'update' | 'upsert' | 'delete' = 'select';
@@ -97,6 +103,7 @@ class Query implements PromiseLike<{ data: any; error: any }> {
   private max: number | null = null;
   private mode: 'many' | 'single' | 'maybeSingle' = 'many';
   private returnRows = false;
+  private conflict: string[] | null = null;
 
   constructor(private name: string) {}
 
@@ -114,9 +121,18 @@ class Query implements PromiseLike<{ data: any; error: any }> {
     this.payload = patch;
     return this;
   }
-  upsert(rows: Row | Row[]) {
+  upsert(rows: Row | Row[], opts: { onConflict?: string } = {}) {
     this.op = 'upsert';
     this.payload = Array.isArray(rows) ? rows : [rows];
+    this.conflict = opts.onConflict ? opts.onConflict.split(',').map((c) => c.trim()) : null;
+    return this;
+  }
+  gte(column: string, value: any) {
+    this.filters.push((r) => r[column] >= value);
+    return this;
+  }
+  lte(column: string, value: any) {
+    this.filters.push((r) => r[column] <= value);
     return this;
   }
   delete() {
@@ -172,8 +188,8 @@ class Query implements PromiseLike<{ data: any; error: any }> {
       rows.push(...result);
     } else if (this.op === 'upsert') {
       result = this.payload.map((r: Row) => {
-        const key = 'key' in r ? 'key' : 'id';
-        const i = rows.findIndex((x) => x[key] === r[key]);
+        const keys = this.conflict ?? ['key' in r ? 'key' : 'id'];
+        const i = rows.findIndex((x) => keys.every((k) => x[k] === r[k]));
         if (i >= 0) rows[i] = { ...rows[i], ...r };
         else rows.push({ ...r });
         return i >= 0 ? rows[i] : r;
@@ -241,6 +257,7 @@ export function resetSupabaseMock() {
     signUp: vi.fn(async () => ({ data: { session: null, user: { id: 'new-uid' } }, error: null })),
     resetPasswordForEmail: vi.fn(async () => ({ data: {}, error: null })),
     updateUser: vi.fn(async () => ({ data: { user: state.session?.user ?? null }, error: null })),
+    signInWithOAuth: vi.fn(async () => ({ data: { url: 'https://accounts.google.test' }, error: null })),
     signOut: vi.fn(async () => {
       emit('SIGNED_OUT', null);
       return { error: null };
@@ -249,13 +266,87 @@ export function resetSupabaseMock() {
 
   supabaseMock.from = vi.fn((name: string) => new Query(name));
 
-  supabaseMock.rpc = vi.fn(async (fn: string) => {
+  // Simplified stand-ins for the database functions in migration 07.
+  supabaseMock.rpc = vi.fn(async (fn: string, args: Record<string, any> = {}) => {
+    const uid = state.session?.user.id;
+    const ok = (data: unknown) => ({ data, error: null });
+    const fail = (message: string) => ({ data: null, error: { message } });
     if (fn === 'get_my_trainer') {
-      const me = table('profiles').find((p) => p.id === state.session?.user.id);
+      const me = table('profiles').find((p) => p.id === uid);
       const trainer = me?.assigned_trainer_id ? table('profiles').find((p) => p.id === me.assigned_trainer_id) : null;
-      return { data: trainer ? [{ id: trainer.id, full_name: trainer.full_name, email: trainer.email, phone: trainer.phone ?? null, avatar_url: trainer.avatar_url ?? null }] : [], error: null };
+      return ok(trainer ? [{ id: trainer.id, full_name: trainer.full_name, email: trainer.email, phone: trainer.phone ?? null, avatar_url: trainer.avatar_url ?? null }] : []);
     }
-    return { data: null, error: { message: `Unknown function ${fn}` } };
+    if (fn === 'request_plan') {
+      const plan = PLAN_CATALOG[args.p_plan_code];
+      if (!plan) return fail('Unknown plan');
+      if (table('plan_requests').some((r) => r.member_id === uid && r.status === 'pending')) {
+        return fail('You already have a pending request. Please wait for the gym to respond.');
+      }
+      const d = table('settings').find((r) => r.key === 'discount')?.value;
+      const price = d?.enabled ? Math.round((plan.price * (100 - d.percent)) / 100) : plan.price;
+      const row = {
+        id: `req-${++idCounter}`, member_id: uid, plan_code: args.p_plan_code, plan_title: plan.title, months: plan.months,
+        base_price: plan.price, price, request_type: args.p_type === 'change' ? 'change' : 'renew',
+        payment_preference: args.p_payment === 'online' ? 'online' : 'desk', status: 'pending', note: null,
+        decided_at: null, payment_id: null, created_at: new Date().toISOString(),
+      };
+      table('plan_requests').push(row);
+      return ok(row);
+    }
+    if (fn === 'decide_plan_request') {
+      const req = table('plan_requests').find((r) => r.id === args.p_request);
+      if (!req || req.status !== 'pending') return fail('This request is no longer pending');
+      req.status = args.p_approve ? 'approved' : 'rejected';
+      req.note = args.p_note;
+      req.decided_at = new Date().toISOString();
+      if (args.p_approve) {
+        const m = { id: `mem-${++idCounter}`, member_id: req.member_id, plan_code: req.plan_code, plan_title: req.plan_title, price: req.price,
+          start_date: new Date().toLocaleDateString('en-CA'), end_date: new Date(Date.now() + req.months * 30 * 86400000).toLocaleDateString('en-CA'),
+          status: 'active', created_at: new Date().toISOString() };
+        table('memberships').push(m);
+        const paid = !!args.p_mark_paid;
+        const pay = { id: `pay-${++idCounter}`, member_id: req.member_id, membership_id: m.id, plan_code: req.plan_code, plan_title: req.plan_title,
+          amount: req.price, tax_amount: 0, total_amount: req.price, discount_amount: req.base_price - req.price,
+          payment_mode: paid ? args.p_mode : 'online', status: paid ? 'paid' : 'pending',
+          gst_invoice_no: paid ? `RVF-2026-${String(idCounter).padStart(5, '0')}` : null, paid_at: paid ? new Date().toISOString() : null,
+          notes: args.p_note ?? null, created_at: new Date().toISOString() };
+        table('payments').push(pay);
+        req.payment_id = pay.id;
+      }
+      return ok(req);
+    }
+    if (fn === 'my_qr_token') return uid ? ok(`RVF1.${uid}.1.sig`) : fail('Please sign in first');
+    if (fn === 'check_in_by_qr') {
+      const parts = String(args.p_token).split('.');
+      if (parts[0] !== 'RVF1' || parts[3] !== 'sig') return fail('This pass has expired. Ask the member to refresh their QR card.');
+      const member = table('profiles').find((p) => p.id === parts[1]);
+      if (!member) return fail('Member not found');
+      const today = new Date().toLocaleDateString('en-CA');
+      const already = table('attendance').some((a) => a.member_id === member.id && new Date(a.check_in).toLocaleDateString('en-CA') === today);
+      if (!already) table('attendance').push({ id: `att-${++idCounter}`, member_id: member.id, check_in: new Date().toISOString(), method: 'qr', verified_by: uid });
+      const active = table('memberships').some((m) => m.member_id === member.id && m.status === 'active');
+      return ok({ member_id: member.id, full_name: member.full_name, member_code: member.member_code ?? null, avatar_url: member.avatar_url ?? null,
+        status: active ? 'active' : 'inactive', already_checked_in: already });
+    }
+    if (fn === 'self_check_in') {
+      const g = table('settings').find((r) => r.key === 'geofence')?.value;
+      if (!g?.enabled) return fail('Selfie check-in is turned off. Please ask a trainer to scan your QR pass.');
+      table('attendance').push({ id: `att-${++idCounter}`, member_id: uid, check_in: new Date().toISOString(), method: 'selfie', selfie_path: args.p_selfie_path, distance_m: 12 });
+      return ok({ already_checked_in: false, distance_m: 12 });
+    }
+    if (fn === 'decide_content_draft') {
+      const d = table('site_content_drafts').find((r) => r.id === args.p_draft);
+      if (!d) return fail('This change is no longer pending');
+      d.status = args.p_approve ? 'approved' : 'rejected';
+      if (args.p_approve) {
+        const rows = table('site_content');
+        const i = rows.findIndex((r) => r.key === d.key);
+        if (i >= 0) rows[i] = { ...rows[i], value: d.value };
+        else rows.push({ key: d.key, value: d.value });
+      }
+      return ok(null);
+    }
+    return fail(`Unknown function ${fn}`);
   });
 
   supabaseMock.storage = {

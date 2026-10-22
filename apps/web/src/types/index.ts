@@ -12,8 +12,15 @@ export interface UserProfile {
     phone: string;
     relation: string;
   };
-  health_notes?: string;
+  health_notes?: string | null;
   assigned_trainer_id?: string | null;
+  dob?: string | null;
+  blood_group?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  medicines?: string | null;
+  membership_tier?: 'normal' | 'premium';
+  member_code?: string | null;
   created_at: string;
 }
 

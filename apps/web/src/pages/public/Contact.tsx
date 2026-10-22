@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { submitLead } from '../../services/api';
 import { phoneDisplay, telHref, whatsappHref, mapEmbedSrc } from '../../config/site';
 import { useSiteInfo } from '../../content/ContentContext';
+import { VisitBookingForm } from '../../components/home/VisitBookingForm';
 
 export const Contact: React.FC = () => {
   const site = useSiteInfo();
@@ -138,6 +139,9 @@ export const Contact: React.FC = () => {
                 </form>
               )}
             </Card>
+            <div className="mt-8">
+              <VisitBookingForm />
+            </div>
           </div>
 
           {/* Right Contact Details & Map */}

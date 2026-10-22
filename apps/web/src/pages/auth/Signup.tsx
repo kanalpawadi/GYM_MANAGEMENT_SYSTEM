@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { homePathForRole, useAuth } from '../../context/AuthContext';
+import { GoogleButton, OrDivider } from '../../components/account/GoogleButton';
 
 export const Signup: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -73,6 +74,11 @@ export const Signup: React.FC = () => {
               </p>
             </div>
           ) : (
+          <>
+          <div className="flex flex-col gap-4 mb-4">
+            <GoogleButton label="Sign up with Google" />
+            <OrDivider />
+          </div>
           <form onSubmit={handleSignup} className="flex flex-col gap-4">
             <Input
               label="Full Name"
@@ -118,6 +124,7 @@ export const Signup: React.FC = () => {
               Create Account & Register
             </Button>
           </form>
+          </>
           )}
 
           <div className="mt-6 text-center text-xs text-gym-muted">

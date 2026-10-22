@@ -16,34 +16,10 @@ export const MyTrainerCard: React.FC = () => {
 
   useEffect(() => {
     getMyTrainer()
-      .then((data) => {
-        if (data) {
-          setTrainer(data);
-        } else if (profile?.assigned_trainer_id) {
-          setTrainer({
-            id: profile.assigned_trainer_id,
-            full_name: 'Rushikesh Arvind Vagare',
-            email: 'founder@rvfitnessgym.in',
-            phone: '9623372426',
-            avatar_url: '/images/gym/rushikesh-hero.jpg',
-          });
-        }
-      })
-      .catch(() => {
-        if (profile?.assigned_trainer_id) {
-          setTrainer({
-            id: profile.assigned_trainer_id,
-            full_name: 'Rushikesh Arvind Vagare',
-            email: 'founder@rvfitnessgym.in',
-            phone: '9623372426',
-            avatar_url: '/images/gym/rushikesh-hero.jpg',
-          });
-        } else {
-          setError('Could not load trainer details.');
-        }
-      })
+      .then(setTrainer)
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [profile]);
+  }, [profile?.assigned_trainer_id]);
 
   return (
     <Card hoverEffect={false} className="flex flex-col gap-4 border-gym-primary/40" aria-label="My trainer">

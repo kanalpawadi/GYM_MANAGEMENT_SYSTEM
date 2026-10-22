@@ -36,3 +36,30 @@ export async function uploadSiteImage(file: File, folder: string): Promise<strin
   if (error) throw new Error(friendlyError(error.message));
   return bucket.getPublicUrl(path).data.publicUrl;
 }
+
+// ---- Owner's changes waiting for Super Admin approval ---------------------------
+
+export interface ContentDraft {
+  id: string;
+  key: SectionKey;
+  value: Record<string, unknown>;
+  submitted_by: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
+export async function submitDraft(key: SectionKey, value: unknown, userId: string): Promise<void> {
+  const { error } = await supabase.from('site_content_drafts').insert({ key, value, submitted_by: userId, status: 'pending' });
+  if (error) throw new Error(friendlyError(error.message));
+}
+
+export async function listPendingDrafts(): Promise<ContentDraft[]> {
+  const { data, error } = await supabase.from('site_content_drafts').select('*').eq('status', 'pending').order('created_at', { ascending: true });
+  if (error) throw new Error(friendlyError(error.message));
+  return (data ?? []) as ContentDraft[];
+}
+
+export async function decideDraft(id: string, approve: boolean): Promise<void> {
+  const { error } = await supabase.rpc('decide_content_draft', { p_draft: id, p_approve: approve });
+  if (error) throw new Error(friendlyError(error.message));
+}

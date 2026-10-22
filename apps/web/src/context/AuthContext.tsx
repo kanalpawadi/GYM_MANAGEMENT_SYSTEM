@@ -20,6 +20,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<AuthResult>;
+  /** Sign in or sign up with a Google account (Supabase OAuth). New users start as members. */
+  signInWithGoogle: () => Promise<AuthResult>;
   signUp: (input: SignUpInput) => Promise<AuthResult & { needsConfirmation: boolean }>;
   resetPassword: (email: string) => Promise<AuthResult>;
   updatePassword: (password: string) => Promise<AuthResult>;
@@ -105,6 +107,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [applySession]);
 
+  const signInWithGoogle = async (): Promise<AuthResult> => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/login` },
+    });
+    return { error: error?.message ?? null };
+  };
+
   const signIn = async (email: string, password: string): Promise<AuthResult> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
@@ -119,7 +129,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: `${window.location.origin}/login`,
       },
     });
-    return { error: error?.message ?? null, needsConfirmation: !error && !data.session };
+
+    let errorMsg = error?.message ?? null;
+    if (errorMsg) {
+      const lower = errorMsg.toLowerCase();
+      if (lower.includes('profiles_phone_key')) {
+        errorMsg = 'This phone number is already registered to an account. Please sign in or use another number.';
+      } else if (lower.includes('database error saving new user') || lower.includes('duplicate key')) {
+        errorMsg = 'An account with this email or phone number already exists. Please sign in.';
+      }
+    }
+
+    return { error: errorMsg, needsConfirmation: !error && !data.session };
   };
 
   const resetPassword = async (email: string): Promise<AuthResult> => {
@@ -174,6 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         loading,
         signIn,
+        signInWithGoogle,
         signUp,
         resetPassword,
         updatePassword,
@@ -192,3 +214,6 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+
+/** Like useAuth, but returns null outside an AuthProvider (public components rendered on their own). */
+export const useOptionalAuth = () => useContext(AuthContext) ?? null;

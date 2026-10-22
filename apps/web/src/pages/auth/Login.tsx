@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { homePathForRole, useAuth } from '../../context/AuthContext';
+import { GoogleButton, OrDivider } from '../../components/account/GoogleButton';
 import { isDemoAuthEnabled } from '../../context/demoProfiles';
 import { UserRole } from '../../types';
 
@@ -64,6 +65,10 @@ export const Login: React.FC = () => {
             <p className="text-xs text-gym-muted mt-1">Access your membership, QR card, attendance & training plans.</p>
           </div>
 
+          <div className="flex flex-col gap-4 mb-4">
+            <GoogleButton label="Continue with Google" />
+            <OrDivider />
+          </div>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <Input
               label="Email Address"

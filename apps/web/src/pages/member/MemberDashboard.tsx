@@ -1,168 +1,134 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Flame, Clock, Calendar, QrCode, CreditCard, Award, ArrowRight, BookOpen, Activity, CheckCircle2 } from 'lucide-react';
+import { Flame, Award, Activity, QrCode, CreditCard, Utensils, Receipt, CalendarCheck } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { QRCodeSVG } from 'qrcode.react';
 import { MyTrainerCard } from '../../components/account/MyTrainerCard';
+import { TodayPlanPopup } from '../../components/engagement/TodayPlanPopup';
+import { useAuth } from '../../context/AuthContext';
+import { AttendanceRow, Membership, attendanceStreak, currentMembership, daysLeft, listAttendance, listMemberships, localDay } from '../../services/gym';
+import { ProgressEntry, listProgress } from '../../services/portal';
+
+const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+const QUICK_LINKS = [
+  { to: '/portal/digital-card', label: 'Show QR Pass', hint: 'Check in at reception', icon: QrCode },
+  { to: '/portal/plans', label: 'My Diet & Workout', hint: "Today's plan from your trainer", icon: Utensils },
+  { to: '/portal/checkout', label: 'Renew / Change Plan', hint: 'Send a request to the gym', icon: CreditCard },
+  { to: '/portal/payments', label: 'Invoices', hint: 'View and download receipts', icon: Receipt },
+  { to: '/portal/attendance', label: 'Attendance', hint: 'Your check-in history', icon: CalendarCheck },
+  { to: '/portal/progress', label: 'Body Metrics', hint: 'Log weight and photos', icon: Activity },
+];
 
 export const MemberDashboard: React.FC = () => {
+  const { profile } = useAuth();
+  const [membership, setMembership] = useState<Membership | null>(null);
+  const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
+  const [latest, setLatest] = useState<ProgressEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!profile) return;
+    const monthAgo = new Date(Date.now() - 60 * 86400000).toISOString();
+    Promise.all([listMemberships(profile.id), listAttendance({ memberId: profile.id, since: monthAgo }), listProgress(profile.id)])
+      .then(([memberships, att, progress]) => {
+        setMembership(currentMembership(memberships));
+        setAttendance(att);
+        setLatest(progress.find((p) => p.weight_kg != null) ?? null);
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [profile]);
+
+  const left = daysLeft(membership);
+  const thisMonth = localDay().slice(0, 7);
+  const monthVisits = attendance.filter((a) => localDay(a.check_in).startsWith(thisMonth)).length;
+
   return (
     <>
       <Helmet>
         <title>Member Dashboard | RV Fitness</title>
       </Helmet>
 
+      <TodayPlanPopup />
+
       <div className="flex flex-col gap-8">
-        <MyTrainerCard />
+        <div>
+          <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">WELCOME BACK</span>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading text-white uppercase tracking-wide mt-1 break-words">
+            {profile?.full_name?.split(' ')[0] || 'Member'} <span className="text-gym-primary">DASHBOARD</span>
+          </h1>
+        </div>
 
-        {/* KPI Overview Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-gym-primary/40 bg-gradient-to-br from-gym-surface via-gym-surface to-gym-primary/10">
-            <div className="flex justify-between items-start">
+        {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <Card hoverEffect={false} aria-label="Membership">
+            <div className="flex justify-between items-start gap-3">
               <div>
-                <span className="text-xs font-heading text-gym-muted uppercase">ACTIVE MEMBERSHIP</span>
-                <h3 className="text-2xl font-heading text-gym-primary uppercase mt-1">Six Month</h3>
-                <p className="text-xs text-gym-success font-medium mt-1">Ends Nov 18, 2026 (42 Days Left)</p>
+                <span className="text-xs font-heading text-gym-muted uppercase">Membership</span>
+                {loading ? (
+                  <p className="text-sm text-gym-muted mt-2">Loading...</p>
+                ) : membership ? (
+                  <>
+                    <h3 className="text-2xl font-heading text-gym-primary uppercase mt-1">{membership.plan_title || 'Membership'}</h3>
+                    <p className={`text-xs font-medium mt-1 ${left != null && left >= 0 ? 'text-gym-success' : 'text-gym-danger'}`}>
+                      {left != null && left >= 0 ? `Valid till ${fmt(membership.end_date)} (${left} days left)` : `Expired on ${fmt(membership.end_date)}`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-heading text-white uppercase mt-1">No active plan</h3>
+                    <Link to="/portal/checkout" className="text-xs text-gym-primary hover:underline">Request a plan →</Link>
+                  </>
+                )}
               </div>
-              <div className="w-10 h-10 rounded-lg bg-gym-primary/20 text-gym-primary flex items-center justify-center">
-                <Award className="w-6 h-6" />
-              </div>
+              <Award className="w-8 h-8 text-gym-primary shrink-0" />
             </div>
           </Card>
 
-          <Card className="border-amber-500/40 bg-gradient-to-br from-gym-surface via-gym-surface to-amber-500/10">
-            <div className="flex justify-between items-start">
+          <Card hoverEffect={false} aria-label="Attendance streak">
+            <div className="flex justify-between items-start gap-3">
               <div>
-                <span className="text-xs font-heading text-gym-muted uppercase">ATTENDANCE STREAK</span>
-                <h3 className="text-2xl font-heading text-amber-400 uppercase mt-1 flex items-center gap-1.5">
-                  <Flame className="w-6 h-6 text-amber-400 fill-amber-400" /> 14 DAYS
+                <span className="text-xs font-heading text-gym-muted uppercase">Attendance streak</span>
+                <h3 className="text-2xl font-heading text-white uppercase mt-1">{loading ? '—' : `${attendanceStreak(attendance)} days`}</h3>
+                <p className="text-xs text-gym-muted mt-1">{monthVisits} visits this month</p>
+              </div>
+              <Flame className="w-8 h-8 text-gym-primary shrink-0" />
+            </div>
+          </Card>
+
+          <Card hoverEffect={false} aria-label="Body weight">
+            <div className="flex justify-between items-start gap-3">
+              <div>
+                <span className="text-xs font-heading text-gym-muted uppercase">Latest weight</span>
+                <h3 className="text-2xl font-heading text-white uppercase mt-1">
+                  {latest?.weight_kg != null ? `${latest.weight_kg} kg` : profile?.weight_kg != null ? `${profile.weight_kg} kg` : '—'}
                 </h3>
-                <p className="text-xs text-gym-muted mt-1">18 Workouts logged this month</p>
+                <p className="text-xs text-gym-muted mt-1">{latest ? `Logged ${fmt(latest.date)}` : 'Log it under Body Metrics'}</p>
               </div>
-            </div>
-          </Card>
-
-          <Card className="border-gym-border">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-xs font-heading text-gym-muted uppercase">NEXT UPCOMING CLASS</span>
-                <h3 className="text-xl font-heading text-white uppercase mt-1">CrossFit Shred</h3>
-                <p className="text-xs text-gym-primary font-medium mt-1">Tomorrow @ 07:30 AM (Studio B)</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gym-surfaceHover text-gym-primary flex items-center justify-center">
-                <BookOpen className="w-5 h-5" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-gym-border">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-xs font-heading text-gym-muted uppercase">BODY WEIGHT LOGGED</span>
-                <h3 className="text-2xl font-heading text-white uppercase mt-1">74.5 KG</h3>
-                <p className="text-xs text-gym-success font-medium mt-1">-3.5 kg down since join date!</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gym-surfaceHover text-gym-primary flex items-center justify-center">
-                <Activity className="w-5 h-5" />
-              </div>
+              <Activity className="w-8 h-8 text-gym-primary shrink-0" />
             </div>
           </Card>
         </div>
 
-        {/* Quick Check-in QR Banner & Recommended Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          {/* Left Quick QR Card */}
-          <Card className="lg:col-span-5 border-gym-primary flex flex-col items-center text-center p-6 bg-gym-surface">
-            <span className="text-xs font-heading text-gym-primary uppercase tracking-widest mb-1">RECEPTION ENTRY PASS</span>
-            <h4 className="text-xl font-heading text-white uppercase mb-4">DIGITAL MEMBERSHIP CARD</h4>
+        <MyTrainerCard />
 
-            <div className="bg-white p-4 rounded-xl shadow-yellow-glow border-4 border-gym-primary mb-4">
-              <QRCodeSVG
-                value={`RV_MEMBER_TOKEN_8842_${Date.now()}`}
-                size={160}
-                bgColor="#FFFFFF"
-                fgColor="#0A0A0A"
-                level="H"
-              />
-            </div>
-
-            <span className="text-xs font-heading text-gym-muted uppercase">MEMBER CODE: <strong className="text-gym-primary font-bold">RV-2026-8842</strong></span>
-            <p className="text-[11px] text-gym-muted mt-2">
-              Scan at reception scanner terminal for automatic check-in.
-            </p>
-          </Card>
-
-          {/* Right Quick Actions & Announcements */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
-            <Card className="flex-1 border-gym-border flex flex-col justify-between">
-              <div>
-                <h3 className="text-2xl font-heading text-white uppercase mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-gym-primary" /> QUICK MEMBER ACTIONS
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Link to="/portal/checkout">
-                    <div className="p-4 rounded-xl bg-gym-bg border border-gym-border hover:border-gym-primary transition-all flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gym-primary/20 text-gym-primary flex items-center justify-center">
-                        <CreditCard className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-heading text-base text-white uppercase">Renew Membership</h4>
-                        <p className="text-xs text-gym-muted">Apply coupon & pay via UPI</p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link to="/portal/classes">
-                    <div className="p-4 rounded-xl bg-gym-bg border border-gym-border hover:border-gym-primary transition-all flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gym-primary/20 text-gym-primary flex items-center justify-center">
-                        <BookOpen className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-heading text-base text-white uppercase">Book Class Spot</h4>
-                        <p className="text-xs text-gym-muted">Zumba, Yoga, CrossFit</p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link to="/portal/progress">
-                    <div className="p-4 rounded-xl bg-gym-bg border border-gym-border hover:border-gym-primary transition-all flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gym-primary/20 text-gym-primary flex items-center justify-center">
-                        <Activity className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-heading text-base text-white uppercase">Log Weight & Fat</h4>
-                        <p className="text-xs text-gym-muted">Track progress line chart</p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link to="/portal/payments">
-                    <div className="p-4 rounded-xl bg-gym-bg border border-gym-border hover:border-gym-primary transition-all flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gym-primary/20 text-gym-primary flex items-center justify-center">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-heading text-base text-white uppercase">Download Invoices</h4>
-                        <p className="text-xs text-gym-muted">GST receipts PDF format</p>
-                      </div>
-                    </div>
-                  </Link>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {QUICK_LINKS.map(({ to, label, hint, icon: Icon }) => (
+            <Link key={to} to={to}>
+              <Card className="flex items-center gap-4 h-full">
+                <div className="w-11 h-11 rounded-xl bg-gym-primary/10 text-gym-primary flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5" />
                 </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-gym-border bg-gym-bg/60 p-4 rounded-xl flex justify-between items-center">
-                <div>
-                  <span className="text-xs font-heading text-gym-primary uppercase">ANNOUNCEMENT</span>
-                  <p className="text-xs text-white">Diwali Special Bootcamp Starts Next Week! Register at front desk.</p>
+                <div className="min-w-0">
+                  <h3 className="font-heading text-white">{label}</h3>
+                  <p className="text-xs text-gym-muted">{hint}</p>
                 </div>
-                <Link to="/schedule">
-                  <Button variant="outline" size="sm">Details</Button>
-                </Link>
-              </div>
-            </Card>
-          </div>
+              </Card>
+            </Link>
+          ))}
         </div>
       </div>
     </>

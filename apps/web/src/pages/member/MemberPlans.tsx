@@ -16,6 +16,12 @@ const AssignedBy: React.FC<{ name?: string | null; date: string }> = ({ name, da
   </p>
 );
 
+const CommonBadge: React.FC = () => (
+  <p className="text-[11px] text-gym-muted mt-1">
+    Gym plan for all members. Premium members get a personal plan from their trainer.
+  </p>
+);
+
 const EmptyPlan: React.FC<{ what: string }> = ({ what }) => (
   <p className="text-sm text-gym-muted">
     Your trainer hasn't assigned a {what} yet. Ask at the front desk to get a trainer assigned.
@@ -27,6 +33,7 @@ export const MemberPlans: React.FC = () => {
   const { profile } = useAuth();
   const [diet, setDiet] = useState<DietPlan | null>(null);
   const [workout, setWorkout] = useState<WorkoutPlan | null>(null);
+  const [common, setCommon] = useState({ diet: false, workout: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -36,6 +43,7 @@ export const MemberPlans: React.FC = () => {
       .then((plans) => {
         setDiet(plans.diet);
         setWorkout(plans.workout);
+        setCommon({ diet: plans.dietIsCommon, workout: plans.workoutIsCommon });
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
@@ -72,6 +80,7 @@ export const MemberPlans: React.FC = () => {
                   <div>
                     <h3 className="text-xl font-heading text-gym-primary uppercase">{diet.title}</h3>
                     <AssignedBy name={diet.trainer_name} date={diet.created_at} />
+                    {common.diet && <CommonBadge />}
                   </div>
                   <ul className="divide-y divide-gym-border border border-gym-border rounded-lg">
                     {diet.meals.map((meal, i) => (
@@ -104,6 +113,7 @@ export const MemberPlans: React.FC = () => {
                   <div>
                     <h3 className="text-xl font-heading text-gym-primary uppercase">{workout.title}</h3>
                     <AssignedBy name={workout.trainer_name} date={workout.created_at} />
+                    {common.workout && <CommonBadge />}
                   </div>
                   <ul className="divide-y divide-gym-border border border-gym-border rounded-lg">
                     {workout.schedule.map((day, i) => (

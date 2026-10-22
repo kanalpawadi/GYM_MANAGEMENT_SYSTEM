@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Dumbbell, Trophy, Flame, ArrowRight, CheckCircle2, Calendar, Clock, MapPin, UserCheck, TrendingUp } from 'lucide-react';
+import { Dumbbell, Trophy, Flame, ArrowRight, CheckCircle2, Clock, MapPin, UserCheck, TrendingUp } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
 import { FitnessCalculators } from '../../components/calculators/FitnessCalculators';
-import { bookFreeTrial } from '../../services/api';
+import { HeroSlider } from '../../components/home/HeroSlider';
+import { useGymSettings } from '../../content/useGymSettings';
+import { applyDiscount } from '../../services/gym';
 import { formatINR, mapEmbedSrc } from '../../config/site';
 import { useContent, usePlans, useSiteInfo } from '../../content/ContentContext';
 
@@ -18,38 +18,7 @@ export const Home: React.FC = () => {
   const plans = usePlans();
   const home = useContent('home');
   const { principles } = useContent('about');
-  const [trialName, setTrialName] = useState('');
-  const [trialPhone, setTrialPhone] = useState('');
-  const [trialDate, setTrialDate] = useState('');
-  const [trialSlot, setTrialSlot] = useState('Morning (6 AM - 10 AM)');
-  const [trialSuccess, setTrialSuccess] = useState('');
-  const [trialError, setTrialError] = useState('');
-  const [trialLoading, setTrialLoading] = useState(false);
-  const [honeypot, setHoneypot] = useState('');
-
-  const handleTrialSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTrialSuccess('');
-    setTrialError('');
-    setTrialLoading(true);
-
-    try {
-      const res = await bookFreeTrial({
-        name: trialName,
-        phone: trialPhone,
-        preferred_date: trialDate || new Date().toISOString().split('T')[0],
-        preferred_slot: trialSlot,
-        website_honeypot: honeypot,
-      });
-      setTrialSuccess(res.message);
-      setTrialName('');
-      setTrialPhone('');
-    } catch (err: any) {
-      setTrialError(err.message || 'Error booking trial pass');
-    } finally {
-      setTrialLoading(false);
-    }
-  };
+  const { settings } = useGymSettings();
 
   return (
     <>
@@ -115,95 +84,17 @@ export const Home: React.FC = () => {
               <div className="grid grid-cols-3 gap-6 pt-8 border-t border-gym-border/80">
                 {plans.map((plan) => (
                   <div key={plan.id}>
-                    <h4 className="text-3xl font-heading text-gym-primary">{formatINR(plan.price)}</h4>
+                    <h4 className="text-3xl font-heading text-gym-primary">{formatINR(applyDiscount(plan.price, settings.discount))}</h4>
+                    {settings.discount.enabled && <p className="text-xs text-gym-muted line-through">{formatINR(plan.price)}</p>}
                     <p className="text-xs text-gym-muted uppercase font-heading">{plan.title} Plan</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right Hero Form: Instant Free Trial Pass */}
+            {/* Right: auto-scrolling gym photos (edit in Website Editor → Home Page) */}
             <div className="lg:col-span-5">
-              <Card className="border-gym-primary/40 bg-gym-surface/90 shadow-2xl backdrop-blur-md">
-                <div className="flex items-center gap-2 text-gym-primary font-heading text-2xl uppercase mb-1">
-                  <Calendar className="w-6 h-6" /> BOOK YOUR GYM VISIT
-                </div>
-                <p className="text-xs text-gym-muted mb-6">
-                  Visit {site.fullName}, see the equipment and meet our trainers — no obligation.
-                </p>
-
-                {trialSuccess ? (
-                  <div className="bg-gym-success/20 border border-gym-success/40 text-gym-success p-4 rounded-xl text-center space-y-2">
-                    <CheckCircle2 className="w-8 h-8 mx-auto" />
-                    <h4 className="font-heading text-xl uppercase">VISIT BOOKED!</h4>
-                    <p className="text-xs text-white">{trialSuccess}</p>
-                    <Button variant="outline" size="sm" onClick={() => setTrialSuccess('')} className="mt-2">
-                      Book Another
-                    </Button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleTrialSubmit} className="flex flex-col gap-4">
-                    {/* Honeypot field */}
-                    <input
-                      type="text"
-                      name="website_honeypot"
-                      value={honeypot}
-                      onChange={(e) => setHoneypot(e.target.value)}
-                      className="hidden"
-                      tabIndex={-1}
-                      autoComplete="off"
-                    />
-
-                    <Input
-                      label="Full Name"
-                      placeholder="e.g. Rahul Sharma"
-                      value={trialName}
-                      onChange={(e) => setTrialName(e.target.value)}
-                      required
-                    />
-
-                    <Input
-                      label="Mobile Number (10-Digit Indian Phone)"
-                      placeholder="9876543210"
-                      type="tel"
-                      value={trialPhone}
-                      onChange={(e) => setTrialPhone(e.target.value)}
-                      required
-                    />
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        label="Visit Date"
-                        type="date"
-                        value={trialDate}
-                        onChange={(e) => setTrialDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        required
-                      />
-                      <Select
-                        label="Time Slot"
-                        options={[
-                          { label: 'Morning (6 AM - 10 AM)', value: 'Morning (6 AM - 10 AM)' },
-                          { label: 'Afternoon (12 PM - 4 PM)', value: 'Afternoon (12 PM - 4 PM)' },
-                          { label: 'Evening (5 PM - 9 PM)', value: 'Evening (5 PM - 9 PM)' },
-                        ]}
-                        value={trialSlot}
-                        onChange={(e) => setTrialSlot(e.target.value)}
-                      />
-                    </div>
-
-                    {trialError && <span className="text-xs text-gym-danger font-medium">{trialError}</span>}
-
-                    <Button type="submit" variant="primary" isLoading={trialLoading} className="w-full mt-2">
-                      Book My Visit
-                    </Button>
-
-                    <p className="text-[11px] text-gym-muted text-center">
-                      🔒 No payment required. We will call you to confirm.
-                    </p>
-                  </form>
-                )}
-              </Card>
+              <HeroSlider slides={home.heroSlides ?? []} />
             </div>
           </div>
         </section>
@@ -275,7 +166,8 @@ export const Home: React.FC = () => {
                   </div>
                   <h3 className="text-2xl font-heading text-white uppercase">{plan.title}</h3>
                   <div className="my-4">
-                    <span className="text-4xl font-heading text-gym-primary">{formatINR(plan.price)}</span>
+                    <span className="text-4xl font-heading text-gym-primary">{formatINR(applyDiscount(plan.price, settings.discount))}</span>
+                    {settings.discount.enabled && <span className="ml-2 text-sm text-gym-muted line-through">{formatINR(plan.price)}</span>}
                   </div>
                   <ul className="space-y-2">
                     {plan.features.map((f) => (

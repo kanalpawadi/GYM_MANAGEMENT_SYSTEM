@@ -33,7 +33,7 @@ export interface WorkoutPlan {
   created_at: string;
 }
 
-const PROFILE_COLUMNS = 'id, full_name, email, phone, role, avatar_url, assigned_trainer_id, created_at';
+const PROFILE_COLUMNS = 'id, full_name, email, phone, role, avatar_url, assigned_trainer_id, membership_tier, member_code, created_at';
 
 export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -50,6 +50,9 @@ export function friendlyError(message: string): string {
     return 'Cannot reach the database right now. Check your internet connection and try again.';
   }
   if (/profiles_phone_key/i.test(message)) return 'This mobile number is already used by another account.';
+  if (/schema cache|does not exist|could not find the function/i.test(message)) {
+    return 'This feature needs the latest database update. Please run the newest file in supabase/migrations (see docs/ADMIN-SETUP.md).';
+  }
   return message;
 }
 
@@ -77,74 +80,70 @@ export async function assignTrainer(memberId: string, trainerId: string | null):
   unwrap(await supabase.from('profiles').update({ assigned_trainer_id: trainerId }).eq('id', memberId));
 }
 
-/** Members a trainer coaches; admins coaching from the trainer panel see every member. */
-export async function listTrainees(viewer: UserProfile): Promise<UserProfile[]> {
-  const query = supabase.from('profiles').select(PROFILE_COLUMNS).eq('role', 'member');
-  const scoped = viewer.role === 'trainer' ? query.eq('assigned_trainer_id', viewer.id) : query;
-  return unwrap(await scoped.order('full_name', { ascending: true })) ?? [];
+/** All members (role chain: trainers and above can see every member). */
+export async function listTrainees(_viewer?: UserProfile): Promise<UserProfile[]> {
+  return unwrap(await supabase.from('profiles').select(PROFILE_COLUMNS).eq('role', 'member').order('full_name', { ascending: true })) ?? [];
 }
 
 // ---- Diet & workout plans --------------------------------------------------
 
-async function latestActive<T>(tableName: 'diet_plans' | 'workout_plans', memberId: string): Promise<T | null> {
-  const idToQuery = memberId === 'demo-member-id' ? '00000000-0000-4000-8000-000000000001' : memberId;
-  const rows = unwrap(
-    await supabase
-      .from(tableName)
-      .select('*')
-      .eq('member_id', idToQuery)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1),
-  ) as T[] | null;
+async function latestActive<T>(tableName: 'diet_plans' | 'workout_plans', memberId: string | null): Promise<T | null> {
+  let q = supabase.from(tableName).select('*').eq('is_active', true);
+  q = memberId ? q.eq('member_id', memberId) : q.eq('is_common', true);
+  const rows = unwrap(await q.order('created_at', { ascending: false }).limit(1)) as T[] | null;
   return rows?.[0] ?? null;
 }
 
+/**
+ * The plans a member should follow: their personal plan from a trainer if they have
+ * one (premium members), otherwise the gym's common plan (normal members).
+ */
 export async function getActivePlans(memberId: string) {
-  const normalizedId = memberId === 'demo-member-id' ? '00000000-0000-4000-8000-000000000001' : memberId;
-  const [diet, workout] = await Promise.all([
-    latestActive<DietPlan>('diet_plans', normalizedId),
-    latestActive<WorkoutPlan>('workout_plans', normalizedId),
+  const [diet, workout, commonDiet, commonWorkout] = await Promise.all([
+    latestActive<DietPlan>('diet_plans', memberId),
+    latestActive<WorkoutPlan>('workout_plans', memberId),
+    latestActive<DietPlan>('diet_plans', null),
+    latestActive<WorkoutPlan>('workout_plans', null),
   ]);
+  return {
+    diet: diet ?? commonDiet,
+    workout: workout ?? commonWorkout,
+    dietIsCommon: !diet && !!commonDiet,
+    workoutIsCommon: !workout && !!commonWorkout,
+  };
+}
 
-  // Demo fallback: Provide realistic sample plans for demo users when DB has none
-  if (!diet && !workout && (normalizedId === '00000000-0000-4000-8000-000000000001' || normalizedId === 'demo-member-id')) {
-    return {
-      diet: {
-        id: 'd0000000-0000-4000-8000-000000000001',
-        member_id: memberId,
-        title: 'Lean Hypertrophy & Fat Loss Meal Plan',
-        trainer_name: 'Rushikesh Arvind Vagare',
-        meals: [
-          { time: '07:30 AM', name: 'Pre-Workout Fuel', items: '1 Banana, 5 soaked almonds, black coffee' },
-          { time: '09:30 AM', name: 'Post-Workout Breakfast', items: '4 Egg whites (or 100g Paneer bhurji), 2 slices brown bread, 1 scoop whey protein' },
-          { time: '01:30 PM', name: 'Power Lunch', items: '150g grilled chicken / soya chunks, 1 cup brown rice, dal, fresh green salad' },
-          { time: '05:30 PM', name: 'Evening Energy Snack', items: 'Sprouted moong & chana chaat with lemon, roasted makhana' },
-          { time: '08:30 PM', name: 'Dinner & Recovery', items: 'Paneer / fish curry, 2 multigrain rotis, bowl of sauteed vegetables' },
-        ],
-        notes: 'Drink 3.5 to 4 liters of water daily. No refined sugar or fried snacks.',
-        created_at: new Date().toISOString(),
-      },
-      workout: {
-        id: 'w0000000-0000-4000-8000-000000000001',
-        member_id: memberId,
-        title: '5-Day Upper / Lower Strength Split',
-        trainer_name: 'Rushikesh Arvind Vagare',
-        schedule: [
-          { day: 'Monday (Chest & Triceps)', exercises: 'Incline Dumbbell Press (4x10), Flat Barbell Bench (3x8), Cable Flyes (3x12), Tricep Rope Pushdown (4x12)' },
-          { day: 'Tuesday (Back & Biceps)', exercises: 'Lat Pulldown (4x10), Barbell Bent-Over Row (4x8), Seated Cable Row (3x12), Incline Dumbbell Curls (4x10)' },
-          { day: 'Wednesday (Legs & Abs)', exercises: 'Barbell Back Squats (4x8), Leg Press (3x12), Romanian Deadlift (3x10), Hanging Leg Raises (4x15)' },
-          { day: 'Thursday (Shoulders & Arms)', exercises: 'Overhead Barbell Press (4x8), Dumbbell Lateral Raises (4x15), Facepulls (3x15), Hammer Curls (3x12)' },
-          { day: 'Friday (Full Body & HIIT)', exercises: 'Deadlifts (4x6), Pull-ups (3xMax), Dumbbell Lunges (3x12 each), 15 min Assault Bike intervals' },
-          { day: 'Weekend', exercises: 'Active recovery: Light stretching, walking, sauna session' },
-        ],
-        notes: 'Focus on progressive overload. Track weights lifted every week.',
-        created_at: new Date().toISOString(),
-      },
-    };
-  }
-
+/** Only the member's own personal plans (for the trainer's editor). */
+export async function getPersonalPlans(memberId: string) {
+  const [diet, workout] = await Promise.all([
+    latestActive<DietPlan>('diet_plans', memberId),
+    latestActive<WorkoutPlan>('workout_plans', memberId),
+  ]);
   return { diet, workout };
+}
+
+export async function getCommonPlans() {
+  const [diet, workout] = await Promise.all([
+    latestActive<DietPlan>('diet_plans', null),
+    latestActive<WorkoutPlan>('workout_plans', null),
+  ]);
+  return { diet, workout };
+}
+
+async function replaceCommonPlan(tableName: 'diet_plans' | 'workout_plans', row: Record<string, unknown>) {
+  const saved = unwrap(
+    await supabase.from(tableName).insert({ ...row, member_id: null, is_common: true, is_active: true }).select().single(),
+  ) as { id: string };
+  unwrap(await supabase.from(tableName).update({ is_active: false }).eq('is_common', true).eq('is_active', true).neq('id', saved.id));
+  return saved;
+}
+
+export async function saveCommonDietPlan(plan: { title: string; meals: DietMeal[]; notes?: string }, author: UserProfile) {
+  return replaceCommonPlan('diet_plans', { title: plan.title, meals: plan.meals, notes: plan.notes || null, created_by: author.id, trainer_name: author.full_name });
+}
+
+export async function saveCommonWorkoutPlan(plan: { title: string; schedule: WorkoutDay[]; notes?: string }, author: UserProfile) {
+  return replaceCommonPlan('workout_plans', { title: plan.title, schedule: plan.schedule, notes: plan.notes || null, created_by: author.id, trainer_name: author.full_name });
 }
 
 async function replaceActivePlan(tableName: 'diet_plans' | 'workout_plans', memberId: string, row: Record<string, unknown>) {

@@ -7,7 +7,8 @@ import { Input } from '../../components/ui/Input';
 import { useAuth } from '../../context/AuthContext';
 import { useContentState } from '../../content/ContentContext';
 import { DEFAULT_CONTENT, FieldDef, SECTIONS, SectionKey } from '../../content/sections';
-import { resetSection, saveSection, uploadSiteImage } from '../../services/content';
+import { ContentDraft, decideDraft, listPendingDrafts, resetSection, saveSection, submitDraft, uploadSiteImage } from '../../services/content';
+import { loadGymSettings, useGymSettings } from '../../content/useGymSettings';
 
 const PAGE_LINKS: Partial<Record<SectionKey, string>> = {
   site: '/contact',
@@ -21,6 +22,7 @@ const PAGE_LINKS: Partial<Record<SectionKey, string>> = {
   faq: '/faq',
   offer: '/',
   blog: '/blog',
+  schedule: '/schedule',
 };
 
 const textareaClass =
@@ -221,8 +223,39 @@ export const AdminContent: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const { settings } = useGymSettings();
+  const [drafts, setDrafts] = useState<ContentDraft[]>([]);
+  const isSuper = profile?.role === 'super_admin';
+  // Owner edits go live directly unless the Super Admin turned on approval.
+  const needsApproval = profile?.role === 'owner' && settings.content_approval.required;
 
   const section = SECTIONS.find((s) => s.key === active)!;
+
+  const loadDrafts = () => (isSuper ? listPendingDrafts().then(setDrafts).catch(() => undefined) : Promise.resolve());
+  useEffect(() => {
+    loadDrafts();
+    loadGymSettings(true);
+  }, [isSuper]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reviewDraft = (d: ContentDraft) => {
+    if (dirty && !window.confirm('You have unsaved changes. Discard them?')) return;
+    setActive(d.key);
+    setDraft(clone({ ...(DEFAULT_CONTENT[d.key] as Record<string, unknown>), ...d.value }));
+    setDirty(false);
+    setNotice(`Showing the owner's proposed "${SECTIONS.find((s) => s.key === d.key)?.label}" changes. Approve or decline above.`);
+  };
+
+  const decide = async (d: ContentDraft, approve: boolean) => {
+    setError('');
+    try {
+      await decideDraft(d.id, approve);
+      await Promise.all([refresh(), loadDrafts()]);
+      setDirty(false);
+      setNotice(approve ? 'Change approved and published.' : 'Change declined.');
+    } catch (err: any) {
+      setError(err.message || 'Could not update');
+    }
+  };
 
   // Load the section's current content whenever the tab changes or content reloads.
   useEffect(() => {
@@ -250,10 +283,16 @@ export const AdminContent: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      await saveSection(active, draft, profile?.id);
-      setDirty(false);
-      await refresh();
-      setNotice(`${section.label} saved. The website now shows your changes.`);
+      if (needsApproval && profile) {
+        await submitDraft(active, draft, profile.id);
+        setDirty(false);
+        setNotice(`${section.label} changes sent to the Super Admin for approval. They go live once approved.`);
+      } else {
+        await saveSection(active, draft, profile?.id);
+        setDirty(false);
+        await refresh();
+        setNotice(`${section.label} saved. The website now shows your changes.`);
+      }
     } catch (err: any) {
       setError(err.message || 'Could not save');
     } finally {
@@ -266,11 +305,17 @@ export const AdminContent: React.FC = () => {
     setSaving(true);
     setError('');
     try {
-      await resetSection(active);
-      setDirty(false);
-      setDraft(clone(DEFAULT_CONTENT[active]));
-      await refresh();
-      setNotice(`${section.label} reset to the original content.`);
+      if (needsApproval && profile) {
+        await submitDraft(active, DEFAULT_CONTENT[active], profile.id);
+        setDirty(false);
+        setNotice(`Reset of ${section.label} sent to the Super Admin for approval.`);
+      } else {
+        await resetSection(active);
+        setDirty(false);
+        setDraft(clone(DEFAULT_CONTENT[active]));
+        await refresh();
+        setNotice(`${section.label} reset to the original content.`);
+      }
     } catch (err: any) {
       setError(err.message || 'Could not reset');
     } finally {
@@ -286,12 +331,36 @@ export const AdminContent: React.FC = () => {
 
       <div className="flex flex-col gap-6">
         <div>
-          <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">SUPER ADMIN</span>
+          <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">{isSuper ? 'SUPER ADMIN' : 'GYM OWNER'}</span>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl break-words font-heading text-white uppercase tracking-wide mt-1">
             WEBSITE <span className="text-gym-primary">EDITOR</span>
           </h1>
-          <p className="text-xs text-gym-muted mt-1">Change the text and photos on the public website. Changes go live as soon as you save.</p>
+          <p className="text-xs text-gym-muted mt-1">
+            Change the text and photos on the public website.{' '}
+            {needsApproval ? 'Your changes are sent to the Super Admin and go live once approved.' : 'Changes go live as soon as you save.'}
+          </p>
         </div>
+
+        {isSuper && drafts.length > 0 && (
+          <Card hoverEffect={false} className="flex flex-col gap-3 border-amber-400/40" aria-label="Changes waiting for approval">
+            <h3 className="font-heading text-white">Owner changes waiting for your approval ({drafts.length})</h3>
+            <ul className="divide-y divide-gym-border">
+              {drafts.map((d) => (
+                <li key={d.id} className="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="text-sm text-white">
+                    {SECTIONS.find((s) => s.key === d.key)?.label ?? d.key}
+                    <span className="text-xs text-gym-muted"> · {new Date(d.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => reviewDraft(d)}>Review</Button>
+                    <Button variant="primary" size="sm" onClick={() => decide(d, true)}>Approve</Button>
+                    <Button variant="outline" size="sm" onClick={() => decide(d, false)}>Decline</Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <nav className="lg:col-span-3 flex lg:flex-col gap-1 overflow-x-auto no-scrollbar" aria-label="Website sections">
@@ -339,7 +408,7 @@ export const AdminContent: React.FC = () => {
                 Reset to Original
               </Button>
               <Button type="button" variant="primary" onClick={handleSave} isLoading={saving} disabled={!dirty} leftIcon={<Save className="w-4 h-4" />}>
-                {dirty ? 'Save Changes' : 'Saved'}
+                {dirty ? (needsApproval ? 'Submit for Approval' : 'Save Changes') : 'Saved'}
               </Button>
             </div>
           </Card>

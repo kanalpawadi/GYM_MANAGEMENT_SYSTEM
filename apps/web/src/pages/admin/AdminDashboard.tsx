@@ -1,25 +1,96 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Users, UserPlus, Clock, DollarSign, QrCode, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Users, UserPlus, Clock, IndianRupee, QrCode, Inbox } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Link } from 'react-router-dom';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { formatINR } from '../../config/site';
+import { listMembers } from '../../services/gym';
+import {
+  AttendanceRow,
+  Membership,
+  Payment,
+  PlanRequest,
+  listAttendance,
+  listMemberships,
+  listPayments,
+  listPlanRequests,
+  localDay,
+} from '../../services/gym';
+import type { UserProfile } from '../../types';
+
+const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
 export const AdminDashboard: React.FC = () => {
-  const revenueData = [
-    { month: 'May', revenue: 210000, checkins: 1420 },
-    { month: 'Jun', revenue: 245000, checkins: 1650 },
-    { month: 'Jul', revenue: 280000, checkins: 1890 },
-    { month: 'Aug', revenue: 310000, checkins: 2100 },
-    { month: 'Sep', revenue: 325000, checkins: 2250 },
-    { month: 'Oct', revenue: 342500, checkins: 2480 },
+  const [members, setMembers] = useState<UserProfile[]>([]);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
+  const [requests, setRequests] = useState<PlanRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    Promise.all([listMembers(), listMemberships(), listPayments(), listAttendance({ since: midnight.toISOString() }), listPlanRequests({ status: 'pending' })])
+      .then(([m, ms, p, a, r]) => {
+        setMembers(m);
+        setMemberships(ms);
+        setPayments(p);
+        setAttendance(a);
+        setRequests(r);
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const today = localDay();
+  const month = today.slice(0, 7);
+  const in7 = localDay(new Date(Date.now() + 7 * 86400000));
+
+  const stats = useMemo(() => {
+    const active = memberships.filter((m) => m.status === 'active' && m.start_date <= today && m.end_date >= today);
+    const activeIds = new Set(active.map((m) => m.member_id));
+    const expiring = active.filter((m) => m.end_date <= in7).sort((a, b) => a.end_date.localeCompare(b.end_date));
+    const paid = payments.filter((p) => p.status === 'paid');
+    const revenueThisMonth = paid.filter((p) => localDay(p.paid_at || p.created_at).startsWith(month)).reduce((s, p) => s + Number(p.total_amount), 0);
+    const chart = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - (5 - i));
+      const key = localDay(d).slice(0, 7);
+      return {
+        month: d.toLocaleDateString('en-IN', { month: 'short' }),
+        revenue: paid.filter((p) => localDay(p.paid_at || p.created_at).startsWith(key)).reduce((s, p) => s + Number(p.total_amount), 0),
+      };
+    });
+    return {
+      activeMembers: activeIds.size,
+      newJoins: members.filter((m) => localDay(m.created_at).startsWith(month)).length,
+      expiring,
+      revenueThisMonth,
+      chart,
+      duePayments: payments.filter((p) => p.status === 'pending').length,
+    };
+  }, [members, memberships, payments, today, month, in7]);
+
+  const nameOf = (id: string) => members.find((m) => m.id === id);
+
+  const kpis = [
+    { label: 'Active members', value: stats.activeMembers, hint: `${members.length} registered`, icon: Users },
+    { label: 'New this month', value: stats.newJoins, hint: 'Sign-ups', icon: UserPlus },
+    { label: 'Expiring in 7 days', value: stats.expiring.length, hint: 'Remind them to renew', icon: Clock },
+    { label: 'Revenue this month', value: formatINR(stats.revenueThisMonth), hint: `${stats.duePayments} payment(s) due`, icon: IndianRupee },
+    { label: "Today's check-ins", value: attendance.length, hint: 'QR, selfie or desk', icon: QrCode },
+    { label: 'Pending requests', value: requests.length, hint: 'Plan renewals / changes', icon: Inbox },
   ];
 
   return (
     <>
       <Helmet>
-        <title>Admin Overview KPIs | RV Fitness</title>
+        <title>Admin Overview | RV Fitness</title>
       </Helmet>
 
       <div className="flex flex-col gap-8">
@@ -27,114 +98,47 @@ export const AdminDashboard: React.FC = () => {
           <div>
             <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">EXECUTIVE OVERVIEW</span>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl break-words font-heading text-white uppercase tracking-wide mt-1">
-              GYM MANAGEMENT <span className="text-gym-primary">METRICS</span>
+              GYM <span className="text-gym-primary">OVERVIEW</span>
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/admin/members">
-              <Button variant="outline" size="sm" leftIcon={<UserPlus className="w-4 h-4" />}>
-                Add New Member
-              </Button>
+            <Link to="/admin/requests">
+              <Button variant="outline" size="sm" leftIcon={<Inbox className="w-4 h-4" />}>Requests ({requests.length})</Button>
             </Link>
             <Link to="/admin/attendance">
-              <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>
-                QR Scanner Terminal
-              </Button>
+              <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>Scan Attendance</Button>
             </Link>
           </div>
         </div>
 
-        {/* Top 5 KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="border-gym-primary/40 bg-gym-surface">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-heading text-gym-muted uppercase">ACTIVE MEMBERS</span>
-                <h3 className="text-3xl font-heading text-gym-primary mt-1">1,248</h3>
-                <span className="text-[11px] text-gym-success font-medium flex items-center gap-0.5">
-                  <ArrowUpRight className="w-3 h-3" /> +12% vs last month
-                </span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gym-primary/20 text-gym-primary flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
-            </div>
-          </Card>
+        {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
 
-          <Card className="border-gym-border bg-gym-surface">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-heading text-gym-muted uppercase">NEW JOINS (OCT)</span>
-                <h3 className="text-3xl font-heading text-white mt-1">142</h3>
-                <span className="text-[11px] text-gym-success font-medium flex items-center gap-0.5">
-                  <ArrowUpRight className="w-3 h-3" /> +8% target
-                </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {kpis.map(({ label, value, hint, icon: Icon }) => (
+            <Card key={label} hoverEffect={false} aria-label={label}>
+              <div className="flex justify-between items-start gap-3">
+                <div>
+                  <span className="text-xs font-heading text-gym-muted uppercase">{label}</span>
+                  <p className="text-3xl font-heading text-white mt-1">{loading ? '—' : value}</p>
+                  <p className="text-xs text-gym-muted mt-1">{hint}</p>
+                </div>
+                <Icon className="w-7 h-7 text-gym-primary shrink-0" />
               </div>
-              <div className="w-10 h-10 rounded-lg bg-gym-surfaceHover text-gym-primary flex items-center justify-center">
-                <UserPlus className="w-5 h-5" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-amber-500/40 bg-gym-surface">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-heading text-gym-muted uppercase">EXPIRING IN 7 DAYS</span>
-                <h3 className="text-3xl font-heading text-amber-400 mt-1">18</h3>
-                <span className="text-[11px] text-amber-400 font-medium">Auto SMS alert queued</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-gym-success/40 bg-gym-surface">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-heading text-gym-muted uppercase">MONTHLY REVENUE</span>
-                <h3 className="text-3xl font-heading text-gym-success mt-1">₹3,42,500</h3>
-                <span className="text-[11px] text-gym-success font-medium">GST Invoices Verified</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gym-success/20 text-gym-success flex items-center justify-center">
-                <DollarSign className="w-5 h-5" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-gym-border bg-gym-surface">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] font-heading text-gym-muted uppercase">TODAY'S CHECK-INS</span>
-                <h3 className="text-3xl font-heading text-white mt-1">186</h3>
-                <span className="text-[11px] text-gym-muted">Peak hours: 6-8 PM</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gym-surfaceHover text-gym-primary flex items-center justify-center">
-                <QrCode className="w-5 h-5" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
 
-        {/* Charts & Quick Tables Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Revenue Growth Bar Chart */}
-          <Card className="lg:col-span-8 border-gym-border bg-gym-surface p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-xl font-heading text-white uppercase flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-gym-primary" /> MONTHLY REVENUE TREND (INR)
-                </h3>
-                <p className="text-xs text-gym-muted">Gross membership sales including 18% GST tax</p>
-              </div>
-            </div>
-            <div className="h-72 w-full">
+          <Card hoverEffect={false} className="lg:col-span-8">
+            <h3 className="text-lg font-heading text-white mb-4">Revenue (last 6 months)</h3>
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2E2E2E" />
-                  <XAxis dataKey="month" stroke="#B3B3B3" fontSize={12} />
-                  <YAxis stroke="#B3B3B3" fontSize={12} />
+                <BarChart data={stats.chart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272A" vertical={false} />
+                  <XAxis dataKey="month" stroke="#A1A1AA" fontSize={12} tickLine={false} />
+                  <YAxis stroke="#A1A1AA" fontSize={12} tickLine={false} />
                   <Tooltip
+                    formatter={(v: number) => formatINR(v)}
                     contentStyle={{ backgroundColor: '#18181B', borderColor: '#D4AF37', borderRadius: '8px' }}
                     itemStyle={{ color: '#D4AF37' }}
                   />
@@ -144,35 +148,25 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </Card>
 
-          {/* Quick Expiring Members Alert Box */}
-          <Card className="lg:col-span-4 border-amber-500/40 bg-gym-surface flex flex-col justify-between">
-            <div>
-              <h3 className="text-xl font-heading text-amber-400 uppercase mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5" /> EXPIRING MEMBERSHIPS
-              </h3>
-              <div className="space-y-3 text-xs">
-                {[
-                  { name: 'Karan Sharma', plan: 'Monthly', phone: '9876543210', days: 2 },
-                  { name: 'Neha Gupta', plan: 'Six Month', phone: '9876511111', days: 3 },
-                  { name: 'Vikramaditya S', plan: 'Yearly', phone: '9876522222', days: 5 },
-                ].map((m, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-gym-bg border border-gym-border flex justify-between items-center">
-                    <div>
-                      <h4 className="font-heading text-white text-sm uppercase">{m.name}</h4>
-                      <p className="text-gym-muted">{m.plan} | {m.phone}</p>
-                    </div>
-                    <span className="text-amber-400 font-heading text-xs bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/40">
-                      {m.days} DAYS LEFT
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <Link to="/admin/members" className="w-full mt-4">
-              <Button variant="outline" size="sm" className="w-full">
-                View All Expiring Members
-              </Button>
-            </Link>
+          <Card hoverEffect={false} className="lg:col-span-4 flex flex-col gap-3" aria-label="Expiring memberships">
+            <h3 className="text-lg font-heading text-white">Expiring soon</h3>
+            {stats.expiring.length === 0 ? (
+              <p className="text-sm text-gym-muted">{loading ? 'Loading...' : 'No memberships expire in the next 7 days.'}</p>
+            ) : (
+              <ul className="divide-y divide-gym-border">
+                {stats.expiring.slice(0, 8).map((m) => {
+                  const who = nameOf(m.member_id);
+                  return (
+                    <li key={m.id} className="py-2 flex justify-between gap-2 text-sm">
+                      <Link to={`/admin/members/${m.member_id}`} className="text-white hover:text-gym-primary truncate">
+                        {who?.full_name || 'Member'}
+                      </Link>
+                      <span className="text-amber-400 shrink-0">{fmt(m.end_date)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </Card>
         </div>
       </div>

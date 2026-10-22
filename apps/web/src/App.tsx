@@ -41,7 +41,6 @@ import { DigitalCard } from './pages/member/DigitalCard';
 import { MembershipCheckout } from './pages/member/MembershipCheckout';
 import { PaymentHistory } from './pages/member/PaymentHistory';
 import { MemberAttendance } from './pages/member/MemberAttendance';
-import { ClassBooking } from './pages/member/ClassBooking';
 import { MemberProgress } from './pages/member/MemberProgress';
 import { MemberProfile } from './pages/member/MemberProfile';
 import { MemberPlans } from './pages/member/MemberPlans';
@@ -51,7 +50,10 @@ import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminMembers } from './pages/admin/AdminMembers';
 import { AdminLeads } from './pages/admin/AdminLeads';
-import { AdminAttendanceScanner } from './pages/admin/AdminAttendanceScanner';
+import { AdminRequests } from './pages/admin/AdminRequests';
+import { AttendanceScanner } from './pages/staff/AttendanceScanner';
+import { MemberDetail } from './pages/staff/MemberDetail';
+import { InvoicePage } from './pages/InvoicePage';
 import { AdminFinancials } from './pages/admin/AdminFinancials';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminSettings } from './pages/admin/AdminSettings';
@@ -69,6 +71,13 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Back link above the trainer's scanner page.
+const MemberDetailBack: React.FC = () => (
+  <div className="max-w-5xl mx-auto mb-4">
+    <a href="/trainer/dashboard" className="text-sm text-gym-muted hover:text-white">← Back to trainer panel</a>
+  </div>
+);
 
 export const App: React.FC = () => {
   return (
@@ -91,7 +100,6 @@ export const App: React.FC = () => {
                         <Route path="checkout" element={<MembershipCheckout />} />
                         <Route path="payments" element={<PaymentHistory />} />
                         <Route path="attendance" element={<MemberAttendance />} />
-                        <Route path="classes" element={<ClassBooking />} />
                         <Route path="progress" element={<MemberProgress />} />
                         <Route path="profile" element={<MemberProfile />} />
                         <Route path="*" element={<Navigate to="/portal/dashboard" replace />} />
@@ -108,6 +116,8 @@ export const App: React.FC = () => {
                   <ProtectedRoute allowedRoles={TRAINER_PANEL_ROLES}>
                     <Routes>
                       <Route path="dashboard" element={<TrainerDashboard />} />
+                      <Route path="members/:memberId" element={<div className="min-h-screen bg-gym-bg p-4 sm:p-6"><MemberDetail backTo="/trainer/dashboard" /></div>} />
+                      <Route path="scan" element={<div className="min-h-screen bg-gym-bg p-4 sm:p-6"><MemberDetailBack /><AttendanceScanner /></div>} />
                       <Route path="*" element={<Navigate to="/trainer/dashboard" replace />} />
                     </Routes>
                   </ProtectedRoute>
@@ -123,8 +133,10 @@ export const App: React.FC = () => {
                       <Routes>
                         <Route path="dashboard" element={<AdminDashboard />} />
                         <Route path="members" element={<AdminMembers />} />
+                        <Route path="members/:memberId" element={<MemberDetail backTo="/admin/members" />} />
+                        <Route path="requests" element={<AdminRequests />} />
                         <Route path="leads" element={<AdminLeads />} />
-                        <Route path="attendance" element={<AdminAttendanceScanner />} />
+                        <Route path="attendance" element={<AttendanceScanner />} />
                         <Route path="financials" element={<AdminFinancials />} />
                         <Route path="reports" element={<AdminReports />} />
                         <Route path="settings" element={<AdminSettings />} />
@@ -147,6 +159,16 @@ export const App: React.FC = () => {
                         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                       </Routes>
                     </AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* PRINTABLE INVOICE (members see their own; staff see all) */}
+              <Route
+                path="/invoice/:paymentId"
+                element={
+                  <ProtectedRoute allowedRoles={PORTAL_ROLES}>
+                    <InvoicePage />
                   </ProtectedRoute>
                 }
               />

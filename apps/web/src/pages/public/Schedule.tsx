@@ -4,6 +4,7 @@ import { Calendar, Clock, MapPin, User, CheckCircle2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Link } from 'react-router-dom';
+import { useContent } from '../../content/ContentContext';
 
 export const Schedule: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState('Monday');
@@ -11,25 +12,9 @@ export const Schedule: React.FC = () => {
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  const timetable = [
-    { title: 'Power Yoga & Breathwork', category: 'Yoga', day: 'Monday', time: '06:30 AM - 07:30 AM', trainer: 'Priya Patel', room: 'Studio A', capacity: 20 },
-    { title: 'CrossFit Shred & Conditioning', category: 'CrossFit', day: 'Monday', time: '07:30 AM - 08:30 AM', trainer: 'Vikram Sharma', room: 'CrossFit Arena', capacity: 15 },
-    { title: 'Heavy Compound Bodybuilding', category: 'Strength', day: 'Monday', time: '06:00 PM - 07:00 PM', trainer: 'Rahul Verma', room: 'Main Weight Floor', capacity: 12 },
-
-    { title: 'High-Energy Zumba Party', category: 'Zumba', day: 'Tuesday', time: '06:00 PM - 07:00 PM', trainer: 'Ananya Rao', timeSlot: 'Evening', room: 'Dance Studio B', capacity: 25 },
-    { title: 'Morning Mobility & Core Yoga', category: 'Yoga', day: 'Tuesday', time: '07:00 AM - 08:00 AM', trainer: 'Priya Patel', room: 'Studio A', capacity: 20 },
-
-    { title: 'HIIT Tabata Fat Burner', category: 'HIIT', day: 'Wednesday', time: '06:30 AM - 07:30 AM', trainer: 'Vikram Sharma', room: 'CrossFit Arena', capacity: 15 },
-    { title: 'Zumba Dance Cardio', category: 'Zumba', day: 'Wednesday', time: '06:30 PM - 07:30 PM', trainer: 'Ananya Rao', room: 'Dance Studio B', capacity: 25 },
-
-    { title: 'CrossFit Functional Endurance', category: 'CrossFit', day: 'Thursday', time: '07:00 AM - 08:00 AM', trainer: 'Vikram Sharma', room: 'CrossFit Arena', capacity: 15 },
-    { title: 'Ashtanga Vinyasa Flow', category: 'Yoga', day: 'Thursday', time: '06:00 PM - 07:00 PM', trainer: 'Priya Patel', room: 'Studio A', capacity: 20 },
-
-    { title: 'Powerlifting Heavy Bench & Deadlift', category: 'Strength', day: 'Friday', time: '06:00 PM - 07:30 PM', trainer: 'Rahul Verma', room: 'Main Weight Floor', capacity: 10 },
-
-    { title: 'Weekend Zumba Party Explosion', category: 'Zumba', day: 'Saturday', time: '08:00 AM - 09:00 AM', trainer: 'Ananya Rao', room: 'Dance Studio B', capacity: 30 },
-    { title: 'Full Body Foam Rolling & Stretch', category: 'Yoga', day: 'Saturday', time: '09:00 AM - 10:00 AM', trainer: 'Priya Patel', room: 'Studio A', capacity: 25 },
-  ];
+  // Edited in Admin → Website Editor → Class Schedule.
+  const timetable = useContent('schedule').items;
+  const categories = ['All', ...Array.from(new Set(timetable.map((t) => t.category).filter(Boolean)))];
 
   const filtered = timetable.filter(
     (item) => item.day === selectedDay && (selectedCategory === 'All' || item.category === selectedCategory)
@@ -73,7 +58,7 @@ export const Schedule: React.FC = () => {
         {/* Category Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-gym-muted uppercase font-heading mr-2">Category:</span>
-          {['All', 'Yoga', 'Zumba', 'CrossFit', 'Strength', 'HIIT'].map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -108,12 +93,16 @@ export const Schedule: React.FC = () => {
                   </div>
                   <h3 className="text-2xl font-heading text-white uppercase mt-2">{item.title}</h3>
                   <div className="space-y-1.5 text-xs text-gym-muted my-4">
-                    <p className="flex items-center gap-2">
-                      <User className="w-3.5 h-3.5 text-gym-primary" /> Coach: <strong className="text-white">{item.trainer}</strong>
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-gym-primary" /> Location: <strong className="text-white">{item.room}</strong>
-                    </p>
+                    {item.trainer && (
+                      <p className="flex items-center gap-2">
+                        <User className="w-3.5 h-3.5 text-gym-primary" /> Coach: <strong className="text-white">{item.trainer}</strong>
+                      </p>
+                    )}
+                    {item.room && (
+                      <p className="flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-gym-primary" /> Location: <strong className="text-white">{item.room}</strong>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Link to="/contact" className="w-full mt-4">

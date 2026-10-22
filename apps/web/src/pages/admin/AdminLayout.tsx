@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, UserPlus, QrCode, DollarSign, BarChart3, Sliders, LogOut, Dumbbell, ShieldCheck, ChevronLeft, PenSquare, KeyRound } from 'lucide-react';
+import { LayoutDashboard, Users, UserPlus, QrCode, DollarSign, BarChart3, Sliders, LogOut, ShieldCheck, ChevronLeft, PenSquare, KeyRound, Inbox, Dumbbell, Globe } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { ChangePasswordModal } from '../../components/account/ChangePasswordModal';
 import { ProfilePhotoPicker } from '../../components/account/ProfilePhotoPicker';
+import { NotificationBell } from '../../components/account/NotificationBell';
 import { ROLE_LABELS, canEditContent, isAdminRole } from '../../config/roles';
 
 export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -16,12 +17,14 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
   const [showPassword, setShowPassword] = useState(false);
 
   const navItems = [
-    { name: 'Overview KPIs', path: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: 'Member Management', path: '/admin/members', icon: <Users className="w-5 h-5" /> },
-    { name: 'Lead CRM Pipeline', path: '/admin/leads', icon: <UserPlus className="w-5 h-5" /> },
+    { name: 'Overview', path: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { name: 'Members', path: '/admin/members', icon: <Users className="w-5 h-5" /> },
+    { name: 'Plan Requests', path: '/admin/requests', icon: <Inbox className="w-5 h-5" /> },
     { name: 'Attendance Scanner', path: '/admin/attendance', icon: <QrCode className="w-5 h-5" /> },
-    { name: 'Financials & GST', path: '/admin/financials', icon: <DollarSign className="w-5 h-5" /> },
-    { name: 'Reports & Analytics', path: '/admin/reports', icon: <BarChart3 className="w-5 h-5" /> },
+    { name: 'Leads & Visits', path: '/admin/leads', icon: <UserPlus className="w-5 h-5" /> },
+    { name: 'Financials', path: '/admin/financials', icon: <DollarSign className="w-5 h-5" /> },
+    { name: 'Reports', path: '/admin/reports', icon: <BarChart3 className="w-5 h-5" /> },
+    { name: 'Trainer Panel', path: '/trainer/dashboard', icon: <Dumbbell className="w-5 h-5" /> },
     { name: 'Gym Settings', path: '/admin/settings', icon: <Sliders className="w-5 h-5" /> },
     ...(isAdminRole(profile?.role)
       ? [{ name: 'Users & Roles', path: '/admin/users', icon: <ShieldCheck className="w-5 h-5" /> }]
@@ -71,7 +74,7 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
           {/* Navigation Links */}
           <nav className="p-3 space-y-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
               return (
                 <Link
                   key={item.path}
@@ -129,18 +132,17 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
           <div className="hidden sm:flex items-center gap-2 text-xs font-heading text-gym-muted uppercase">
             <span>ADMINISTRATIVE SYSTEM</span>
             <span>/</span>
-            <span className="text-gym-primary font-bold">{location.pathname.replace('/admin/', '').toUpperCase()}</span>
+            <span className="text-gym-primary font-bold">{location.pathname.replace('/admin/', '').split('/')[0].toUpperCase()}</span>
           </div>
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
+            <NotificationBell />
+            <Link to="/" title="Open the public website">
+              <Button variant="ghost" size="sm" leftIcon={<Globe className="w-4 h-4" />}>Website</Button>
+            </Link>
             <Link to="/admin/attendance">
               <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>
-                Launch Scanner
-              </Button>
-            </Link>
-            <Link to="/portal/dashboard">
-              <Button variant="outline" size="sm">
-                Member View
+                Scanner
               </Button>
             </Link>
           </div>

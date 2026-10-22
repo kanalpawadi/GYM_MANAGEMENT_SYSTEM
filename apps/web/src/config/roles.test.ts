@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignableRoles, canEditContent, canManageUser, isAdminRole } from './roles';
+import { assignableRoles, canEditContent, canManageData, canManageUser, isAdminRole } from './roles';
 
 describe('role rules', () => {
   it('only the super admin can hand out owner and super admin access', () => {
@@ -30,11 +30,27 @@ describe('role rules', () => {
     }
   });
 
-  it('only the super admin edits website content by default', () => {
+  it('owner and super admin edit website content; others cannot', () => {
     expect(canEditContent('super_admin')).toBe(true);
-    expect(canEditContent('owner')).toBe(false);
+    expect(canEditContent('owner')).toBe(true);
+    expect(canEditContent('manager')).toBe(false);
     expect(canEditContent('trainer')).toBe(false);
     expect(isAdminRole('super_admin')).toBe(true);
     expect(isAdminRole('receptionist')).toBe(false);
+  });
+
+  it('follows the role chain for viewing and changing dashboards', () => {
+    const sup = { id: 's', role: 'super_admin' as const };
+    const owner = { id: 'o', role: 'owner' as const };
+    const trainer = { id: 't', role: 'trainer' as const };
+    const member = { id: 'm', role: 'member' as const };
+    expect(canManageData(sup, owner)).toBe(true);
+    expect(canManageData(owner, trainer)).toBe(true);
+    expect(canManageData(owner, member)).toBe(true);
+    expect(canManageData(trainer, member)).toBe(true);
+    expect(canManageData(trainer, owner)).toBe(false);
+    expect(canManageData(member, { id: 'm2', role: 'member' })).toBe(false);
+    expect(canManageData(member, member)).toBe(true);
+    expect(canManageData(owner, sup)).toBe(false);
   });
 });

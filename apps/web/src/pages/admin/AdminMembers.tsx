@@ -1,77 +1,82 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Search, Plus, Download, Edit, Trash2, CheckCircle2, UserCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Crown, Download, ExternalLink, Search } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
-import { formatINR } from '../../config/site';
-import { usePlans } from '../../content/ContentContext';
-import { Select } from '../../components/ui/Select';
-import { Modal } from '../../components/ui/Modal';
+import { Avatar } from '../../components/account/Avatar';
+import { Membership, currentMembership, downloadFile, listMembers, listMemberships, localDay, toCsv } from '../../services/gym';
+import type { UserProfile } from '../../types';
+
+const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+type Tier = 'all' | 'premium' | 'normal';
 
 export const AdminMembers: React.FC = () => {
-  const PLANS = usePlans();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [members, setMembers] = useState<UserProfile[]>([]);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [tier, setTier] = useState<Tier>('all');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // New member state
-  const [newMemberName, setNewMemberName] = useState('');
-  const [newMemberPhone, setNewMemberPhone] = useState('');
-  const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberPlan, setNewMemberPlan] = useState('Six Month');
+  useEffect(() => {
+    Promise.all([listMembers(), listMemberships()])
+      .then(([m, ms]) => {
+        setMembers(m);
+        setMemberships(ms);
+      })
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const [members, setMembers] = useState([
-    { id: 'm1', name: 'Rahul Sharma', phone: '9876543210', email: 'rahul@example.com', plan: 'Six Month', status: 'active', endDate: '18 Nov 2026', paid: '₹4,719' },
-    { id: 'm2', name: 'Sneha Reddy', phone: '9876543211', email: 'sneha@example.com', plan: 'Yearly', status: 'active', endDate: '14 May 2027', paid: '₹14,158' },
-    { id: 'm3', name: 'Karan Sharma', phone: '9876543212', email: 'karan@example.com', plan: 'Monthly', status: 'expired', endDate: '02 Oct 2026', paid: '₹1,769' },
-    { id: 'm4', name: 'Amit Verma', phone: '9876543213', email: 'amit@example.com', plan: 'Six Month', status: 'frozen', endDate: '20 Dec 2026', paid: '₹8,258' },
-  ]);
+  const today = localDay();
+  const rows = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return members
+      .filter((m) => tier === 'all' || (m.membership_tier ?? 'normal') === tier)
+      .filter((m) => !term || m.full_name.toLowerCase().includes(term) || (m.phone ?? '').includes(term) || (m.member_code ?? '').toLowerCase().includes(term))
+      .map((m) => {
+        const ms = currentMembership(memberships.filter((x) => x.member_id === m.id));
+        const status = !ms ? 'none' : ms.status === 'active' && ms.end_date >= today ? (ms.start_date > today ? 'upcoming' : 'active') : 'expired';
+        return { m, ms, status };
+      });
+  }, [members, memberships, tier, search, today]);
 
-  const handleExportCSV = () => {
-    const headers = 'ID,Name,Phone,Email,Plan,Status,EndDate,Paid\n';
-    const rows = members.map((m) => `${m.id},${m.name},${m.phone},${m.email},${m.plan},${m.status},${m.endDate},${m.paid}`).join('\n');
-    const blob = new Blob([headers + rows], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `rv_fitness_members_${Date.now()}.csv`;
-    a.click();
+  const counts = {
+    all: members.length,
+    premium: members.filter((m) => m.membership_tier === 'premium').length,
+    normal: members.filter((m) => (m.membership_tier ?? 'normal') === 'normal').length,
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMemberName || !newMemberPhone) return;
+  const exportCsv = () =>
+    downloadFile(
+      `rv-fitness-members-${today}.csv`,
+      toCsv(
+        rows.map(({ m, ms, status }) => ({
+          member_id: m.member_code ?? '',
+          name: m.full_name,
+          phone: m.phone ?? '',
+          email: m.email,
+          type: m.membership_tier ?? 'normal',
+          plan: ms?.plan_title ?? '',
+          valid_till: ms?.end_date ?? '',
+          status,
+        })),
+      ),
+    );
 
-    const newObj = {
-      id: `m${members.length + 1}`,
-      name: newMemberName,
-      phone: newMemberPhone,
-      email: newMemberEmail || `${newMemberName.toLowerCase().replace(/\s+/g, '')}@example.com`,
-      plan: newMemberPlan,
-      status: 'active',
-      endDate: '06 Jan 2027',
-      paid: formatINR(PLANS.find((p) => p.title === newMemberPlan)?.price ?? 0),
-    };
-
-    setMembers([newObj, ...members]);
-    setShowAddModal(false);
-    setNewMemberName('');
-    setNewMemberPhone('');
-    setNewMemberEmail('');
+  const STATUS_STYLE: Record<string, string> = {
+    active: 'text-gym-success border-gym-success/40 bg-gym-success/10',
+    upcoming: 'text-sky-400 border-sky-400/40 bg-sky-400/10',
+    expired: 'text-gym-danger border-gym-danger/40 bg-gym-danger/10',
+    none: 'text-gym-muted border-gym-border',
   };
-
-  const filteredMembers = members.filter((m) => {
-    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.phone.includes(searchTerm);
-    const matchesStatus = statusFilter === 'All' || m.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
 
   return (
     <>
       <Helmet>
-        <title>Member Management | RV Fitness Admin</title>
+        <title>Members | RV Fitness Admin</title>
       </Helmet>
 
       <div className="flex flex-col gap-6">
@@ -83,72 +88,81 @@ export const AdminMembers: React.FC = () => {
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCSV} leftIcon={<Download className="w-4 h-4" />}>
+            <Button variant="outline" size="sm" onClick={exportCsv} leftIcon={<Download className="w-4 h-4" />} disabled={!rows.length}>
               Export CSV
             </Button>
-            <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)} leftIcon={<Plus className="w-4 h-4" />}>
-              Register New Member
-            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-gym-muted -mt-3">New members join by signing up on the website (Google or email). Open a member to change their details, plans or type.</p>
+
+        <div className="flex flex-col md:flex-row gap-3 md:items-center justify-between">
+          <div className="flex rounded-xl border border-gym-border overflow-hidden w-fit" role="tablist">
+            {(['all', 'premium', 'normal'] as Tier[]).map((t) => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tier === t}
+                onClick={() => setTier(t)}
+                className={`px-4 py-2 text-xs font-heading capitalize ${tier === t ? 'bg-gold-gradient text-black' : 'text-gym-muted hover:text-white'}`}
+              >
+                {t === 'all' ? 'All' : t === 'premium' ? 'Premium' : 'Normal'} ({counts[t]})
+              </button>
+            ))}
+          </div>
+          <div className="md:w-80">
+            <Input aria-label="Search members" placeholder="Name, phone or member ID" value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4 text-gym-primary" />} />
           </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-          <div className="sm:col-span-8">
-            <Input
-              placeholder="Search member by name or 10-digit mobile number..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              leftIcon={<Search className="w-4 h-4 text-gym-primary" />}
-            />
-          </div>
-          <div className="sm:col-span-4">
-            <Select
-              options={[
-                { label: 'All Statuses', value: 'All' },
-                { label: 'Active Members', value: 'active' },
-                { label: 'Expired Members', value: 'expired' },
-                { label: 'Frozen Members', value: 'frozen' },
-              ]}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            />
-          </div>
-        </div>
+        {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
 
-        {/* Members Table */}
-        <Card className="p-0 border-gym-border overflow-hidden bg-gym-surface">
+        <Card hoverEffect={false} className="p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gym-text">
-              <thead className="bg-gym-surfaceHover font-heading text-base text-gym-primary uppercase border-b border-gym-border">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gym-surfaceHover font-heading text-gym-primary">
                 <tr>
-                  <th className="p-4">Member Name</th>
-                  <th className="p-4">Phone / Email</th>
-                  <th className="p-4">Assigned Plan</th>
-                  <th className="p-4">Expiry Date</th>
+                  <th className="p-4">Member</th>
+                  <th className="p-4">Contact</th>
+                  <th className="p-4">Plan</th>
+                  <th className="p-4">Valid till</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4 text-right">Open</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gym-border">
-                {filteredMembers.map((m) => (
+                {loading && (
+                  <tr><td colSpan={6} className="p-6 text-center text-gym-muted">Loading members...</td></tr>
+                )}
+                {!loading && rows.length === 0 && (
+                  <tr><td colSpan={6} className="p-6 text-center text-gym-muted">No members found.</td></tr>
+                )}
+                {rows.map(({ m, ms, status }) => (
                   <tr key={m.id} className="hover:bg-gym-surfaceHover/50">
-                    <td className="p-4 font-heading text-white text-base uppercase">{m.name}</td>
                     <td className="p-4">
-                      <p className="text-white font-medium">{m.phone}</p>
-                      <span className="text-xs text-gym-muted">{m.email}</span>
+                      <div className="flex items-center gap-3">
+                        <Avatar src={m.avatar_url} name={m.full_name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-heading text-white flex items-center gap-1.5">
+                            {m.full_name}
+                            {m.membership_tier === 'premium' && <Crown className="w-3.5 h-3.5 text-gym-primary" aria-label="Premium" />}
+                          </p>
+                          <p className="text-xs text-gym-muted">{m.member_code}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="p-4 font-medium">{m.plan}</td>
-                    <td className="p-4 text-gym-muted">{m.endDate}</td>
                     <td className="p-4">
-                      <Badge variant={m.status === 'active' ? 'success' : m.status === 'frozen' ? 'warning' : 'danger'}>
-                        {m.status.toUpperCase()}
-                      </Badge>
+                      <p className="text-white">{m.phone || '—'}</p>
+                      <p className="text-xs text-gym-muted">{m.email}</p>
+                    </td>
+                    <td className="p-4">{ms?.plan_title || '—'}</td>
+                    <td className="p-4 text-gym-muted">{fmt(ms?.end_date)}</td>
+                    <td className="p-4">
+                      <span className={`text-xs font-heading px-2.5 py-1 rounded-full border capitalize ${STATUS_STYLE[status]}`}>{status === 'none' ? 'No plan' : status}</span>
                     </td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => alert(`Viewing profile details for ${m.name}`)} leftIcon={<Edit className="w-4 h-4" />}>
-                        Edit
-                      </Button>
+                      <Link to={`/admin/members/${m.id}`} aria-label={`Open ${m.full_name}`} className="inline-flex items-center gap-1 text-gym-primary text-xs font-heading hover:underline">
+                        <ExternalLink className="w-4 h-4" /> Open
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -156,43 +170,6 @@ export const AdminMembers: React.FC = () => {
             </table>
           </div>
         </Card>
-
-        {/* Add Member Modal */}
-        <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="REGISTER NEW GYM MEMBER">
-          <form onSubmit={handleAddMember} className="flex flex-col gap-4">
-            <Input
-              label="Member Full Name"
-              placeholder="e.g. Anish Kapoor"
-              value={newMemberName}
-              onChange={(e) => setNewMemberName(e.target.value)}
-              required
-            />
-            <Input
-              label="Mobile Number (10-Digit Indian Phone)"
-              type="tel"
-              placeholder="9876543210"
-              value={newMemberPhone}
-              onChange={(e) => setNewMemberPhone(e.target.value)}
-              required
-            />
-            <Input
-              label="Email Address"
-              type="email"
-              placeholder="anish@example.com"
-              value={newMemberEmail}
-              onChange={(e) => setNewMemberEmail(e.target.value)}
-            />
-            <Select
-              label="Select Membership Plan"
-              options={PLANS.map((p) => ({ label: `${p.title} (${formatINR(p.price)})`, value: p.title }))}
-              value={newMemberPlan}
-              onChange={(e) => setNewMemberPlan(e.target.value)}
-            />
-            <Button type="submit" variant="primary" className="mt-2">
-              Confirm Registration & Issue Card
-            </Button>
-          </form>
-        </Modal>
       </div>
     </>
   );

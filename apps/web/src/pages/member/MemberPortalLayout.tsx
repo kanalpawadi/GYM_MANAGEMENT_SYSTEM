@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, QrCode, CreditCard, Receipt, CalendarCheck, BookOpen, Activity, User, LogOut, Utensils, KeyRound } from 'lucide-react';
+import { LayoutDashboard, QrCode, CreditCard, Receipt, CalendarCheck, Activity, User, LogOut, Utensils, KeyRound, Globe } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { ChangePasswordModal } from '../../components/account/ChangePasswordModal';
 import { Avatar } from '../../components/account/Avatar';
+import { NotificationBell } from '../../components/account/NotificationBell';
+import { ROLE_LABELS, roleRank } from '../../config/roles';
 
 export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, logout } = useAuth();
@@ -16,10 +18,9 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
     { name: 'Dashboard', path: '/portal/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { name: 'My Diet & Workout', path: '/portal/plans', icon: <Utensils className="w-4 h-4" /> },
     { name: 'Digital QR Card', path: '/portal/digital-card', icon: <QrCode className="w-4 h-4" /> },
-    { name: 'Renew Plan', path: '/portal/checkout', icon: <CreditCard className="w-4 h-4" /> },
+    { name: 'Renew / Change Plan', path: '/portal/checkout', icon: <CreditCard className="w-4 h-4" /> },
     { name: 'Payments & Invoices', path: '/portal/payments', icon: <Receipt className="w-4 h-4" /> },
-    { name: 'Attendance Streak', path: '/portal/attendance', icon: <CalendarCheck className="w-4 h-4" /> },
-    { name: 'Book Classes', path: '/portal/classes', icon: <BookOpen className="w-4 h-4" /> },
+    { name: 'Attendance', path: '/portal/attendance', icon: <CalendarCheck className="w-4 h-4" /> },
     { name: 'Body Metrics', path: '/portal/progress', icon: <Activity className="w-4 h-4" /> },
     { name: 'My Profile', path: '/portal/profile', icon: <User className="w-4 h-4" /> },
   ];
@@ -42,14 +43,23 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <h2 className="text-lg sm:text-xl font-heading text-white uppercase break-words">{profile?.full_name || 'Member'}</h2>
                 <span className="bg-gym-primary/20 text-gym-primary text-xs font-heading px-2 py-0.5 rounded border border-gym-primary/40 uppercase font-bold">
-                  ACTIVE MEMBER
+                  {profile?.role === 'member' ? `${profile.membership_tier === 'premium' ? 'Premium' : 'Normal'} member` : profile ? ROLE_LABELS[profile.role] : ''}
                 </span>
               </div>
-              <p className="text-xs text-gym-muted">ID: <strong className="text-white">RV-2026-8842</strong> | Phone: {profile?.phone || '—'}</p>
+              <p className="text-xs text-gym-muted">ID: <strong className="text-white">{profile?.member_code || '—'}</strong> | Phone: {profile?.phone || '—'}</p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+            <NotificationBell />
+            <Link to="/" title="Open the public website">
+              <Button variant="ghost" size="sm" leftIcon={<Globe className="w-4 h-4" />}>Website</Button>
+            </Link>
+            {roleRank(profile?.role) >= 2 && (
+              <Link to={roleRank(profile?.role) >= 3 ? '/admin/dashboard' : '/trainer/dashboard'}>
+                <Button variant="outline" size="sm">{roleRank(profile?.role) >= 3 ? 'Admin Panel' : 'Trainer Panel'}</Button>
+              </Link>
+            )}
             <Link to="/portal/digital-card">
               <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>
                 Show QR Pass

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../test/renderWithProviders';
+import { seed } from '../../test/supabaseMock';
 import { Home } from './Home';
 import { Plans } from './Plans';
 import { About } from './About';
@@ -74,33 +75,19 @@ describe('Home page', () => {
     expect(map.getAttribute('src')).toContain('Narsobawadi');
   });
 
-  it('books a gym visit through the API', async () => {
-    const user = userEvent.setup();
-    const fetchSpy = mockFetch({ message: 'Visit booked for Asha.' });
+  it('shows sliding gym photos instead of the visit booking form', () => {
     renderWithProviders(<Home />);
-
-    await user.type(screen.getByLabelText(/full name/i), 'Asha Patil');
-    await user.type(screen.getByLabelText(/mobile number/i), '9623372426');
-    await user.type(screen.getByLabelText(/visit date/i), '2030-01-15');
-    await user.click(screen.getByRole('button', { name: /book my visit/i }));
-
-    expect(await screen.findByText('Visit booked for Asha.')).toBeInTheDocument();
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toMatch(/\/trial-bookings$/);
-    expect(JSON.parse(init.body as string)).toMatchObject({ name: 'Asha Patil', phone: '9623372426' });
+    expect(screen.getByRole('button', { name: /next photo/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /show photo \d/i }).length).toBeGreaterThanOrEqual(5);
+    expect(screen.queryByRole('button', { name: /book my visit/i })).not.toBeInTheDocument();
   });
 
-  it('shows the API error when booking fails', async () => {
+  it('moves the slider with the arrows', async () => {
     const user = userEvent.setup();
-    mockFetch({ error: { message: 'Please enter a valid phone' } }, false);
     renderWithProviders(<Home />);
-
-    await user.type(screen.getByLabelText(/full name/i), 'Asha Patil');
-    await user.type(screen.getByLabelText(/mobile number/i), '1234');
-    await user.type(screen.getByLabelText(/visit date/i), '2030-01-15');
-    await user.click(screen.getByRole('button', { name: /book my visit/i }));
-
-    expect(await screen.findByText('Please enter a valid phone')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show photo 1' })).toHaveAttribute('aria-current', 'true');
+    await user.click(screen.getByRole('button', { name: /next photo/i }));
+    expect(screen.getByRole('button', { name: 'Show photo 2' })).toHaveAttribute('aria-current', 'true');
   });
 });
 
@@ -128,22 +115,19 @@ describe('Plans page', () => {
     expect(screen.queryByText(/GST/)).not.toBeInTheDocument();
   });
 
-  it('applies and rejects coupon codes', async () => {
-    const user = userEvent.setup();
+  it('shows normal prices while the discount is off', async () => {
     renderWithProviders(<Plans />);
-    const input = screen.getByPlaceholderText(/coupon/i);
+    expect((await screen.findAllByText('₹1,500')).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/% OFF all plans/i)).not.toBeInTheDocument();
+  });
 
-    await user.type(input, 'WRONG');
-    await user.click(screen.getByRole('button', { name: /apply code/i }));
-    expect(screen.getByText(/invalid coupon/i)).toBeInTheDocument();
-
-    await user.clear(input);
-    await user.type(input, 'rvfit20');
-    await user.click(screen.getByRole('button', { name: /apply code/i }));
-    expect(screen.getByText(/applied/i)).toBeInTheDocument();
-    expect(screen.getByText('₹1,200')).toBeInTheDocument();
-    expect(screen.getByText('₹6,000')).toBeInTheDocument();
-    expect(screen.getByText('₹9,600')).toBeInTheDocument();
+  it('shows the admin discount on every plan when it is on', async () => {
+    seed('settings', [{ key: 'discount', value: { enabled: true, percent: 20, label: 'Diwali Offer' } }]);
+    renderWithProviders(<Plans />);
+    expect(await screen.findByText('Diwali Offer: 20% OFF all plans')).toBeInTheDocument();
+    expect(screen.getAllByText('₹1,200').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('₹6,000').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('₹9,600').length).toBeGreaterThan(0);
   });
 });
 
@@ -203,5 +187,38 @@ describe('FAQ page', () => {
     // The only match is first in the filtered list, which opens by default.
     expect(screen.getByText('What is included in each membership plan?')).toBeInTheDocument();
     expect(screen.getByText(/Six Month plan adds diet guidance/)).toBeInTheDocument();
+  });
+});
+
+describe('Contact page visit booking', () => {
+  it('books a gym visit through the API', async () => {
+    const user = userEvent.setup();
+    const fetchSpy = mockFetch({ message: 'Visit booked for Asha.' });
+    renderWithProviders(<Contact />);
+    const form = screen.getByRole('region', { name: /book your gym visit/i });
+
+    await user.type(within(form).getByLabelText(/full name/i), 'Asha Patil');
+    await user.type(within(form).getByLabelText(/mobile number/i), '9623372426');
+    await user.type(within(form).getByLabelText(/visit date/i), '2030-01-15');
+    await user.click(within(form).getByRole('button', { name: /book my visit/i }));
+
+    expect(await screen.findByText('Visit booked for Asha.')).toBeInTheDocument();
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/trial-bookings$/);
+    expect(JSON.parse(init.body as string)).toMatchObject({ name: 'Asha Patil', phone: '9623372426' });
+  });
+
+  it('shows the API error when booking fails', async () => {
+    const user = userEvent.setup();
+    mockFetch({ error: { message: 'Please enter a valid phone' } }, false);
+    renderWithProviders(<Contact />);
+    const form = screen.getByRole('region', { name: /book your gym visit/i });
+
+    await user.type(within(form).getByLabelText(/full name/i), 'Asha Patil');
+    await user.type(within(form).getByLabelText(/mobile number/i), '1234');
+    await user.type(within(form).getByLabelText(/visit date/i), '2030-01-15');
+    await user.click(within(form).getByRole('button', { name: /book my visit/i }));
+
+    expect(await screen.findByText('Please enter a valid phone')).toBeInTheDocument();
   });
 });

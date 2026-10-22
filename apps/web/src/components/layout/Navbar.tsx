@@ -4,9 +4,13 @@ import { Dumbbell, Menu, X, Phone, User, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { phoneDisplay, telHref } from '../../config/site';
 import { useSiteInfo } from '../../content/ContentContext';
+import { homePathForRole, useOptionalAuth } from '../../context/AuthContext';
 
 export const Navbar: React.FC = () => {
   const site = useSiteInfo();
+  const auth = useOptionalAuth();
+  const portalPath = auth?.profile ? homePathForRole(auth.profile.role) : '/login';
+  const portalLabel = auth?.profile ? 'My Portal' : null;
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
@@ -77,9 +81,9 @@ export const Navbar: React.FC = () => {
 
         {/* Right Action Buttons */}
         <div className="hidden xl:flex items-center gap-2 shrink-0">
-          <Link to="/login">
+          <Link to={portalPath}>
             <Button variant="ghost" size="sm" className="whitespace-nowrap" leftIcon={<User className="w-4 h-4" />}>
-              Portal Login
+              {portalLabel ?? 'Portal Login'}
             </Button>
           </Link>
           <Link to="/contact">
@@ -127,9 +131,9 @@ export const Navbar: React.FC = () => {
           </nav>
 
           <div className="pt-4 border-t border-gym-border flex flex-col gap-2">
-            <Link to="/login" onClick={() => setIsOpen(false)}>
+            <Link to={portalPath} onClick={() => setIsOpen(false)}>
               <Button variant="outline" className="w-full" leftIcon={<User className="w-5 h-5" />}>
-                Member Login
+                {portalLabel ?? 'Member Login'}
               </Button>
             </Link>
             <Link to="/contact" onClick={() => setIsOpen(false)}>

@@ -1,38 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Check, X, Tag, Sparkles } from 'lucide-react';
+import { Check, X, Sparkles } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { Link } from 'react-router-dom';
 import { formatINR } from '../../config/site';
 import { usePlans, useSiteInfo } from '../../content/ContentContext';
+import { useGymSettings } from '../../content/useGymSettings';
+import { applyDiscount } from '../../services/gym';
 
 export const Plans: React.FC = () => {
   const site = useSiteInfo();
   const plans = usePlans();
   const allFeatures = Array.from(new Set(plans.flatMap((p) => p.features)));
-  const [coupon, setCoupon] = useState('');
-  const [discountPercent, setDiscountPercent] = useState(0);
-  const [couponMessage, setCouponMessage] = useState('');
-
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (coupon.trim().toUpperCase() === 'RVFIT20') {
-      setDiscountPercent(20);
-      setCouponMessage('🎉 Coupon RVFIT20 Applied! 20% Discount Activated.');
-    } else {
-      setDiscountPercent(0);
-      setCouponMessage('❌ Invalid coupon code. Try code: RVFIT20');
-    }
-  };
-
-  const calculateFinal = (price: number) => {
-    if (discountPercent > 0) {
-      return Math.round(price * (1 - discountPercent / 100));
-    }
-    return price;
-  };
+  const { settings } = useGymSettings();
+  const discount = settings.discount;
 
   return (
     <>
@@ -45,39 +27,24 @@ export const Plans: React.FC = () => {
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">TRANSPARENT VALUE</span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl break-words font-heading text-white tracking-wide uppercase mt-1">
-            MEMBERSHIP <span className="text-gym-primary">plans</span>
+            MEMBERSHIP <span className="text-gym-primary">PLANS</span>
           </h1>
           <p className="text-sm text-gym-muted mt-2">
             Choose the plan that fits your fitness journey at {site.fullName}.
           </p>
         </div>
 
-        {/* Coupon Bar */}
-        <Card className="max-w-xl mx-auto w-full bg-gym-surface/80 border-gym-primary/40">
-          <form onSubmit={handleApplyCoupon} className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex-1 w-full">
-              <Input
-                placeholder="Have a coupon? Enter RVFIT20"
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
-                leftIcon={<Tag className="w-4 h-4" />}
-              />
-            </div>
-            <Button type="submit" variant="primary" size="md" className="w-full sm:w-auto">
-              Apply Code
-            </Button>
-          </form>
-          {couponMessage && (
-            <p className={`text-xs font-medium mt-2 text-center ${discountPercent > 0 ? 'text-gym-success' : 'text-gym-danger'}`}>
-              {couponMessage}
-            </p>
-          )}
-        </Card>
+        {discount.enabled && (
+          <Card hoverEffect={false} className="max-w-xl mx-auto w-full border-gym-primary/50 text-center">
+            <p className="font-heading text-gym-primary text-lg">{discount.label}: {discount.percent}% OFF all plans</p>
+            <p className="text-xs text-gym-muted mt-1">The discounted price is applied automatically when you request your plan.</p>
+          </Card>
+        )}
 
         {/* Plan Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((p) => {
-            const finalPrice = calculateFinal(p.price);
+            const finalPrice = applyDiscount(p.price, discount);
             return (
               <Card
                 key={p.id}
@@ -95,12 +62,12 @@ export const Plans: React.FC = () => {
                   <h3 className="text-2xl font-heading text-white uppercase">{p.title}</h3>
                   <p className="text-xs text-gym-muted mt-1">{p.description}</p>
                   <div className="my-4">
-                    {discountPercent > 0 && (
+                    {finalPrice !== p.price && (
                       <span className="text-xs text-gym-muted line-through mr-2">{formatINR(p.price)}</span>
                     )}
                     <span className="text-4xl font-heading text-gym-primary">{formatINR(finalPrice)}</span>
-                    {discountPercent > 0 && (
-                      <span className="text-xs text-gym-success block font-heading">SAVED 20% WITH COUPON</span>
+                    {finalPrice !== p.price && (
+                      <span className="text-xs text-gym-success block font-heading">YOU SAVE {formatINR(p.price - finalPrice)}</span>
                     )}
                   </div>
                   <ul className="space-y-2 border-t border-gym-border pt-3">
