@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, QrCode, CreditCard, Receipt, CalendarCheck, Activity, User, LogOut, Utensils, KeyRound, Globe, MessageCircle, Megaphone } from 'lucide-react';
+import { LayoutDashboard, QrCode, CreditCard, Receipt, CalendarCheck, Activity, User, LogOut, Utensils, KeyRound, Globe, Megaphone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { ChangePasswordModal } from '../../components/account/ChangePasswordModal';
 import { Avatar } from '../../components/account/Avatar';
 import { NotificationBell } from '../../components/account/NotificationBell';
 import { ROLE_LABELS, roleRank } from '../../config/roles';
-import { useUnreadMessages } from '../../components/chat/useUnreadMessages';
+import { MemberChatWidget } from '../../components/chat/MemberChatWidget';
 
 export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const unread = useUnreadMessages();
 
   const navItems = [
     { name: 'Dashboard', path: '/portal/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { name: 'My Diet & Workout', path: '/portal/plans', icon: <Utensils className="w-4 h-4" /> },
-    { name: 'Messages', path: '/portal/messages', icon: <MessageCircle className="w-4 h-4" />, badge: unread },
     { name: 'Notices', path: '/portal/notices', icon: <Megaphone className="w-4 h-4" /> },
     { name: 'Digital QR Card', path: '/portal/digital-card', icon: <QrCode className="w-4 h-4" /> },
     { name: 'Renew / Change Plan', path: '/portal/checkout', icon: <CreditCard className="w-4 h-4" /> },
@@ -96,11 +94,6 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
               >
                 {item.icon}
                 <span>{item.name}</span>
-                {'badge' in item && item.badge ? (
-                  <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-gym-primary text-black text-[11px] font-bold flex items-center justify-center" aria-label={`${item.badge} unread`}>
-                    {item.badge}
-                  </span>
-                ) : null}
               </Link>
             );
           })}
@@ -112,6 +105,7 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
         {children}
       </div>
       <ChangePasswordModal isOpen={showPassword} onClose={() => setShowPassword(false)} />
+      <MemberChatWidget />
     </div>
   );
 };

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Phone, MessageCircle, Mail, UserCheck, MessagesSquare } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Avatar } from './Avatar';
@@ -7,6 +6,7 @@ import { TrainerContact, getMyTrainer } from '../../services/portal';
 import { phoneDisplay, telHref, whatsappHref } from '../../config/site';
 
 import { useAuth } from '../../context/AuthContext';
+import { openMemberChat } from '../chat/MemberChatWidget';
 
 /** Shows a member who their coach is: photo, name and how to reach them. */
 export const MyTrainerCard: React.FC = () => {
@@ -40,12 +40,13 @@ export const MyTrainerCard: React.FC = () => {
           <div className="flex flex-col gap-2 min-w-0">
             <h3 className="text-2xl font-heading text-white uppercase">{trainer.full_name}</h3>
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 text-xs">
-              <Link
-                to={`/portal/messages?with=${trainer.id}`}
+              <button
+                type="button"
+                onClick={() => openMemberChat(trainer.id)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-gradient text-black font-bold"
               >
                 <MessagesSquare className="w-3.5 h-3.5" /> Chat in app
-              </Link>
+              </button>
               {trainer.phone && (
                 <>
                   <a href={telHref(trainer.phone)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gym-border text-white hover:border-gym-primary">

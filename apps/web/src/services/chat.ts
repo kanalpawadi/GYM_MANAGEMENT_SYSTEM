@@ -66,14 +66,36 @@ export async function countUnreadMessages(): Promise<number> {
 export function subscribeToMyMessages(userId: string, onMessage: () => void): () => void {
   const client = supabase as any;
   if (typeof client.channel !== 'function') return () => {};
-  const channel = client
-    .channel(`messages-${userId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${userId}` }, onMessage)
-    .subscribe();
+
+  // One shared channel per user: Supabase reuses channels by name and throws if a second
+  // screen adds callbacks after subscribe(), so every screen listens through this registry.
+  let entry = liveChannels.get(userId);
+  if (!entry) {
+    const listeners = new Set<() => void>();
+    const channel = client
+      .channel(`messages-${userId}-${++channelSeq}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${userId}` }, () =>
+        listeners.forEach((fn) => fn()),
+      )
+      .subscribe();
+    entry = { channel, listeners };
+    liveChannels.set(userId, entry);
+  }
+  entry.listeners.add(onMessage);
+
   return () => {
-    void client.removeChannel?.(channel);
+    const current = liveChannels.get(userId);
+    if (!current) return;
+    current.listeners.delete(onMessage);
+    if (current.listeners.size === 0) {
+      liveChannels.delete(userId);
+      void client.removeChannel?.(current.channel);
+    }
   };
 }
+
+const liveChannels = new Map<string, { channel: unknown; listeners: Set<() => void> }>();
+let channelSeq = 0;
 
 // ---- Notice board ------------------------------------------------------------------------
 

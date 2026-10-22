@@ -45,6 +45,9 @@ The database, logins and photo storage are in **Supabase**, which is already set
    | `NEXT_PUBLIC_SUPABASE_URL` | your Supabase project URL |
    | `SUPABASE_SERVICE_ROLE_KEY` | your Supabase **service_role** key |
    | `ALLOWED_ORIGIN` | the website URL from Step 2, e.g. `https://rv-fitness.vercel.app` (no slash at the end). If you don't know it yet, put a placeholder and update it after Step 2. |
+   | `XAI_API_KEY` | your Grok API key from [console.x.ai](https://console.x.ai), for the member health assistant |
+   | `XAI_MODEL` | optional, the Grok model to use (default `grok-3-mini`) |
+   | `XAI_BASE_URL` | only for a **Groq** key (`gsk_…`): `https://api.groq.com/openai/v1`, with `XAI_MODEL` = `llama-3.3-70b-versatile` |
    | `RAZORPAY_WEBHOOK_SECRET` | only once Razorpay is set up (see Step 5) |
    | `RAZORPAY_KEY_ID` | only once Razorpay is set up |
 

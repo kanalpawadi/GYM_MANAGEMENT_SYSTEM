@@ -99,11 +99,11 @@ describe('One-to-one chat', () => {
     expect(table('messages')).toHaveLength(0);
   });
 
-  it('the member portal menu shows the unread count', async () => {
+  it('the member chat button shows the unread count', async () => {
     seed('messages', [{ id: 'm1', sender_id: 'coach', recipient_id: 'asha', body: 'Drink water', read_at: null, created_at: '2026-10-22T09:00:00Z' }]);
     signInAs(asha);
     renderPortal(<MemberPortalLayout><p>page</p></MemberPortalLayout>);
-    expect(await screen.findByLabelText('1 unread')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Open chat, 1 unread' })).toBeInTheDocument();
   });
 });
 

@@ -26,8 +26,15 @@ const timeLabel = (iso: string) => {
     : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
+interface ChatPanelProps {
+  /** Popup mode: one pane at a time, fills its container, keeps the open chat out of the URL. */
+  compact?: boolean;
+  /** Popup mode: person to open first. */
+  initialWith?: string | null;
+}
+
 /** WhatsApp-style one-to-one chat. Open a person directly with `?with=<profile id>`. */
-export const ChatPanel: React.FC = () => {
+export const ChatPanel: React.FC<ChatPanelProps> = ({ compact = false, initialWith = null }) => {
   const { profile } = useAuth();
   const [params, setParams] = useSearchParams();
   const [contacts, setContacts] = useState<ChatContact[]>([]);
@@ -39,7 +46,9 @@ export const ChatPanel: React.FC = () => {
   const [error, setError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const activeId = params.get('with');
+  const [popupWith, setPopupWith] = useState<string | null>(initialWith);
+  useEffect(() => setPopupWith(initialWith), [initialWith]);
+  const activeId = compact ? popupWith : params.get('with');
   const active = contacts.find((c) => c.id === activeId) ?? null;
   const me = profile?.id;
 
@@ -101,7 +110,8 @@ export const ChatPanel: React.FC = () => {
   const open = (id: string | null) => {
     setError('');
     setDraft('');
-    setParams(id ? { with: id } : {}, { replace: true });
+    if (compact) setPopupWith(id);
+    else setParams(id ? { with: id } : {}, { replace: true });
   };
 
   const send = async (e?: React.FormEvent) => {
@@ -128,9 +138,18 @@ export const ChatPanel: React.FC = () => {
   const lastMineId = [...messages].reverse().find((m) => m.sender_id === me)?.id;
 
   return (
-    <div className="bg-gym-surface border border-gym-border rounded-2xl overflow-hidden flex h-[calc(100vh-220px)] min-h-[460px]">
+    <div
+      className={
+        compact
+          ? 'bg-gym-surface overflow-hidden flex h-full min-h-0'
+          : 'bg-gym-surface border border-gym-border rounded-2xl overflow-hidden flex h-[calc(100vh-220px)] min-h-[460px]'
+      }
+    >
       {/* Contacts */}
-      <aside className={`${active ? 'hidden md:flex' : 'flex'} w-full md:w-80 shrink-0 flex-col border-r border-gym-border`} aria-label="Chats">
+      <aside
+        className={`${active ? (compact ? 'hidden' : 'hidden md:flex') : 'flex'} w-full ${compact ? '' : 'md:w-80 border-r border-gym-border'} shrink-0 flex-col`}
+        aria-label="Chats"
+      >
         <div className="p-3 border-b border-gym-border">
           <label className="relative block">
             <span className="sr-only">Search people</span>
@@ -182,7 +201,7 @@ export const ChatPanel: React.FC = () => {
       </aside>
 
       {/* Conversation */}
-      <section className={`${active ? 'flex' : 'hidden md:flex'} flex-1 min-w-0 flex-col`} aria-label={active ? `Conversation with ${active.full_name}` : 'Conversation'}>
+      <section className={`${active ? 'flex' : compact ? 'hidden' : 'hidden md:flex'} flex-1 min-w-0 flex-col`} aria-label={active ? `Conversation with ${active.full_name}` : 'Conversation'}>
         {!active ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 p-6 text-gym-muted">
             <MessageCircle className="w-10 h-10 text-gym-primary" />
@@ -192,7 +211,7 @@ export const ChatPanel: React.FC = () => {
         ) : (
           <>
             <header className="flex items-center gap-3 px-3 py-2.5 border-b border-gym-border">
-              <button type="button" onClick={() => open(null)} className="md:hidden p-1.5 text-gym-muted hover:text-white" aria-label="Back to chats">
+              <button type="button" onClick={() => open(null)} className={`${compact ? '' : 'md:hidden'} p-1.5 text-gym-muted hover:text-white`} aria-label="Back to chats">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <Avatar src={active.avatar_url} name={active.full_name} size="sm" />

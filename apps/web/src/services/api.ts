@@ -1,4 +1,4 @@
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+export const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL) {
   // Without this the contact and visit-booking forms post to localhost and fail.

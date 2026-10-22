@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Download } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { AttendanceRow, Membership, Payment, downloadFile, listAttendance, listMembers, listMemberships, listPayments, localDay, toCsv } from '../../services/gym';
+import { AttendanceRow, Membership, Payment, listAttendance, listMembers, listMemberships, listPayments, localDay } from '../../services/gym';
+import { ExportMenu } from '../../components/ui/ExportMenu';
 import type { UserProfile } from '../../types';
 
-/** Plan popularity and CSV exports from real gym data. */
+/** Plan popularity and CSV / PDF / HTML exports from real gym data. */
 export const AdminReports: React.FC = () => {
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
@@ -38,36 +37,32 @@ export const AdminReports: React.FC = () => {
   const premium = members.filter((m) => m.membership_tier === 'premium').length;
   const today = localDay();
 
-  const exportPayments = () =>
-    downloadFile(
-      `rv-fitness-payments-${today}.csv`,
-      toCsv(
-        payments.map((p) => ({
-          invoice: p.gst_invoice_no ?? '',
-          member: p.member?.full_name ?? '',
-          member_id: p.member?.member_code ?? '',
-          plan: p.plan_title ?? '',
-          amount: p.total_amount,
-          discount: p.discount_amount,
-          mode: p.payment_mode,
-          status: p.status,
-          date: localDay(p.paid_at || p.created_at),
-        })),
-      ),
-    );
-  const exportAttendance = () =>
-    downloadFile(
-      `rv-fitness-attendance-${today}.csv`,
-      toCsv(
-        attendance.map((a) => ({
-          date: localDay(a.check_in),
-          time: new Date(a.check_in).toLocaleTimeString('en-IN'),
-          member: a.member?.full_name ?? '',
-          member_id: a.member?.member_code ?? '',
-          method: a.method,
-        })),
-      ),
-    );
+  const paymentsSpec = () => ({
+    title: 'Payments & invoices',
+    filename: `rv-fitness-payments-${today}`,
+    rows: payments.map((p) => ({
+      invoice: p.gst_invoice_no ?? '',
+      member: p.member?.full_name ?? '',
+      member_id: p.member?.member_code ?? '',
+      plan: p.plan_title ?? '',
+      amount: p.total_amount,
+      discount: p.discount_amount,
+      mode: p.payment_mode,
+      status: p.status,
+      date: localDay(p.paid_at || p.created_at),
+    })),
+  });
+  const attendanceSpec = () => ({
+    title: 'Attendance (last 90 days)',
+    filename: `rv-fitness-attendance-${today}`,
+    rows: attendance.map((a) => ({
+      date: localDay(a.check_in),
+      time: new Date(a.check_in).toLocaleTimeString('en-IN'),
+      member: a.member?.full_name ?? '',
+      member_id: a.member?.member_code ?? '',
+      method: a.method,
+    })),
+  });
 
   return (
     <>
@@ -107,10 +102,10 @@ export const AdminReports: React.FC = () => {
           </Card>
 
           <Card hoverEffect={false} className="flex flex-col gap-3" aria-label="Exports">
-            <h3 className="font-heading text-white">Download reports (CSV)</h3>
-            <p className="text-xs text-gym-muted">Open in Excel or Google Sheets.</p>
-            <Button variant="primary" onClick={exportPayments} disabled={!payments.length} leftIcon={<Download className="w-4 h-4" />}>Payments & invoices ({payments.length})</Button>
-            <Button variant="outline" onClick={exportAttendance} disabled={!attendance.length} leftIcon={<Download className="w-4 h-4" />}>Attendance, last 90 days ({attendance.length})</Button>
+            <h3 className="font-heading text-white">Download reports</h3>
+            <p className="text-xs text-gym-muted">CSV for Excel / Google Sheets, PDF to print or share, HTML as a web page.</p>
+            <ExportMenu variant="primary" getSpec={paymentsSpec} disabled={!payments.length} label={`Payments & invoices (${payments.length})`} />
+            <ExportMenu getSpec={attendanceSpec} disabled={!attendance.length} label={`Attendance, last 90 days (${attendance.length})`} />
           </Card>
         </div>
       </div>

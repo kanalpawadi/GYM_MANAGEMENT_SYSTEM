@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Crown, Download, ExternalLink, Search } from 'lucide-react';
+import { Crown, ExternalLink, MessageCircle, Search } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
+import { ExportMenu } from '../../components/ui/ExportMenu';
 import { Avatar } from '../../components/account/Avatar';
-import { Membership, currentMembership, downloadFile, listMembers, listMemberships, localDay, toCsv } from '../../services/gym';
+import { Membership, currentMembership, listMembers, listMemberships, localDay } from '../../services/gym';
 import type { UserProfile } from '../../types';
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
@@ -49,22 +49,20 @@ export const AdminMembers: React.FC = () => {
     normal: members.filter((m) => (m.membership_tier ?? 'normal') === 'normal').length,
   };
 
-  const exportCsv = () =>
-    downloadFile(
-      `rv-fitness-members-${today}.csv`,
-      toCsv(
-        rows.map(({ m, ms, status }) => ({
-          member_id: m.member_code ?? '',
-          name: m.full_name,
-          phone: m.phone ?? '',
-          email: m.email,
-          type: m.membership_tier ?? 'normal',
-          plan: ms?.plan_title ?? '',
-          valid_till: ms?.end_date ?? '',
-          status,
-        })),
-      ),
-    );
+  const exportSpec = () => ({
+    title: tier === 'all' ? 'Members' : `${tier === 'premium' ? 'Premium' : 'Normal'} members`,
+    filename: `rv-fitness-members-${today}`,
+    rows: rows.map(({ m, ms, status }) => ({
+      member_id: m.member_code ?? '',
+      name: m.full_name,
+      phone: m.phone ?? '',
+      email: m.email,
+      type: m.membership_tier ?? 'normal',
+      plan: ms?.plan_title ?? '',
+      valid_till: ms?.end_date ?? '',
+      status: status === 'none' ? 'no plan' : status,
+    })),
+  });
 
   const STATUS_STYLE: Record<string, string> = {
     active: 'text-gym-success border-gym-success/40 bg-gym-success/10',
@@ -88,9 +86,7 @@ export const AdminMembers: React.FC = () => {
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={exportCsv} leftIcon={<Download className="w-4 h-4" />} disabled={!rows.length}>
-              Export CSV
-            </Button>
+            <ExportMenu getSpec={exportSpec} label="Export" disabled={!rows.length} />
           </div>
         </div>
         <p className="text-xs text-gym-muted -mt-3">New members join by signing up on the website (Google or email). Open a member to change their details, plans or type.</p>
@@ -126,7 +122,7 @@ export const AdminMembers: React.FC = () => {
                   <th className="p-4">Plan</th>
                   <th className="p-4">Valid till</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Open</th>
+                  <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gym-border">
@@ -159,10 +155,15 @@ export const AdminMembers: React.FC = () => {
                     <td className="p-4">
                       <span className={`text-xs font-heading px-2.5 py-1 rounded-full border capitalize ${STATUS_STYLE[status]}`}>{status === 'none' ? 'No plan' : status}</span>
                     </td>
-                    <td className="p-4 text-right">
-                      <Link to={`/admin/members/${m.id}`} aria-label={`Open ${m.full_name}`} className="inline-flex items-center gap-1 text-gym-primary text-xs font-heading hover:underline">
-                        <ExternalLink className="w-4 h-4" /> Open
-                      </Link>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end gap-4 whitespace-nowrap">
+                        <Link to={`/admin/messages?with=${m.id}`} aria-label={`Message ${m.full_name}`} className="inline-flex items-center gap-1 text-gym-primary text-xs font-heading hover:underline">
+                          <MessageCircle className="w-4 h-4" /> Message
+                        </Link>
+                        <Link to={`/admin/members/${m.id}`} aria-label={`Open ${m.full_name}`} className="inline-flex items-center gap-1 text-gym-primary text-xs font-heading hover:underline">
+                          <ExternalLink className="w-4 h-4" /> Open
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

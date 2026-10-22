@@ -199,9 +199,14 @@ export const TrainerDashboard: React.FC = () => {
                       {m.phone || m.email}
                     </p>
                   </div>
-                  <Link to={`/trainer/members/${m.id}`} aria-label={`Open ${m.full_name}`}>
-                    <Button variant="ghost" size="sm" leftIcon={<ExternalLink className="w-4 h-4" />}>Open</Button>
-                  </Link>
+                  <div className="flex items-center gap-1">
+                    <Link to={`/trainer/messages?with=${m.id}`} aria-label={`Message ${m.full_name}`}>
+                      <Button variant="ghost" size="sm" leftIcon={<MessageCircle className="w-4 h-4" />}>Message</Button>
+                    </Link>
+                    <Link to={`/trainer/members/${m.id}`} aria-label={`Open ${m.full_name}`}>
+                      <Button variant="ghost" size="sm" leftIcon={<ExternalLink className="w-4 h-4" />}>Open</Button>
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-6 pt-4 border-t border-gym-border">

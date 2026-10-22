@@ -210,10 +210,10 @@ Good to know:
 ## 18. Chat and notice board
 ### One-to-one chat
 Where to find it:
-- **Members:** Portal → **Messages**, or **Chat in app** on the My Trainer card
+- **Members:** the round gold **chat button** at the bottom-right of every portal page (it opens a popup), or **Chat in app** on the My Trainer card
 - **Trainers:** Trainer Panel → **Messages**
 - **Staff:** Admin → **Messages**
-- From a member's dashboard, **Message** opens a chat with that member.
+- **Message** on each row of Admin → Members and the Trainer Panel list, or on a member's dashboard, opens a chat with that person.
 
 Who can chat with whom:
 - Members see their own trainer plus the owner, manager and receptionist. They can also reply to anyone who messaged them first.
@@ -235,4 +235,34 @@ How it works:
 - **Notify:** everyone gets a bell notification when a new notice is posted.
 - **Edit and delete:** trainers can unpin or delete their own notices. Managers, the owner and Super Admin can manage any notice.
 - **Expiry:** expired notices disappear for members. Staff still see them, faded, so they can delete them.
+
+## 19. Health assistant (Grok AI)
+Members open the chat button and pick **Health Assistant**. Trainers and staff can use it from the member portal too.
+
+**What it answers:**
+- It only answers fitness, workouts, diet and nutrition, water, sleep, recovery and gym questions.
+- Anything else (homework, coding, news, jokes and so on) gets a polite "I can only help with health and fitness" reply.
+- It is not a doctor. It won't diagnose or change medicines, and for emergencies it tells people to call 108 / 112.
+
+**One-time setup:**
+1. Create an API key at [console.x.ai](https://console.x.ai).
+2. In the **API** project on Vercel → Settings → Environment Variables, add `XAI_API_KEY` = your key. Optionally add `XAI_MODEL` (default `grok-3-mini`).
+3. Redeploy the API project.
+
+**Using Groq instead of Grok** (key starts with `gsk_`, from [console.groq.com](https://console.groq.com/keys)): set `XAI_API_KEY` = the Groq key, `XAI_BASE_URL` = `https://api.groq.com/openai/v1` and `XAI_MODEL` = `llama-3.3-70b-versatile`. No code change is needed.
+
+For local testing, put the same lines in `apps/api/.env`. Never put the key in the website (`apps/web`) or in the code: anyone could read it there.
+
+**Safeguards:**
+- Only signed-in, approved members and staff can use it.
+- Each person is limited to 20 questions per 10 minutes, to keep Grok costs low.
+- The conversation is kept only in that browser tab and is sent to Grok to get an answer.
+
+## 20. Exports (CSV, PDF, HTML)
+**Admin → Members** and both reports in **Admin → Reports** have an **Export** menu:
+- **CSV:** opens in Excel or Google Sheets.
+- **PDF:** opens a print-ready page. Choose **Save as PDF** in the print window. If nothing opens, allow pop-ups for the site.
+- **HTML:** a web page file you can open in any browser or email.
+
+The member export uses your current filter (All / Premium / Normal) and search.
 
