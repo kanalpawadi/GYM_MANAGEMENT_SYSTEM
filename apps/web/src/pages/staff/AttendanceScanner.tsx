@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Camera, CameraOff, CheckCircle2, Search, XCircle } from 'lucide-react';
+import { Camera, CameraOff, CheckCircle2, ImageUp, Search, XCircle } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -10,11 +10,37 @@ import { AttendanceRow, ScanResult, checkInByQr, listAttendance, listMembers, st
 import type { UserProfile } from '../../types';
 
 const READER_ID = 'rv-qr-reader';
+const PHOTO_READER_ID = 'rv-qr-photo-reader';
+
+/** Scan box: 70% of the camera view (a fixed size breaks on small or not-yet-sized views). */
+export const qrBox = (width: number, height: number) => {
+  const side = Math.max(120, Math.floor(Math.min(width, height) * 0.7));
+  return { width: side, height: side };
+};
+
+/** Plain-language reason why the camera could not start. */
+export function cameraErrorMessage(err: unknown): string {
+  const text = `${(err as { name?: string })?.name ?? ''} ${(err as { message?: string })?.message ?? err ?? ''}`;
+  if (typeof window !== 'undefined' && window.isSecureContext === false) {
+    return 'The camera only works on a secure (https://) website. Open the live site, or use the name search below.';
+  }
+  if (/NotAllowed|Permission|denied/i.test(text)) {
+    return 'Camera permission was blocked. Allow the camera for this site in the browser settings (lock icon in the address bar), then press Start camera again.';
+  }
+  if (/NotFound|no camera|Requested device not found|OverconstrainedError/i.test(text)) {
+    return 'No camera was found on this device. Use "Scan from photo" or the name search below.';
+  }
+  if (/NotReadable|in use|Could not start video source/i.test(text)) {
+    return 'The camera is being used by another app. Close it and press Start camera again.';
+  }
+  return 'Could not open the camera. Use "Scan from photo" or the name search below.';
+}
 
 /** Trainers and front desk scan a member's QR pass (or search by name) to mark attendance. */
 export const AttendanceScanner: React.FC = () => {
   const { profile } = useAuth();
   const [scanning, setScanning] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState('');
   const [members, setMembers] = useState<UserProfile[]>([]);
@@ -57,15 +83,48 @@ export const AttendanceScanner: React.FC = () => {
 
   const startCamera = async () => {
     setError('');
+    setResult(null);
+    // Show the camera box first: the scanner measures it when it starts, and a hidden
+    // (0 px wide) box gives it nothing to read, so QR codes are never detected.
+    setStarting(true);
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
     try {
       const { Html5Qrcode } = await import('html5-qrcode');
-      const scanner = new Html5Qrcode(READER_ID);
+      const scanner = new Html5Qrcode(READER_ID, false);
       scannerRef.current = scanner;
-      await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, (text: string) => handleToken(text), () => undefined);
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: qrBox, aspectRatio: 1 },
+        (text: string) => void handleToken(text),
+        () => undefined,
+      );
       setScanning(true);
-    } catch {
-      setError('Could not open the camera. Allow camera access, or use the name search below.');
+    } catch (err) {
+      scannerRef.current = null;
+      setError(cameraErrorMessage(err));
       setScanning(false);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  // Fallback when the live camera doesn't work: take or pick a photo of the member's QR.
+  const scanPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError('');
+    setResult(null);
+    if (scanning) await stopCamera();
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const reader = new Html5Qrcode(PHOTO_READER_ID, false);
+      const text = await reader.scanFile(file, false);
+      reader.clear();
+      busyRef.current = false;
+      await handleToken(text);
+    } catch {
+      setError('No QR code found in that photo. Hold the phone closer so the QR fills the picture, and try again.');
     }
   };
 
@@ -115,12 +174,22 @@ export const AttendanceScanner: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card hoverEffect={false} className="flex flex-col gap-4" aria-label="QR scanner">
             <h3 className="font-heading text-white">Scan member's QR pass</h3>
-            <div id={READER_ID} className={`w-full rounded-xl overflow-hidden bg-black ${scanning ? 'min-h-[260px]' : 'hidden'}`} />
+            <div
+              id={READER_ID}
+              data-testid="qr-camera"
+              className={`w-full max-w-sm mx-auto rounded-xl overflow-hidden bg-black ${scanning || starting ? 'block min-h-[260px]' : 'hidden'}`}
+            />
+            <div id={PHOTO_READER_ID} className="hidden" />
             {scanning ? (
               <Button variant="outline" onClick={stopCamera} leftIcon={<CameraOff className="w-4 h-4" />}>Stop camera</Button>
             ) : (
-              <Button variant="primary" onClick={startCamera} leftIcon={<Camera className="w-4 h-4" />}>Start camera</Button>
+              <Button variant="primary" onClick={startCamera} isLoading={starting} leftIcon={<Camera className="w-4 h-4" />}>Start camera</Button>
             )}
+            <label className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-gym-border text-sm font-heading text-white hover:border-gym-primary cursor-pointer">
+              <ImageUp className="w-4 h-4 text-gym-primary" /> Scan from photo
+              <input type="file" accept="image/*" className="sr-only" onChange={scanPhoto} aria-label="Scan QR from photo" />
+            </label>
+            {scanning && <p className="text-xs text-gym-muted text-center">Hold the member's QR inside the box, about 15–25 cm from the camera.</p>}
 
             {result && (
               <div
