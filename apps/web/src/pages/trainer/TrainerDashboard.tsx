@@ -84,39 +84,55 @@ export const TrainerDashboard: React.FC = () => {
         <div className="bg-gym-surface border border-gym-border p-4 sm:p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0 w-full md:w-auto">
             <ProfilePhotoPicker size="lg" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <span className="text-xs font-heading text-gym-primary uppercase">COACH TERMINAL</span>
-              <h1 className="text-2xl sm:text-3xl font-heading text-white uppercase break-words">{profile?.full_name}</h1>
+              <h1 className="text-xl sm:text-3xl font-heading text-white uppercase break-words">{profile?.full_name}</h1>
               <p className="text-xs text-gym-muted break-all">{profile ? ROLE_LABELS[profile.role] : ''} · {profile?.email}</p>
             </div>
+            <div className="md:hidden self-start">
+              <NotificationBell />
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
-            <NotificationBell />
-            <Link to="/trainer/scan">
-              <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>Scan Attendance</Button>
-            </Link>
-            <Link to="/trainer/messages">
-              <Button variant="outline" size="sm" leftIcon={<MessageCircle className="w-4 h-4" />}>
-                {unread ? `Messages (${unread})` : 'Messages'}
-              </Button>
-            </Link>
-            <Link to="/trainer/notices">
-              <Button variant="outline" size="sm" leftIcon={<Megaphone className="w-4 h-4" />}>Notices</Button>
-            </Link>
-            <Link to="/">
-              <Button variant="ghost" size="sm" leftIcon={<Globe className="w-4 h-4" />}>Website</Button>
-            </Link>
-            {isStaffRole(profile?.role) && (
-              <Link to="/admin/dashboard">
-                <Button variant="outline" size="sm">Admin Panel</Button>
+          <div className="w-full md:w-auto flex flex-col gap-2">
+            {/* Main actions: a tidy 3-column grid on phones, one row on wider screens. */}
+            <div className="grid grid-cols-3 md:flex md:flex-wrap md:items-center md:justify-end gap-2">
+              <span className="hidden md:inline-flex">
+                <NotificationBell />
+              </span>
+              <Link to="/trainer/scan" className="contents md:block">
+                <Button variant="primary" size="sm" className="w-full px-2 md:px-4" leftIcon={<QrCode className="w-4 h-4" />}>
+                  <span className="md:hidden">Scan</span>
+                  <span className="hidden md:inline">Scan Attendance</span>
+                </Button>
               </Link>
-            )}
-            <Button variant="ghost" size="sm" onClick={() => setShowPassword(true)} leftIcon={<KeyRound className="w-4 h-4" />}>
-              Change Password
-            </Button>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-gym-danger">
-              Sign Out
-            </Button>
+              <Link to="/trainer/messages" className="contents md:block">
+                <Button variant="outline" size="sm" className="w-full px-2 md:px-4" leftIcon={<MessageCircle className="w-4 h-4" />}>
+                  {unread ? `Chat (${unread})` : <><span className="md:hidden">Chat</span><span className="hidden md:inline">Messages</span></>}
+                </Button>
+              </Link>
+              <Link to="/trainer/notices" className="contents md:block">
+                <Button variant="outline" size="sm" className="w-full px-2 md:px-4" leftIcon={<Megaphone className="w-4 h-4" />}>
+                  Notices
+                </Button>
+              </Link>
+            </div>
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-x-1 gap-y-1">
+              <Link to="/">
+                <Button variant="ghost" size="sm" leftIcon={<Globe className="w-4 h-4" />}>Website</Button>
+              </Link>
+              {isStaffRole(profile?.role) && (
+                <Link to="/admin/dashboard">
+                  <Button variant="ghost" size="sm">Admin Panel</Button>
+                </Link>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowPassword(true)} leftIcon={<KeyRound className="w-4 h-4" />}>
+                <span className="sm:hidden">Password</span>
+                <span className="hidden sm:inline">Change Password</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={logout} className="text-gym-danger">
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
 

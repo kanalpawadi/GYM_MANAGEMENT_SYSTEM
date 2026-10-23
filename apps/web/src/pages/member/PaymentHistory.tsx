@@ -6,10 +6,12 @@ import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../config/site';
 import { Payment, listPayments } from '../../services/gym';
+import { useCardTable } from '../../utils/useCardTable';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export const PaymentHistory: React.FC = () => {
+  const paymentsTable = useCardTable();
   const { profile } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export const PaymentHistory: React.FC = () => {
 
         <Card hoverEffect={false} className="p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table ref={paymentsTable} className="table-cards w-full text-left text-sm">
               <thead className="bg-gym-surfaceHover font-heading text-gym-primary">
                 <tr>
                   <th className="p-4">Invoice</th>

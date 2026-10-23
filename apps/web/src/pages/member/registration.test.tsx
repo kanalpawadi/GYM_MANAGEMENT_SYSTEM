@@ -43,7 +43,7 @@ describe('First sign-in registration', () => {
 
     expect(await screen.findByRole('heading', { name: /member registration/i })).toBeInTheDocument();
     await user.type(screen.getByLabelText(/contact number/i), '9822011111');
-    await user.type(screen.getByLabelText(/date of birth/i), '1999-02-01');
+    await user.type(screen.getByLabelText(/^date of birth$/i), '01021999');
     await user.click(screen.getByRole('button', { name: /submit for approval/i }));
 
     expect(await screen.findByRole('heading', { name: /waiting for approval/i })).toBeInTheDocument();

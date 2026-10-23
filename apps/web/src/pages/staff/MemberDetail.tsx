@@ -29,6 +29,7 @@ import {
   updateProfile,
 } from '../../services/gym';
 import type { UserProfile } from '../../types';
+import { useCardTable } from '../../utils/useCardTable';
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 type Tab = 'overview' | 'profile' | 'plans' | 'progress' | 'payments' | 'attendance';
@@ -43,6 +44,7 @@ const TABS: [Tab, string][] = [
 
 /** A member's full dashboard for trainers and admins (role chain). */
 export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
+  const paymentsTable = useCardTable();
   const { memberId } = useParams<{ memberId: string }>();
   const { profile: me } = useAuth();
   const [member, setMember] = useState<UserProfile | null>(null);
@@ -284,7 +286,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
         {tab === 'payments' && (
           <Card hoverEffect={false} className="p-0 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table ref={paymentsTable} className="table-cards w-full text-left text-sm">
                 <thead className="bg-gym-surfaceHover font-heading text-gym-primary">
                   <tr>
                     <th className="p-3">Invoice</th>

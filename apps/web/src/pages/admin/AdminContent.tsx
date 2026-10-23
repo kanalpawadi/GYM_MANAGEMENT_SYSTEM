@@ -363,7 +363,22 @@ export const AdminContent: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <nav className="lg:col-span-3 flex lg:flex-col gap-1 overflow-x-auto no-scrollbar" aria-label="Website sections">
+          {/* Phones and tablets: pick the section from a dropdown instead of a long sideways strip. */}
+          <label className="lg:hidden flex flex-col gap-1.5 text-sm font-medium text-gym-muted">
+            Section to edit
+            <select
+              value={active}
+              onChange={(e) => switchTo(e.target.value as typeof active)}
+              className="w-full min-h-[44px] bg-black text-white border border-gym-border rounded-xl px-3 text-sm font-heading uppercase focus:outline-none focus:border-gym-primary"
+            >
+              {SECTIONS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <nav className="hidden lg:flex lg:col-span-3 flex-col gap-1" aria-label="Website sections">
             {SECTIONS.map((s) => (
               <button
                 key={s.key}

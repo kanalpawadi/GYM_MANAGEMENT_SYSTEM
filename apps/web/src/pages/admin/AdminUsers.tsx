@@ -10,9 +10,11 @@ import { Link } from 'react-router-dom';
 import { ROLE_LABELS, assignableRoles, canManageData, canManageUser } from '../../config/roles';
 import { assignTrainer, listUsers, updateUserRole } from '../../services/portal';
 import type { UserProfile, UserRole } from '../../types';
+import { useCardTable } from '../../utils/useCardTable';
 
 // Staff and owners sign up like members; an admin then gives them their role here.
 export const AdminUsers: React.FC = () => {
+  const usersTable = useCardTable();
   const { profile } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,7 @@ export const AdminUsers: React.FC = () => {
 
         <Card className="p-0 border-gym-border overflow-hidden bg-gym-surface" hoverEffect={false}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gym-text">
+            <table ref={usersTable} className="table-cards w-full text-left text-sm text-gym-text">
               <thead className="bg-gym-surfaceHover font-heading text-base text-gym-primary uppercase border-b border-gym-border">
                 <tr>
                   <th className="p-4">Name</th>

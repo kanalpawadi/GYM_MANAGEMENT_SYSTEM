@@ -9,10 +9,12 @@ import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../config/site';
 import { Expense, Payment, addExpense, listExpenses, listPayments, localDay, markPaymentPaid } from '../../services/gym';
+import { useCardTable } from '../../utils/useCardTable';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export const AdminFinancials: React.FC = () => {
+  const paymentsTable = useCardTable();
   const { profile } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -120,7 +122,7 @@ export const AdminFinancials: React.FC = () => {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table ref={paymentsTable} className="table-cards w-full text-left text-sm">
               <thead className="bg-gym-surfaceHover font-heading text-gym-primary">
                 <tr>
                   <th className="p-3">Member</th>

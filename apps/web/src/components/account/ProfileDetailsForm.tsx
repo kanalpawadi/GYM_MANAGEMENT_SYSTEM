@@ -4,6 +4,7 @@ import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
+import { DateOfBirthInput } from '../ui/DateOfBirthInput';
 import { ProfilePatch, ageFromDob, updateProfile } from '../../services/gym';
 import type { UserProfile } from '../../types';
 
@@ -26,6 +27,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [dob, setDob] = useState('');
+  const [dobTyped, setDobTyped] = useState('');
   const [bloodGroup, setBloodGroup] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
@@ -39,6 +41,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
     setFullName(target.full_name ?? '');
     setPhone(target.phone ?? '');
     setDob(target.dob ?? '');
+    setDobTyped('');
     setBloodGroup(target.blood_group ?? '');
     setHeight(target.height_cm != null ? String(target.height_cm) : '');
     setWeight(target.weight_kg != null ? String(target.weight_kg) : '');
@@ -55,6 +58,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
     setSaved('');
     if (!fullName.trim()) return setError('Please enter the full name.');
     if (registration && !phone.trim()) return setError('Please enter your mobile number.');
+    if (dobTyped && !dob) return setError('Please check the date of birth (DD/MM/YYYY).');
     if (registration && !dob) return setError('Please enter your date of birth.');
     if (phone && !PHONE.test(phone.trim())) return setError('Enter a valid 10-digit Indian mobile number.');
     if (dob && (age == null || age < 5)) return setError('Please check the date of birth.');
@@ -103,7 +107,15 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
           <Input label="Contact Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10-digit mobile" required={registration} />
-          <Input label="Date of Birth" type="date" value={dob} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDob(e.target.value)} required={registration} />
+          <DateOfBirthInput
+            value={dob}
+            max={new Date().toISOString().slice(0, 10)}
+            required={registration}
+            onChange={(iso, typed) => {
+              setDob(iso);
+              setDobTyped(typed);
+            }}
+          />
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-gym-muted">Age</span>
             <span className="min-h-[44px] flex items-center px-4 rounded-xl border border-gym-border bg-black/40 text-white text-sm" aria-label="Age">

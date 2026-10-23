@@ -96,9 +96,10 @@ describe('My Profile details', () => {
     // Emergency contact is no longer asked for.
     expect(screen.queryByLabelText(/contact person name/i)).not.toBeInTheDocument();
 
-    const dob = screen.getByLabelText(/date of birth/i);
+    const dob = screen.getByLabelText(/^date of birth$/i);
     await user.clear(dob);
-    await user.type(dob, '1995-05-01');
+    await user.type(dob, '01/05/1995');
+    expect(dob).toHaveValue('01/05/1995');
     expect(screen.getByLabelText('Age')).toHaveTextContent(/\d+ years/);
     await user.selectOptions(screen.getByLabelText(/blood group/i), 'O+');
     await user.type(screen.getByLabelText(/height/i), '172');

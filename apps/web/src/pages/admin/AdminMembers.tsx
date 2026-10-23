@@ -5,6 +5,7 @@ import { Crown, ExternalLink, MessageCircle, Search } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { ExportMenu } from '../../components/ui/ExportMenu';
+import { useCardTable } from '../../utils/useCardTable';
 import { Avatar } from '../../components/account/Avatar';
 import { Membership, currentMembership, listMembers, listMemberships, localDay } from '../../services/gym';
 import type { UserProfile } from '../../types';
@@ -19,6 +20,7 @@ export const AdminMembers: React.FC = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const tableRef = useCardTable();
 
   useEffect(() => {
     Promise.all([listMembers(), listMemberships()])
@@ -114,7 +116,7 @@ export const AdminMembers: React.FC = () => {
 
         <Card hoverEffect={false} className="p-0 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table ref={tableRef} className="table-cards w-full text-left text-sm">
               <thead className="bg-gym-surfaceHover font-heading text-gym-primary">
                 <tr>
                   <th className="p-4">Member</th>

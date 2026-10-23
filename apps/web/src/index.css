@@ -53,3 +53,69 @@ h3 .text-gym-primary {
     color: transparent;
   }
 }
+
+/* Tables that become stacked cards on phones (see utils/useCardTable.ts). */
+@media (max-width: 767px) {
+  .table-cards thead {
+    display: none;
+  }
+  .table-cards,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-cards tr {
+    padding: 0.85rem 1rem;
+  }
+  .table-cards td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.3rem 0 !important;
+    min-width: 0 !important;
+    text-align: right !important;
+    word-break: break-word;
+  }
+  .table-cards td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: theme('colors.gym.muted');
+    text-align: left;
+  }
+  /* First cell (usually the name) reads as the card title. */
+  .table-cards td:first-child {
+    justify-content: flex-start;
+    text-align: left !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .table-cards td:first-child::before,
+  .table-cards td[colspan]::before {
+    display: none;
+  }
+  .table-cards td[colspan] {
+    justify-content: center;
+    text-align: center !important;
+  }
+  .table-cards td > div {
+    justify-content: flex-end;
+  }
+  .table-cards td:first-child > div {
+    justify-content: flex-start;
+  }
+}
+
+/* Phones: 16px text in form fields, which stops iPhone zooming in on every tap. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important; /* stop iPhone zoom */
+  }
+}
+

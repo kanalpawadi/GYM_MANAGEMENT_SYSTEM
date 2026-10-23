@@ -43,7 +43,7 @@ export const MemberChatWidget: React.FC = () => {
         <div
           role="dialog"
           aria-label="Chat"
-          className="fixed z-50 bottom-24 right-4 left-4 sm:left-auto sm:w-[390px] h-[min(600px,calc(100vh-8rem))] bg-gym-surface border border-gym-primary/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="fixed z-50 bottom-[8.5rem] md:bottom-24 right-3 left-3 sm:left-auto sm:right-4 sm:w-[390px] h-[min(600px,calc(100dvh-12rem))] md:h-[min(600px,calc(100vh-8rem))] bg-gym-surface border border-gym-primary/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
         >
           <div className="flex items-center gap-1 p-2 border-b border-gym-border" role="tablist">
             {(
@@ -81,7 +81,7 @@ export const MemberChatWidget: React.FC = () => {
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Close chat' : unread ? `Open chat, ${unread} unread` : 'Open chat'}
         aria-expanded={open}
-        className="fixed z-50 bottom-5 right-4 w-14 h-14 rounded-full bg-gold-gradient text-black shadow-yellow-glow flex items-center justify-center hover:scale-105 transition-transform"
+        className="fixed z-40 bottom-[4.75rem] md:bottom-5 right-4 w-14 h-14 rounded-full bg-gold-gradient text-black shadow-yellow-glow flex items-center justify-center hover:scale-105 transition-transform"
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
         {!open && unread > 0 && (
