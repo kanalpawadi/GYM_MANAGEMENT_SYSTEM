@@ -243,6 +243,36 @@ export interface Payment {
   created_at: string;
   member?: Pick<UserProfile, 'full_name' | 'phone' | 'email' | 'member_code'> | null;
   membership?: Pick<Membership, 'start_date' | 'end_date'> | null;
+  /** Set when the member was deleted: the payment is kept for the accounts (migration 11). */
+  deleted_member_label?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
+}
+
+/** Who paid: the member's name, or "Deleted member · RVF-0007" once they were deleted. */
+export const payerName = (p: Pick<Payment, 'member' | 'deleted_member_label'>) => p.member?.full_name ?? p.deleted_member_label ?? 'Member';
+
+// ---- Deleting a member (Gym Owner / Super Admin) ------------------------------------------
+
+const MEMBER_FILE_BUCKETS = ['avatars', 'progress-photos', 'attendance-selfies'];
+
+/**
+ * Permanently deletes a member: first their photos (profile, body progress, attendance
+ * selfies), then their login and all their data. Payments are kept, anonymised.
+ * Photos go first so nothing private is left behind if the second step fails.
+ */
+export async function deleteMember(memberId: string): Promise<{ name: string; payments_kept: number }> {
+  for (const bucket of MEMBER_FILE_BUCKETS) {
+    const store = supabase.storage.from(bucket);
+    const { data: files, error: listError } = await store.list(memberId, { limit: 1000 });
+    if (listError) throw new Error(`Could not read the member's photos: ${friendlyError(listError.message)}`);
+    const paths = (files ?? []).filter((f: { name: string }) => f.name && f.name !== '.emptyFolderPlaceholder').map((f: { name: string }) => `${memberId}/${f.name}`);
+    for (let i = 0; i < paths.length; i += 100) {
+      const { error } = await store.remove(paths.slice(i, i + 100));
+      if (error) throw new Error(`Could not delete the member's photos: ${friendlyError(error.message)}`);
+    }
+  }
+  return unwrap(await supabase.rpc('delete_member', { p_member: memberId })) as { name: string; payments_kept: number };
 }
 
 const PAYMENT_SELECT =

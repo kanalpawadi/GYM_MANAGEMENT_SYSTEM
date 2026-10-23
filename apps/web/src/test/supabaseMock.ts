@@ -290,6 +290,25 @@ export function resetSupabaseMock() {
       }
       return ok(uid);
     }
+    if (fn === 'delete_member') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (!['owner', 'super_admin'].includes(me?.role)) return fail('Only the gym owner or Super Admin can delete members');
+      if (args.p_member === uid) return fail('You cannot delete your own account');
+      const m = table('profiles').find((p) => p.id === args.p_member);
+      if (!m) return fail('Member not found');
+      if (m.role !== 'member') return fail("Only members can be deleted. Change this person's role to Member first.");
+      const label = `Deleted member${m.member_code ? ` · ${m.member_code}` : ''}`;
+      let kept = 0;
+      for (const p of table('payments').filter((x) => x.member_id === m.id)) {
+        Object.assign(p, { member_id: null, member: null, deleted_member_label: label });
+        kept++;
+      }
+      for (const [name, rows] of Object.entries(state.tables)) {
+        if (name === 'payments') continue;
+        state.tables[name] = rows.filter((r) => r.id !== m.id && r.member_id !== m.id && r.sender_id !== m.id && r.recipient_id !== m.id && r.user_id !== m.id);
+      }
+      return ok({ deleted: m.id, name: m.full_name, payments_kept: kept });
+    }
     if (fn === 'submit_registration') {
       const me = table('profiles').find((p) => p.id === uid);
       if (!me) return fail('Account not found');
@@ -436,6 +455,14 @@ export function resetSupabaseMock() {
       remove: vi.fn(async (paths: string[]) => {
         state.removed.push(...paths.map((path) => ({ bucket, path })));
         return { data: paths, error: null };
+      }),
+      // Files uploaded to `folder/` in this bucket and not removed since.
+      list: vi.fn(async (folder: string) => {
+        const gone = new Set(state.removed.filter((r) => r.bucket === bucket).map((r) => r.path));
+        const names = state.uploads
+          .filter((u) => u.bucket === bucket && u.path.startsWith(`${folder}/`) && !gone.has(u.path))
+          .map((u) => ({ name: u.path.slice(folder.length + 1) }));
+        return { data: names, error: null };
       }),
     })),
   };

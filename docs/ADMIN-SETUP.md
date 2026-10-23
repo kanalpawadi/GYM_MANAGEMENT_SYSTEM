@@ -25,8 +25,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 8. `08_google_signin_profiles.sql`: Google sign-in creates a member profile with the Google name and photo, and repairs accounts that signed in but got no profile.
 9. `09_member_registration_approval.sql`: new members fill a registration form and wait for the owner's approval before they can open their dashboard (section 17).
 10. `10_chat_and_notices.sql`: one-to-one chat and the notice board (section 18).
+11. `11_delete_member.sql`: the Gym Owner / Super Admin can permanently delete a member (section 21).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `10`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `11`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -265,4 +266,25 @@ For local testing, put the same lines in `apps/api/.env`. Never put the key in t
 - **HTML:** a web page file you can open in any browser or email.
 
 The member export uses your current filter (All / Premium / Normal) and search.
+
+## 21. Deleting a member
+Only the **Gym Owner** and **Super Admin** can delete. Open the member (Admin → Members → **Open**) and scroll to **Delete member**, then type the member's name to confirm. **This cannot be undone.**
+
+**Deleted for ever:**
+- their login (they can no longer sign in), profile and health details
+- memberships, plan requests and attendance
+- diet and workout plans, body metrics and water logs
+- profile photo, body-progress photos and attendance selfies
+- chats (both sides) and notifications
+
+**Kept, for your accounts and GST records:**
+- payments and invoices, labelled **Deleted member · RVF-xxxx**
+- the invoice number, amount, plan and plan dates
+
+Revenue reports and exports stay correct.
+
+Rules:
+- Only members can be deleted. To remove a trainer or other staff, first change their role to Member in Users & Roles.
+- Nobody can delete their own account.
+- The delete runs inside the database, so these rules cannot be bypassed.
 

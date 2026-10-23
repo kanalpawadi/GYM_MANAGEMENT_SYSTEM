@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../config/site';
-import { Expense, Payment, addExpense, listExpenses, listPayments, localDay, markPaymentPaid } from '../../services/gym';
+import { Expense, Payment, addExpense, listExpenses, listPayments, localDay, markPaymentPaid, payerName } from '../../services/gym';
 import { useCardTable } from '../../utils/useCardTable';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -140,7 +140,11 @@ export const AdminFinancials: React.FC = () => {
                 {shown.map((p) => (
                   <tr key={p.id}>
                     <td className="p-3">
-                      <Link to={`/admin/members/${p.member_id}`} className="text-white hover:text-gym-primary">{p.member?.full_name ?? 'Member'}</Link>
+                      {p.member_id ? (
+                        <Link to={`/admin/members/${p.member_id}`} className="text-white hover:text-gym-primary">{payerName(p)}</Link>
+                      ) : (
+                        <span className="text-gym-muted italic">{payerName(p)}</span>
+                      )}
                     </td>
                     <td className="p-3 text-gym-muted">{p.gst_invoice_no || '—'}</td>
                     <td className="p-3">{p.plan_title}</td>

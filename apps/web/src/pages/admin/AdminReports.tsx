@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Card } from '../../components/ui/Card';
-import { AttendanceRow, Membership, Payment, listAttendance, listMembers, listMemberships, listPayments, localDay } from '../../services/gym';
+import { AttendanceRow, Membership, Payment, listAttendance, listMembers, listMemberships, listPayments, localDay, payerName } from '../../services/gym';
 import { ExportMenu } from '../../components/ui/ExportMenu';
 import type { UserProfile } from '../../types';
 
@@ -42,7 +42,7 @@ export const AdminReports: React.FC = () => {
     filename: `rv-fitness-payments-${today}`,
     rows: payments.map((p) => ({
       invoice: p.gst_invoice_no ?? '',
-      member: p.member?.full_name ?? '',
+      member: payerName(p),
       member_id: p.member?.member_code ?? '',
       plan: p.plan_title ?? '',
       amount: p.total_amount,

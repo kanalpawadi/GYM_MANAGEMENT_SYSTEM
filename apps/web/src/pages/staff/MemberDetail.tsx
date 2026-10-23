@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, QrCode, Utensils } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, QrCode, Trash2, Utensils } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -9,8 +9,9 @@ import { Avatar } from '../../components/account/Avatar';
 import { ProfileDetailsForm } from '../../components/account/ProfileDetailsForm';
 import { ProgressTimeline } from '../../components/progress/ProgressTimeline';
 import { PlanEditorModal, PlanTarget } from '../../components/plans/PlanEditorModal';
+import { DeleteMemberModal } from '../../components/account/DeleteMemberModal';
 import { useAuth } from '../../context/AuthContext';
-import { ROLE_LABELS, canManageData, isStaffRole, roleRank } from '../../config/roles';
+import { ROLE_LABELS, canManageData, isOwnerLevel, isStaffRole, roleRank } from '../../config/roles';
 import { formatINR, phoneDisplay } from '../../config/site';
 import { DietPlan, ProgressEntry, WorkoutPlan, assignTrainer, getPersonalPlans, listProgress, listUsers } from '../../services/portal';
 import {
@@ -59,6 +60,8 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState<PlanTarget>(null);
+  const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
 
   const staff = isStaffRole(me?.role);
 
@@ -345,6 +348,28 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
             )}
           </Card>
         )}
+
+        {isOwnerLevel(me.role) && member.role === 'member' && member.id !== me.id && (
+          <Card hoverEffect={false} className="border-gym-danger/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3" aria-label="Danger zone">
+            <div>
+              <h3 className="font-heading text-gym-danger">Delete member</h3>
+              <p className="text-xs text-gym-muted">Permanently removes this member, their login, photos and data. Payments are kept as “Deleted member”.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeleting(true)}
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-gym-danger text-gym-danger font-heading text-sm hover:bg-gym-danger/10 shrink-0"
+            >
+              <Trash2 className="w-4 h-4" /> Delete member
+            </button>
+          </Card>
+        )}
+
+        <DeleteMemberModal
+          member={deleting ? member : null}
+          onClose={() => setDeleting(false)}
+          onDeleted={(message) => navigate(backTo.startsWith('/admin') ? '/admin/members' : backTo, { replace: true, state: { notice: message } })}
+        />
 
         <PlanEditorModal
           target={editing}

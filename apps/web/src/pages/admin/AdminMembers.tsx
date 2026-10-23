@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Crown, ExternalLink, MessageCircle, Search } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -21,6 +21,7 @@ export const AdminMembers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const tableRef = useCardTable();
+  const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
   useEffect(() => {
     Promise.all([listMembers(), listMemberships()])
@@ -112,6 +113,7 @@ export const AdminMembers: React.FC = () => {
           </div>
         </div>
 
+        {notice && <div role="status" className="bg-gym-success/15 border border-gym-success/60 text-gym-success p-3 rounded-xl text-sm">{notice}</div>}
         {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
 
         <Card hoverEffect={false} className="p-0 overflow-hidden">

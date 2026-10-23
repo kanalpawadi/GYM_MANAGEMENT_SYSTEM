@@ -5,7 +5,7 @@ import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useSiteInfo } from '../content/ContentContext';
 import { formatINR, phoneDisplay } from '../config/site';
-import { Payment, downloadFile, getPayment } from '../services/gym';
+import { Payment, downloadFile, getPayment, payerName } from '../services/gym';
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
@@ -85,7 +85,7 @@ export const InvoicePage: React.FC = () => {
             <div className="row" style={{ marginTop: 28 }}>
               <div>
                 <p className="muted">BILLED TO</p>
-                <p style={{ margin: '4px 0', fontWeight: 700 }}>{payment.member?.full_name}</p>
+                <p style={{ margin: '4px 0', fontWeight: 700 }}>{payerName(payment)}</p>
                 <p className="muted">Member ID: {payment.member?.member_code || '—'}</p>
                 <p className="muted">{payment.member?.phone ? phoneDisplay(payment.member.phone) : ''} {payment.member?.email ? `· ${payment.member.email}` : ''}</p>
               </div>
@@ -108,7 +108,11 @@ export const InvoicePage: React.FC = () => {
               <tbody>
                 <tr>
                   <td>{payment.plan_title || 'Membership'} membership</td>
-                  <td>{payment.membership ? `${fmt(payment.membership.start_date)} – ${fmt(payment.membership.end_date)}` : '—'}</td>
+                  <td>{payment.membership
+                      ? `${fmt(payment.membership.start_date)} – ${fmt(payment.membership.end_date)}`
+                      : payment.period_start && payment.period_end
+                        ? `${fmt(payment.period_start)} – ${fmt(payment.period_end)}`
+                        : '—'}</td>
                   <td style={{ textAlign: 'right' }}>{formatINR(Number(payment.amount) + Number(payment.discount_amount || 0))}</td>
                 </tr>
                 {Number(payment.discount_amount) > 0 && (
