@@ -45,6 +45,7 @@ import { MemberProgress } from './pages/member/MemberProgress';
 import { MemberProfile } from './pages/member/MemberProfile';
 import { Registration } from './pages/member/Registration';
 import { MessagesPage } from './pages/common/MessagesPage';
+import { MemberSupplements } from './pages/member/MemberSupplements';
 import { NoticesPage } from './pages/common/NoticesPage';
 import { MemberPlans } from './pages/member/MemberPlans';
 
@@ -107,6 +108,7 @@ export const App: React.FC = () => {
                         <Route path="profile" element={<MemberProfile />} />
                         <Route path="messages" element={<MessagesPage />} />
                         <Route path="notices" element={<NoticesPage />} />
+                        <Route path="supplements" element={<MemberSupplements />} />
                         <Route path="*" element={<Navigate to="/portal/dashboard" replace />} />
                       </Routes>
                     </MemberPortalLayout>

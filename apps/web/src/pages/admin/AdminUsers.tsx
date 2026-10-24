@@ -139,7 +139,7 @@ export const AdminUsers: React.FC = () => {
                     <tr key={u.id} className="hover:bg-gym-surfaceHover/50" data-testid={`user-row-${u.id}`}>
                       <td className="p-4 font-heading text-white text-base uppercase">
                         <div className="flex items-center gap-3">
-                          <Avatar src={u.avatar_url} name={u.full_name} size="sm" />
+                          <Avatar src={u.avatar_url} name={u.full_name} size="sm" zoomable />
                           <span>
                             {u.full_name}
                             {u.id === profile?.id && <span className="ml-2 text-[10px] text-gym-primary">(YOU)</span>}

@@ -140,7 +140,7 @@ export const AdminMembers: React.FC = () => {
                   <tr key={m.id} className="hover:bg-gym-surfaceHover/50">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <Avatar src={m.avatar_url} name={m.full_name} size="sm" />
+                        <Avatar src={m.avatar_url} name={m.full_name} size="sm" zoomable />
                         <div className="min-w-0">
                           <p className="font-heading text-white flex items-center gap-1.5">
                             {m.full_name}

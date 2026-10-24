@@ -42,7 +42,7 @@ export const ProfilePhotoPicker: React.FC<{ size?: 'md' | 'lg' | 'xl'; showError
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative">
-        <Avatar src={profile?.avatar_url} name={profile?.full_name} size={size} />
+        <Avatar src={profile?.avatar_url} name={profile?.full_name} size={size} zoomable />
         <button
           type="button"
           onClick={() => inputRef.current?.click()}

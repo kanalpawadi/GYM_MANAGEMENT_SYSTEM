@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   X,
   ShieldCheck,
+  Pill,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -28,6 +29,7 @@ import { MemberChatWidget } from '../../components/chat/MemberChatWidget';
 const navItems = [
   { name: 'Dashboard', short: 'Home', path: '/portal/dashboard', icon: LayoutDashboard },
   { name: 'My Diet & Workout', short: 'Plans', path: '/portal/plans', icon: Utensils },
+  { name: 'Supplements', short: 'Supplements', path: '/portal/supplements', icon: Pill },
   { name: 'Notices', short: 'Notices', path: '/portal/notices', icon: Megaphone },
   { name: 'Digital QR Card', short: 'QR Pass', path: '/portal/digital-card', icon: QrCode },
   { name: 'Renew / Change Plan', short: 'Renew', path: '/portal/checkout', icon: CreditCard },
@@ -73,9 +75,13 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
       <div className="bg-gym-surface border-b border-gym-border py-3 md:py-4 px-4 sm:px-6 lg:px-8 sticky top-0 md:static z-30">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <Link to="/portal/profile" title="Change your photo" className="shrink-0">
-              <Avatar src={profile?.avatar_url} name={profile?.full_name} size="md" />
-            </Link>
+            {profile?.avatar_url ? (
+              <Avatar src={profile.avatar_url} name={profile.full_name} size="md" zoomable />
+            ) : (
+              <Link to="/portal/profile" title="Add your photo" className="shrink-0">
+                <Avatar name={profile?.full_name} size="md" />
+              </Link>
+            )}
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                 <h2 className="text-base sm:text-xl font-heading text-white uppercase truncate max-w-[60vw] sm:max-w-none">{profile?.full_name || 'Member'}</h2>

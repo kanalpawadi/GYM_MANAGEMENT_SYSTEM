@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { Clock, FileText, Plus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../config/site';
-import { Payment, listPayments } from '../../services/gym';
+import { Membership, Payment, PlanRequest, cancelPlanRequest, currentMembership, listMemberships, listPayments, listPlanRequests } from '../../services/gym';
+import { Button } from '../../components/ui/Button';
+import { GeneratePaymentModal, PayOnlineButton } from '../../components/payments/GeneratePayment';
 import { useCardTable } from '../../utils/useCardTable';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -16,14 +18,40 @@ export const PaymentHistory: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [requests, setRequests] = useState<PlanRequest[]>([]);
+  const [membership, setMembership] = useState<Membership | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const load = async () => {
+    if (!profile) return;
+    const [pays, reqs, memberships] = await Promise.all([
+      listPayments(profile.id),
+      listPlanRequests({ memberId: profile.id, status: 'pending' }).catch(() => [] as PlanRequest[]),
+      listMemberships(profile.id).catch(() => [] as Membership[]),
+    ]);
+    setPayments(pays);
+    setRequests(reqs);
+    setMembership(currentMembership(memberships));
+  };
 
   useEffect(() => {
     if (!profile) return;
-    listPayments(profile.id)
-      .then(setPayments)
+    load()
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [profile]);
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const cancel = async (id: string) => {
+    setError('');
+    try {
+      await cancelPlanRequest(id);
+      setNotice('Generated payment cancelled.');
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Could not cancel');
+    }
+  };
 
   return (
     <>
@@ -38,6 +66,39 @@ export const PaymentHistory: React.FC = () => {
             PAYMENTS & <span className="text-gym-primary">INVOICES</span>
           </h1>
         </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 -mt-2">
+          <p className="text-xs text-gym-muted">Generate a payment for your next plan. Online card / UPI payment is coming soon; pay at the front desk for now.</p>
+          <Button variant="primary" size="sm" onClick={() => setGenerating(true)} disabled={requests.length > 0} leftIcon={<Plus className="w-4 h-4" />} className="shrink-0">
+            Generate payment
+          </Button>
+        </div>
+
+        {notice && <div role="status" className="bg-gym-success/15 border border-gym-success/60 text-gym-success p-3 rounded-xl text-sm">{notice}</div>}
+
+        {requests.length > 0 && (
+          <Card hoverEffect={false} className="flex flex-col gap-3" aria-label="Generated payments">
+            <h3 className="font-heading text-white">Generated payments</h3>
+            {requests.map((r) => (
+              <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-amber-400/40 bg-amber-400/5 rounded-xl p-3">
+                <div>
+                  <p className="font-heading text-white">
+                    {r.plan_title} · <span className="text-gym-primary">{formatINR(Number(r.price))}</span>
+                  </p>
+                  <p className="text-xs text-amber-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> Waiting for gym approval · generated {fmt(r.created_at)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 sm:justify-end">
+                  <PayOnlineButton amount={Number(r.price)} />
+                  <Button variant="ghost" size="sm" onClick={() => cancel(r.id)} className="text-gym-danger">
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </Card>
+        )}
 
         {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
 
@@ -86,7 +147,7 @@ export const PaymentHistory: React.FC = () => {
                           <FileText className="w-4 h-4" /> View / PDF
                         </Link>
                       ) : (
-                        <span className="text-xs text-gym-muted">After payment</span>
+                        <PayOnlineButton amount={Number(p.total_amount)} />
                       )}
                     </td>
                   </tr>
@@ -96,6 +157,16 @@ export const PaymentHistory: React.FC = () => {
           </div>
         </Card>
       </div>
+      <GeneratePaymentModal
+        isOpen={generating}
+        currentPlanCode={membership?.plan_code ?? null}
+        onClose={() => setGenerating(false)}
+        onGenerated={(message) => {
+          setGenerating(false);
+          setNotice(message);
+          load().catch((err: Error) => setError(err.message));
+        }}
+      />
     </>
   );
 };

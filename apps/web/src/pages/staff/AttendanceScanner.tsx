@@ -196,7 +196,7 @@ export const AttendanceScanner: React.FC = () => {
                 role="status"
                 className={`rounded-xl p-4 flex items-center gap-3 border ${result.status === 'active' ? 'bg-gym-success/15 border-gym-success/50' : 'bg-gym-danger/10 border-gym-danger/50'}`}
               >
-                <Avatar src={result.avatar_url} name={result.full_name} size="lg" />
+                <Avatar src={result.avatar_url} name={result.full_name} size="lg" zoomable />
                 <div>
                   <p className="font-heading text-white">{result.full_name}</p>
                   <p className="text-xs text-gym-muted">{result.member_code}</p>
@@ -217,7 +217,7 @@ export const AttendanceScanner: React.FC = () => {
               {matches.map((m) => (
                 <li key={m.id} className="py-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Avatar src={m.avatar_url} name={m.full_name} size="sm" />
+                    <Avatar src={m.avatar_url} name={m.full_name} size="sm" zoomable />
                     <div className="min-w-0">
                       <p className="text-sm text-white truncate">{m.full_name}</p>
                       <p className="text-xs text-gym-muted">{m.member_code} {m.phone ? `· ${m.phone}` : ''}</p>

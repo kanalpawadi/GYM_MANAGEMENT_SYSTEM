@@ -10,6 +10,7 @@ import { ProfileDetailsForm } from '../../components/account/ProfileDetailsForm'
 import { ProgressTimeline } from '../../components/progress/ProgressTimeline';
 import { PlanEditorModal, PlanTarget } from '../../components/plans/PlanEditorModal';
 import { DeleteMemberModal } from '../../components/account/DeleteMemberModal';
+import { SupplementLog } from '../../components/supplements/SupplementLog';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, canManageData, isOwnerLevel, isStaffRole, roleRank } from '../../config/roles';
 import { formatINR, phoneDisplay } from '../../config/site';
@@ -33,11 +34,12 @@ import type { UserProfile } from '../../types';
 import { useCardTable } from '../../utils/useCardTable';
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
-type Tab = 'overview' | 'profile' | 'plans' | 'progress' | 'payments' | 'attendance';
+type Tab = 'overview' | 'profile' | 'plans' | 'supplements' | 'progress' | 'payments' | 'attendance';
 const TABS: [Tab, string][] = [
   ['overview', 'Overview'],
   ['profile', 'Profile'],
   ['plans', 'Diet & Workout'],
+  ['supplements', 'Supplements'],
   ['progress', 'Progress'],
   ['payments', 'Payments'],
   ['attendance', 'Attendance'],
@@ -133,7 +135,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
 
         <Card hoverEffect={false} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <Avatar src={member.avatar_url} name={member.full_name} size="xl" />
+            <Avatar src={member.avatar_url} name={member.full_name} size="xl" zoomable />
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-heading text-white break-words flex items-center gap-2">
                 {member.full_name}
@@ -331,6 +333,8 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
             </div>
           </Card>
         )}
+
+        {tab === 'supplements' && <SupplementLog memberId={member.id} memberName={member.full_name} canEdit={canManageData(me, member)} />}
 
         {tab === 'attendance' && (
           <Card hoverEffect={false}>

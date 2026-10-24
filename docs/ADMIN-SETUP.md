@@ -26,8 +26,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 9. `09_member_registration_approval.sql`: new members fill a registration form and wait for the owner's approval before they can open their dashboard (section 17).
 10. `10_chat_and_notices.sql`: one-to-one chat and the notice board (section 18).
 11. `11_delete_member.sql`: the Gym Owner / Super Admin can permanently delete a member (section 21).
+12. `12_supplements.sql`: the members' supplement log (section 22).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `11`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `12`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -287,4 +288,29 @@ Rules:
 - Only members can be deleted. To remove a trainer or other staff, first change their role to Member in Users & Roles.
 - Nobody can delete their own account.
 - The delete runs inside the database, so these rules cannot be bypassed.
+
+## 22. Supplements
+Members open **Portal → Supplements** (under **More** on phones):
+- **Note a supplement:** name, brand, dose, when they take it, and the date.
+- **I bought this:** also add the price, quantity, shop and bill / invoice number.
+
+The history shows the total spent. **Statement / invoice** downloads the log as:
+- **CSV**, for Excel or Google Sheets
+- **HTML**, a web page
+- **Minified HTML**, the same page as a smaller file
+
+The member's trainer and gym staff see it on the member's page → **Supplements** tab. Entries are deleted if the member is deleted.
+
+## 23. Generate payment
+In **Portal → Payments & Invoices**, members press **Generate payment** and pick a plan. The price includes any discount.
+
+1. The bill goes to **Admin → Approvals** like a renewal request.
+2. After approval, the member pays at the front desk.
+3. Staff mark it paid and the invoice appears.
+
+**Pay online** shows as *coming soon*. It will take card / UPI payments once the gym's Razorpay account is connected; see DEPLOY.md, Step 5.
+
+## 24. Photos and the header Login button
+- **Photos:** tap any profile photo (member list, member page, My Trainer card, approvals, scanner) to see it full size. Tap again or press Esc to close.
+- **Login button:** on phones, the gold button next to the ☰ menu is **Login**, or **My Portal** when signed in. **Book Free Trial** is inside the ☰ menu.
 

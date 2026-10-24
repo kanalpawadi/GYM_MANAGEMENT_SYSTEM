@@ -214,7 +214,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ compact = false, initialWi
               <button type="button" onClick={() => open(null)} className={`${compact ? '' : 'md:hidden'} p-1.5 text-gym-muted hover:text-white`} aria-label="Back to chats">
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <Avatar src={active.avatar_url} name={active.full_name} size="sm" />
+              <Avatar src={active.avatar_url} name={active.full_name} size="sm" zoomable />
               <div className="min-w-0">
                 <p className="font-heading text-white text-sm truncate">{active.full_name}</p>
                 <p className="text-[11px] text-gym-primary">

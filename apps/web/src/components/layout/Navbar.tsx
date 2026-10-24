@@ -94,9 +94,9 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Hamburger Toggle */}
         <div className="flex xl:hidden items-center gap-2">
-          <Link to="/contact">
-            <Button variant="primary" size="sm" className="text-xs px-3 min-h-[36px]">
-              Trial
+          <Link to={portalPath}>
+            <Button variant="primary" size="sm" className="text-xs px-3 min-h-[36px] whitespace-nowrap" leftIcon={<User className="w-3.5 h-3.5" />}>
+              {auth?.profile ? 'My Portal' : 'Login'}
             </Button>
           </Link>
           <button

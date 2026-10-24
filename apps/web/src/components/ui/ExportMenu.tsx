@@ -7,7 +7,10 @@ const OPTIONS: { format: ExportFormat; label: string; hint: string; icon: React.
   { format: 'csv', label: 'CSV', hint: 'Excel / Google Sheets', icon: <FileSpreadsheet className="w-4 h-4 text-gym-primary" /> },
   { format: 'pdf', label: 'PDF', hint: 'Print or save as PDF', icon: <FileText className="w-4 h-4 text-gym-primary" /> },
   { format: 'html', label: 'HTML', hint: 'Web page file', icon: <FileCode2 className="w-4 h-4 text-gym-primary" /> },
+  { format: 'html-min', label: 'Minified HTML', hint: 'Same page, smallest file', icon: <FileCode2 className="w-4 h-4 text-gym-primary" /> },
 ];
+
+const DEFAULT_FORMATS: ExportFormat[] = ['csv', 'pdf', 'html'];
 
 interface Props {
   /** Builds the export when a format is picked (so it always uses the current filters). */
@@ -16,10 +19,12 @@ interface Props {
   disabled?: boolean;
   variant?: 'primary' | 'outline';
   className?: string;
+  /** Which formats to offer (default CSV, PDF, HTML). */
+  formats?: ExportFormat[];
 }
 
 /** "Export ▾" button with CSV, PDF and HTML. */
-export const ExportMenu: React.FC<Props> = ({ getSpec, label = 'Export', disabled, variant = 'outline', className = '' }) => {
+export const ExportMenu: React.FC<Props> = ({ getSpec, label = 'Export', disabled, variant = 'outline', className = '', formats = DEFAULT_FORMATS }) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -62,7 +67,7 @@ export const ExportMenu: React.FC<Props> = ({ getSpec, label = 'Export', disable
       </Button>
       {open && (
         <div role="menu" aria-label={`${label} formats`} className="absolute right-0 top-full mt-1 z-40 w-56 bg-gym-surface border border-gym-border rounded-xl shadow-2xl overflow-hidden">
-          {OPTIONS.map((o) => (
+          {OPTIONS.filter((o) => formats.includes(o.format)).map((o) => (
             <button
               key={o.format}
               type="button"

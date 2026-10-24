@@ -204,7 +204,7 @@ export const TrainerDashboard: React.FC = () => {
             {visible.map((m) => (
               <Card key={m.id} className="border-gym-primary/30 flex flex-col justify-between">
                 <div className="flex items-center gap-4">
-                  <Avatar src={m.avatar_url} name={m.full_name} size="lg" />
+                  <Avatar src={m.avatar_url} name={m.full_name} size="lg" zoomable />
                   <div className="min-w-0 flex-1">
                     <h3 className="text-xl font-heading text-white uppercase truncate flex items-center gap-2">
                       {m.full_name}

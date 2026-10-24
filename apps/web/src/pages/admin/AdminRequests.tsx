@@ -103,7 +103,7 @@ export const AdminRequests: React.FC = () => {
             <Card key={r.id} hoverEffect={false} className="flex flex-col gap-4" aria-label={`Request from ${r.member?.full_name ?? 'member'}`}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Avatar src={r.member?.avatar_url} name={r.member?.full_name} size="md" />
+                  <Avatar src={r.member?.avatar_url} name={r.member?.full_name} size="md" zoomable />
                   <div className="min-w-0">
                     <Link to={`/admin/members/${r.member_id}`} className="font-heading text-white hover:text-gym-primary">
                       {r.member?.full_name ?? 'Member'}

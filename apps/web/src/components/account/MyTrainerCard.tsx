@@ -36,7 +36,7 @@ export const MyTrainerCard: React.FC = () => {
         <p className="text-sm text-gym-muted">No trainer assigned yet. Ask at the front desk and they will assign a coach to you.</p>
       ) : (
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-          <Avatar src={trainer.avatar_url} name={trainer.full_name} size="xl" />
+          <Avatar src={trainer.avatar_url} name={trainer.full_name} size="xl" zoomable />
           <div className="flex flex-col gap-2 min-w-0">
             <h3 className="text-2xl font-heading text-white uppercase">{trainer.full_name}</h3>
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 text-xs">

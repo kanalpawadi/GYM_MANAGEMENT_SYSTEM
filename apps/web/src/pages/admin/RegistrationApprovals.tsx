@@ -84,7 +84,7 @@ export const RegistrationApprovals: React.FC<{ onCountChange?: (n: number) => vo
         return (
           <Card key={m.id} hoverEffect={false} className="flex flex-col gap-4" aria-label={`Registration from ${m.full_name}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <Avatar src={m.avatar_url} name={m.full_name} size="md" />
+              <Avatar src={m.avatar_url} name={m.full_name} size="md" zoomable />
               <div className="min-w-0">
                 <p className="font-heading text-white break-words">{m.full_name}</p>
                 <p className="text-xs text-gym-muted">

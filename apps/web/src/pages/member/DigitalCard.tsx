@@ -88,7 +88,7 @@ export const DigitalCard: React.FC = () => {
             </div>
             <div className="flex flex-col gap-3 w-full min-w-0">
               <div className="flex items-center gap-3">
-                <Avatar src={profile?.avatar_url} name={profile?.full_name} size="lg" />
+                <Avatar src={profile?.avatar_url} name={profile?.full_name} size="lg" zoomable />
                 <div className="min-w-0">
                   <p className="text-lg font-heading text-white break-words">{profile?.full_name}</p>
                   <p className="text-sm text-gym-primary font-heading">{profile?.member_code || '—'}</p>
