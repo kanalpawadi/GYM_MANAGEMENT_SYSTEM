@@ -10,7 +10,7 @@ import { Payment, downloadFile, getPayment, payerName } from '../services/gym';
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
 // Plain styles so the downloaded HTML file and the printed PDF look the same without Tailwind.
-const INVOICE_CSS = `
+export const INVOICE_CSS = `
 .inv{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#111;background:#fff;max-width:760px;margin:0 auto;padding:36px;border:1px solid #e5e5e5;border-radius:12px}
 .inv h1{font-size:26px;margin:0}.inv .gold{color:#997E25}.inv .muted{color:#666;font-size:12px}
 .inv .row{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
@@ -131,6 +131,18 @@ export const InvoicePage: React.FC = () => {
                   <td colSpan={2}>Total</td>
                   <td style={{ textAlign: 'right' }}>{formatINR(Number(payment.total_amount))}</td>
                 </tr>
+                {payment.status !== 'paid' && Number(payment.amount_paid ?? 0) > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={2}>Paid so far</td>
+                      <td style={{ textAlign: 'right' }}>{formatINR(Number(payment.amount_paid))}</td>
+                    </tr>
+                    <tr className="total">
+                      <td colSpan={2}>Balance due</td>
+                      <td style={{ textAlign: 'right' }}>{formatINR(Number(payment.total_amount) - Number(payment.amount_paid))}</td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
 

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, Pencil, QrCode, Trash2, Utensils } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, IndianRupee, Pencil, QrCode, Trash2, Utensils } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -12,6 +12,8 @@ import { PlanEditorModal, PlanTarget } from '../../components/plans/PlanEditorMo
 import { DeleteMemberModal } from '../../components/account/DeleteMemberModal';
 import { SupplementLog } from '../../components/supplements/SupplementLog';
 import { ChangePlanModal } from '../../components/plans/ChangePlanModal';
+import { RecordPaymentModal } from '../../components/payments/RecordPaymentModal';
+import { PaymentTotals, ReceiptList, leftOn } from '../../components/payments/PaymentSummary';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, canManageData, isOwnerLevel, isStaffRole, roleRank } from '../../config/roles';
 import { formatINR, phoneDisplay } from '../../config/site';
@@ -27,6 +29,8 @@ import {
   listAttendance,
   listMemberships,
   listPayments,
+  listReceipts,
+  Receipt,
   markPaymentPaid,
   staffCheckIn,
   updateProfile,
@@ -55,6 +59,8 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
   const [trainers, setTrainers] = useState<UserProfile[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [recording, setRecording] = useState(false);
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
   const [plans, setPlans] = useState<{ diet: DietPlan | null; workout: WorkoutPlan | null }>({ diet: null, workout: null });
@@ -74,15 +80,18 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
     const m = await getProfile(memberId);
     setMember(m);
     if (!m) return;
-    const [ms, ps, att, prog, pl] = await Promise.all([
+    const [ms, ps, att, prog, pl, rc] = await Promise.all([
       listMemberships(memberId),
       listPayments(memberId),
       listAttendance({ memberId }),
       listProgress(memberId),
       getPersonalPlans(memberId),
+      // Receipts arrive with migration 14; older databases just show none.
+      listReceipts(memberId).catch(() => [] as Receipt[]),
     ]);
     setMemberships(ms);
     setPayments(ps);
+    setReceipts(rc);
     setAttendance(att);
     setProgress(prog);
     setPlans(pl);
@@ -298,6 +307,13 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
         )}
 
         {tab === 'payments' && (
+          <div className="flex flex-col gap-4">
+          <PaymentTotals payments={payments} />
+          {staff && member.role === 'member' && (
+            <Button variant="primary" onClick={() => setRecording(true)} leftIcon={<IndianRupee className="w-4 h-4" />} className="sm:self-start">
+              Record payment received
+            </Button>
+          )}
           <Card hoverEffect={false} className="p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table ref={paymentsTable} className="table-cards w-full text-left text-sm">
@@ -319,7 +335,15 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                       <td className="p-3 text-white">{p.gst_invoice_no || '—'}</td>
                       <td className="p-3">{p.plan_title}</td>
                       <td className="p-3 text-gym-primary font-heading">{formatINR(Number(p.total_amount))}</td>
-                      <td className="p-3">{p.status === 'paid' ? `Paid · ${p.payment_mode.toUpperCase()}` : 'Due'}</td>
+                      <td className="p-3">
+                        {p.status === 'paid' ? (
+                          `Paid · ${p.payment_mode.toUpperCase()}`
+                        ) : Number(p.amount_paid ?? 0) > 0 ? (
+                          <span className="text-amber-400">Part paid · {formatINR(leftOn(p))} left</span>
+                        ) : (
+                          <span className="text-amber-400">Due</span>
+                        )}
+                      </td>
                       <td className="p-3 text-right">
                         {p.status === 'paid' ? (
                           <Link to={`/invoice/${p.id}`} className="inline-flex items-center gap-1 text-gym-primary text-xs hover:underline"><FileText className="w-4 h-4" /> Invoice</Link>
@@ -341,7 +365,20 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
               </table>
             </div>
           </Card>
+          <ReceiptList receipts={receipts} />
+          </div>
         )}
+
+        <RecordPaymentModal
+          isOpen={recording}
+          member={member}
+          payments={payments}
+          onClose={() => setRecording(false)}
+          onSaved={(message) => {
+            setRecording(false);
+            load().then(() => flash(message));
+          }}
+        />
 
         {tab === 'supplements' && <SupplementLog memberId={member.id} memberName={member.full_name} canEdit={canManageData(me, member)} />}
 

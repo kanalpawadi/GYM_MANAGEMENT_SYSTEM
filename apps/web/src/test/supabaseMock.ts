@@ -290,6 +290,30 @@ export function resetSupabaseMock() {
       }
       return ok(uid);
     }
+    if (fn === 'record_payment') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (!['receptionist', 'manager', 'owner', 'super_admin'].includes(me?.role)) return fail('Only gym staff can record payments');
+      const receiptNo = `RCPT-2026-${String(++idCounter).padStart(5, '0')}`;
+      let bill: Row;
+      let amount: number;
+      if (args.p_payment) {
+        bill = table('payments').find((p) => p.id === args.p_payment)!;
+        if (!bill) return fail('Bill not found');
+        if (bill.status === 'paid') return fail('This bill is already fully paid');
+        const left = bill.total_amount - (bill.amount_paid ?? 0);
+        amount = args.p_amount ?? left;
+        if (amount > left) return fail(`Only ₹${left} is left on this bill. Record the extra as a separate payment.`);
+        bill.amount_paid = (bill.amount_paid ?? 0) + amount;
+        if (bill.amount_paid >= bill.total_amount) Object.assign(bill, { status: 'paid', payment_mode: args.p_mode });
+      } else {
+        amount = args.p_amount;
+        bill = { id: `pay-${++idCounter}`, member_id: args.p_member, plan_title: args.p_title || 'Other payment', amount, total_amount: amount, amount_paid: amount, status: 'paid', payment_mode: args.p_mode, notes: args.p_note, created_at: new Date().toISOString() };
+        table('payments').push(bill);
+      }
+      const receipt = { id: `rc-${idCounter}`, receipt_no: receiptNo, payment_id: bill.id, member_id: bill.member_id, amount, payment_mode: args.p_mode, note: args.p_note ?? null, received_by: uid, received_at: new Date().toISOString() };
+      table('payment_receipts').push(receipt);
+      return ok({ receipt_id: receipt.id, receipt_no: receiptNo, payment_id: bill.id, amount, remaining: bill.total_amount - bill.amount_paid, status: bill.status });
+    }
     if (fn === 'assign_membership') {
       const rank: Record<string, number> = { super_admin: 6, owner: 5, manager: 4, receptionist: 3, trainer: 2, member: 1 };
       const me = table('profiles').find((p) => p.id === uid);

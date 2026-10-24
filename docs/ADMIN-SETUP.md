@@ -28,8 +28,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 11. `11_delete_member.sql`: the Gym Owner / Super Admin can permanently delete a member (section 21).
 12. `12_supplements.sql`: the members' supplement log (section 22).
 13. `13_assign_membership.sql`: staff change a member's plan; the owner can set custom plans and amounts (section 25).
+14. `14_payment_receipts.sql`: money received with notes, part payments, receipts, and total paid / remaining (section 26).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `13`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `14`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -330,4 +331,20 @@ Open the member (Admin → Members → **Open**, or Trainer Panel → **Open**).
 Trainers, receptionists and managers can change plans, but only at the standard price.
 
 If the new plan starts before the current one ends, the current plan ends the day before. If it hadn't started yet, it is cancelled. The member gets a notification.
+
+## 26. Money received, receipts and what is left
+Open the member → **Payments** tab:
+
+- **Totals:** at the top you see **Total billed**, **Total paid** and **Remaining**.
+- **Record payment received** (front desk, manager, owner, Super Admin):
+  1. **Money is for:** a due bill, or **Something else** (personal training, locker...). For something else, type what it is for.
+  2. **Amount:** it starts at what is left on the bill. Enter less for a **part payment**, e.g. ₹1,000 now and ₹500 later.
+  3. **Paid by:** cash or UPI, plus a **note** (e.g. "Paid by brother, UPI ref 4521").
+  4. Press **Save & make receipt**.
+- **Receipts:** every amount gets a numbered receipt (RCPT-2026-00001). Open it from **Money received** to **Print / Save as PDF** or **Download HTML**. It shows the bill total, paid so far and remaining.
+- **Bill status:** a part-paid bill shows **Part paid · ₹500 left**. Once the receipts reach the total, it becomes **Paid** and gets its invoice number.
+
+Bills paid in other ways also get a receipt automatically: approvals, Change plan, and the quick **Paid CASH / Paid UPI** buttons.
+
+Members see the same totals and their receipts in **Portal → Payments & Invoices**. Trainers can see the totals but cannot record money.
 

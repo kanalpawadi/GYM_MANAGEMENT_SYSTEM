@@ -5,7 +5,8 @@ import { Clock, FileText, Plus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../config/site';
-import { Membership, Payment, PlanRequest, cancelPlanRequest, currentMembership, listMemberships, listPayments, listPlanRequests } from '../../services/gym';
+import { Membership, Payment, PlanRequest, Receipt, cancelPlanRequest, currentMembership, listMemberships, listPayments, listPlanRequests, listReceipts } from '../../services/gym';
+import { PaymentTotals, ReceiptList, leftOn } from '../../components/payments/PaymentSummary';
 import { Button } from '../../components/ui/Button';
 import { GeneratePaymentModal, PayOnlineButton } from '../../components/payments/GeneratePayment';
 import { useCardTable } from '../../utils/useCardTable';
@@ -20,17 +21,20 @@ export const PaymentHistory: React.FC = () => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [requests, setRequests] = useState<PlanRequest[]>([]);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [membership, setMembership] = useState<Membership | null>(null);
   const [generating, setGenerating] = useState(false);
 
   const load = async () => {
     if (!profile) return;
-    const [pays, reqs, memberships] = await Promise.all([
+    const [pays, reqs, memberships, rc] = await Promise.all([
       listPayments(profile.id),
       listPlanRequests({ memberId: profile.id, status: 'pending' }).catch(() => [] as PlanRequest[]),
       listMemberships(profile.id).catch(() => [] as Membership[]),
+      listReceipts(profile.id).catch(() => [] as Receipt[]),
     ]);
     setPayments(pays);
+    setReceipts(rc);
     setRequests(reqs);
     setMembership(currentMembership(memberships));
   };
@@ -75,6 +79,8 @@ export const PaymentHistory: React.FC = () => {
         </div>
 
         {notice && <div role="status" className="bg-gym-success/15 border border-gym-success/60 text-gym-success p-3 rounded-xl text-sm">{notice}</div>}
+
+        {payments.length > 0 && <PaymentTotals payments={payments} />}
 
         {requests.length > 0 && (
           <Card hoverEffect={false} className="flex flex-col gap-3" aria-label="Generated payments">
@@ -137,6 +143,8 @@ export const PaymentHistory: React.FC = () => {
                     <td className="p-4">
                       {p.status === 'paid' ? (
                         <span className="text-xs font-heading text-gym-success">Paid · {p.payment_mode.toUpperCase()}</span>
+                      ) : Number(p.amount_paid ?? 0) > 0 ? (
+                        <span className="text-xs font-heading text-amber-400">Part paid · {formatINR(leftOn(p))} left</span>
                       ) : (
                         <span className="text-xs font-heading text-amber-400">Payment due · pay at the desk</span>
                       )}
@@ -157,6 +165,7 @@ export const PaymentHistory: React.FC = () => {
           </div>
         </Card>
       </div>
+      <div className="max-w-5xl mx-auto mt-6">{receipts.length > 0 && <ReceiptList receipts={receipts} />}</div>
       <GeneratePaymentModal
         isOpen={generating}
         currentPlanCode={membership?.plan_code ?? null}

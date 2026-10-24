@@ -243,6 +243,8 @@ export interface Payment {
   created_at: string;
   member?: Pick<UserProfile, 'full_name' | 'phone' | 'email' | 'member_code'> | null;
   membership?: Pick<Membership, 'start_date' | 'end_date'> | null;
+  /** Received so far on this bill (part payments, migration 14). */
+  amount_paid?: number | null;
   /** Set when the member was deleted: the payment is kept for the accounts (migration 11). */
   deleted_member_label?: string | null;
   period_start?: string | null;
@@ -318,8 +320,78 @@ export async function getPayment(id: string): Promise<Payment | null> {
   return unwrap(await supabase.from('payments').select(PAYMENT_SELECT).eq('id', id).maybeSingle()) as Payment | null;
 }
 
+/** Marks the rest of a bill as received (creates a receipt). Falls back to a plain update before migration 14. */
 export async function markPaymentPaid(id: string, mode: Payment['payment_mode']): Promise<void> {
+  const { error } = await supabase.rpc('record_payment', { p_payment: id, p_amount: null, p_mode: mode === 'upi' ? 'upi' : 'cash', p_note: null });
+  if (!error) return;
+  if (!/record_payment|schema cache|does not exist/i.test(error.message)) throw new Error(friendlyError(error.message));
   unwrap(await supabase.from('payments').update({ status: 'paid', payment_mode: mode }).eq('id', id));
+}
+
+// ---- Money received & receipts (migration 14) --------------------------------------------
+
+export interface Receipt {
+  id: string;
+  receipt_no: string;
+  payment_id: string;
+  member_id: string | null;
+  amount: number;
+  payment_mode: 'cash' | 'upi' | 'online';
+  note: string | null;
+  received_by: string | null;
+  received_at: string;
+  payment?: Pick<Payment, 'id' | 'plan_title' | 'total_amount' | 'amount_paid' | 'status' | 'gst_invoice_no' | 'deleted_member_label'> | null;
+  member?: Pick<UserProfile, 'full_name' | 'member_code' | 'phone' | 'email'> | null;
+  staff?: Pick<UserProfile, 'full_name'> | null;
+}
+
+const RECEIPT_SELECT =
+  '*, payment:payments(id, plan_title, total_amount, amount_paid, status, gst_invoice_no, deleted_member_label), member:profiles!payment_receipts_member_id_fkey(full_name, member_code, phone, email), staff:profiles!payment_receipts_received_by_fkey(full_name)';
+
+export async function listReceipts(memberId: string): Promise<Receipt[]> {
+  return (unwrap(await supabase.from('payment_receipts').select(RECEIPT_SELECT).eq('member_id', memberId).order('received_at', { ascending: false })) ??
+    []) as Receipt[];
+}
+
+export async function getReceipt(id: string): Promise<Receipt | null> {
+  return unwrap(await supabase.from('payment_receipts').select(RECEIPT_SELECT).eq('id', id).maybeSingle()) as Receipt | null;
+}
+
+export interface RecordPaymentInput {
+  /** Due bill the money is for; leave empty for other money (e.g. personal training). */
+  paymentId?: string | null;
+  memberId: string;
+  amount: number;
+  mode: 'cash' | 'upi';
+  note?: string | null;
+  /** Title for other money, e.g. "Personal training". */
+  title?: string | null;
+}
+
+export async function recordPayment(input: RecordPaymentInput): Promise<{ receipt_id: string; receipt_no: string; remaining: number; status: Payment['status'] }> {
+  if (!(input.amount > 0)) throw new Error('Enter the amount received.');
+  return unwrap(
+    await supabase.rpc('record_payment', {
+      p_payment: input.paymentId ?? null,
+      p_amount: input.amount,
+      p_mode: input.mode,
+      p_note: input.note ?? null,
+      p_member: input.paymentId ? null : input.memberId,
+      p_title: input.paymentId ? null : input.title ?? null,
+    }),
+  ) as { receipt_id: string; receipt_no: string; remaining: number; status: Payment['status'] };
+}
+
+/** Amount already received on a bill (works before migration 14 too). */
+export const paidOn = (p: Pick<Payment, 'status' | 'total_amount' | 'amount_paid'>) =>
+  p.status === 'paid' ? Number(p.total_amount) : Number(p.amount_paid ?? 0);
+
+/** Billed, received and still due across a member's bills (failed bills ignored). */
+export function paymentTotals(payments: Pick<Payment, 'status' | 'total_amount' | 'amount_paid'>[]) {
+  const live = payments.filter((p) => p.status !== 'failed');
+  const billed = live.reduce((s, p) => s + Number(p.total_amount), 0);
+  const paid = live.reduce((s, p) => s + paidOn(p), 0);
+  return { billed, paid, remaining: Math.max(billed - paid, 0) };
 }
 
 // ---- Attendance -----------------------------------------------------------------------

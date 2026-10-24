@@ -58,6 +58,7 @@ import { AdminRequests } from './pages/admin/AdminRequests';
 import { AttendanceScanner } from './pages/staff/AttendanceScanner';
 import { MemberDetail } from './pages/staff/MemberDetail';
 import { InvoicePage } from './pages/InvoicePage';
+import { ReceiptPage } from './pages/ReceiptPage';
 import { AdminFinancials } from './pages/admin/AdminFinancials';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminSettings } from './pages/admin/AdminSettings';
@@ -180,6 +181,16 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['member']} allowUnapproved>
                     <Registration />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* PRINTABLE RECEIPT FOR MONEY RECEIVED */}
+              <Route
+                path="/receipt/:receiptId"
+                element={
+                  <ProtectedRoute allowedRoles={PORTAL_ROLES}>
+                    <ReceiptPage />
                   </ProtectedRoute>
                 }
               />
