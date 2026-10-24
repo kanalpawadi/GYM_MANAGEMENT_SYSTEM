@@ -27,8 +27,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 10. `10_chat_and_notices.sql`: one-to-one chat and the notice board (section 18).
 11. `11_delete_member.sql`: the Gym Owner / Super Admin can permanently delete a member (section 21).
 12. `12_supplements.sql`: the members' supplement log (section 22).
+13. `13_assign_membership.sql`: staff change a member's plan; the owner can set custom plans and amounts (section 25).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `12`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `13`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -313,4 +314,20 @@ In **Portal → Payments & Invoices**, members press **Generate payment** and pi
 ## 24. Photos and the header Login button
 - **Photos:** tap any profile photo (member list, member page, My Trainer card, approvals, scanner) to see it full size. Tap again or press Esc to close.
 - **Login button:** on phones, the gold button next to the ☰ menu is **Login**, or **My Portal** when signed in. **Book Free Trial** is inside the ☰ menu.
+
+## 25. Change a member's plan (and custom plans)
+Open the member (Admin → Members → **Open**, or Trainer Panel → **Open**). In **Membership**, press **Change plan**:
+
+1. **Pick a plan:** Monthly, Six Month or Yearly at the standard price (with any discount).
+2. **Starts on:** today by default; it can be up to one month back.
+3. **Payment:** **Paid cash**, **Paid UPI** or **Payment due**. A payment and invoice are created. Due payments can be marked paid later in Financials or on the member's Payments tab.
+4. **Note:** optional, e.g. "Diwali offer".
+
+**Owner only (Gym Owner and Super Admin):**
+- **Custom plan:** your own name (e.g. "Student monthly"), length in months or days, and amount.
+- **Custom amount:** change the amount of a standard plan.
+
+Trainers, receptionists and managers can change plans, but only at the standard price.
+
+If the new plan starts before the current one ends, the current plan ends the day before. If it hadn't started yet, it is cancelled. The member gets a notification.
 

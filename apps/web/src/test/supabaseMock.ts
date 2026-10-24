@@ -290,6 +290,34 @@ export function resetSupabaseMock() {
       }
       return ok(uid);
     }
+    if (fn === 'assign_membership') {
+      const rank: Record<string, number> = { super_admin: 6, owner: 5, manager: 4, receptionist: 3, trainer: 2, member: 1 };
+      const me = table('profiles').find((p) => p.id === uid);
+      const myRank = rank[me?.role] ?? 0;
+      if (myRank < 2) return fail('Only trainers and gym staff can change a plan');
+      const custom = args.p_plan_code === 'custom';
+      const plan = PLAN_CATALOG[args.p_plan_code];
+      if (!custom && !plan) return fail('Unknown plan');
+      if (custom && myRank < 5) return fail('Only the gym owner can create a custom plan');
+      if (!custom && args.p_price != null && args.p_price !== plan.price && myRank < 5) return fail('Only the gym owner can set a custom amount');
+      const title = custom ? args.p_title || 'Custom plan' : plan.title;
+      const price = args.p_price ?? plan.price;
+      const start = new Date(`${args.p_start}T00:00:00`);
+      const end = new Date(start);
+      if (custom && args.p_days) end.setDate(end.getDate() + args.p_days - 1);
+      else {
+        end.setMonth(end.getMonth() + (custom ? args.p_months : plan.months));
+        end.setDate(end.getDate() - 1);
+      }
+      const endIso = end.toLocaleDateString('en-CA');
+      const ms = { id: `ms-${++idCounter}`, member_id: args.p_member, plan_code: args.p_plan_code, plan_title: title, price, start_date: args.p_start, end_date: endIso, status: 'active', created_at: new Date().toISOString() };
+      table('memberships').push(ms);
+      table('payments').push({
+        id: `pay-${++idCounter}`, member_id: args.p_member, membership_id: ms.id, plan_title: title, amount: price, total_amount: price,
+        status: args.p_payment === 'due' ? 'pending' : 'paid', payment_mode: args.p_payment === 'upi' ? 'upi' : 'cash', notes: args.p_note, created_at: new Date().toISOString(),
+      });
+      return ok({ title, price, start_date: args.p_start, end_date: endIso });
+    }
     if (fn === 'delete_member') {
       const me = table('profiles').find((p) => p.id === uid);
       if (!['owner', 'super_admin'].includes(me?.role)) return fail('Only the gym owner or Super Admin can delete members');

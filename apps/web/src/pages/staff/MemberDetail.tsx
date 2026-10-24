@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, QrCode, Trash2, Utensils } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, Pencil, QrCode, Trash2, Utensils } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -11,6 +11,7 @@ import { ProgressTimeline } from '../../components/progress/ProgressTimeline';
 import { PlanEditorModal, PlanTarget } from '../../components/plans/PlanEditorModal';
 import { DeleteMemberModal } from '../../components/account/DeleteMemberModal';
 import { SupplementLog } from '../../components/supplements/SupplementLog';
+import { ChangePlanModal } from '../../components/plans/ChangePlanModal';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, canManageData, isOwnerLevel, isStaffRole, roleRank } from '../../config/roles';
 import { formatINR, phoneDisplay } from '../../config/site';
@@ -63,6 +64,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState<PlanTarget>(null);
   const [deleting, setDeleting] = useState(false);
+  const [changingPlan, setChangingPlan] = useState(false);
   const navigate = useNavigate();
 
   const staff = isStaffRole(me?.role);
@@ -196,7 +198,14 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
         {tab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card hoverEffect={false} className="flex flex-col gap-3">
-              <h3 className="font-heading text-white">Membership</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-heading text-white">Membership</h3>
+                {roleRank(me.role) >= 2 && member.role === 'member' && member.id !== me.id && (
+                  <Button variant="outline" size="sm" onClick={() => setChangingPlan(true)} leftIcon={<Pencil className="w-4 h-4" />}>
+                    Change plan
+                  </Button>
+                )}
+              </div>
               {membership ? (
                 <>
                   <p className="text-xl font-heading text-gym-primary">{membership.plan_title}</p>
@@ -368,6 +377,18 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
             </button>
           </Card>
         )}
+
+        <ChangePlanModal
+          isOpen={changingPlan}
+          member={member}
+          current={membership}
+          canSetPrice={isOwnerLevel(me.role)}
+          onClose={() => setChangingPlan(false)}
+          onSaved={(message) => {
+            setChangingPlan(false);
+            load().then(() => flash(message));
+          }}
+        />
 
         <DeleteMemberModal
           member={deleting ? member : null}

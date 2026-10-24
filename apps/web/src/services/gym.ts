@@ -252,6 +252,36 @@ export interface Payment {
 /** Who paid: the member's name, or "Deleted member · RVF-0007" once they were deleted. */
 export const payerName = (p: Pick<Payment, 'member' | 'deleted_member_label'>) => p.member?.full_name ?? p.deleted_member_label ?? 'Member';
 
+// ---- Staff change a member's plan (migration 13) -------------------------------------------
+
+export interface AssignPlanInput {
+  planCode: 'monthly' | 'six-month' | 'yearly' | 'custom';
+  start: string;
+  payment: 'cash' | 'upi' | 'due';
+  /** Custom amount (Gym Owner / Super Admin only). */
+  price?: number | null;
+  title?: string | null;
+  months?: number | null;
+  days?: number | null;
+  note?: string | null;
+}
+
+export async function assignMembership(memberId: string, input: AssignPlanInput): Promise<{ title: string; price: number; start_date: string; end_date: string }> {
+  return unwrap(
+    await supabase.rpc('assign_membership', {
+      p_member: memberId,
+      p_plan_code: input.planCode,
+      p_start: input.start,
+      p_payment: input.payment,
+      p_price: input.price ?? null,
+      p_title: input.title ?? null,
+      p_months: input.months ?? null,
+      p_days: input.days ?? null,
+      p_note: input.note ?? null,
+    }),
+  ) as { title: string; price: number; start_date: string; end_date: string };
+}
+
 // ---- Deleting a member (Gym Owner / Super Admin) ------------------------------------------
 
 const MEMBER_FILE_BUCKETS = ['avatars', 'progress-photos', 'attendance-selfies'];
