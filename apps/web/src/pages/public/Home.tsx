@@ -68,7 +68,7 @@ export const Home: React.FC = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
-                <Link to="/plans">
+                <Link to="/login">
                   <Button variant="primary" size="lg" className="w-full sm:w-auto" rightIcon={<ArrowRight className="w-5 h-5" />}>
                     Join Now
                   </Button>
