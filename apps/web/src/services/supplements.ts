@@ -33,9 +33,35 @@ export interface SupplementEntry {
   bill_no: string | null;
   notes: string | null;
   created_at: string;
+  /** Bill for a supplement bought at the gym (migration 15). */
+  payment_id?: string | null;
 }
 
-export type SupplementInput = Omit<SupplementEntry, 'id' | 'member_id' | 'created_at'>;
+export type SupplementInput = Omit<SupplementEntry, 'id' | 'member_id' | 'created_at' | 'payment_id'>;
+
+/** Staff record a supplement bought at the gym and take payment now (cash/UPI) or later (due). */
+export async function sellSupplement(
+  memberId: string,
+  input: SupplementInput & { payment: 'cash' | 'upi' | 'due' },
+): Promise<{ payment_id: string; status: 'paid' | 'pending'; receipt_no: string | null }> {
+  if (!input.supplement.trim()) throw new Error('Please enter the supplement name.');
+  if (!(Number(input.price) > 0)) throw new Error('Enter the price.');
+  return unwrap(
+    await supabase.rpc('sell_supplement', {
+      p_member: memberId,
+      p_supplement: input.supplement.trim(),
+      p_price: input.price,
+      p_payment: input.payment,
+      p_taken_on: input.taken_on,
+      p_brand: input.brand,
+      p_dose: input.dose,
+      p_time: input.time_of_day,
+      p_quantity: input.quantity,
+      p_bill_no: input.bill_no,
+      p_notes: input.notes,
+    }),
+  ) as { payment_id: string; status: 'paid' | 'pending'; receipt_no: string | null };
+}
 
 export const timeLabel = (t: string | null) => TIMES_OF_DAY.find((x) => x.value === t)?.label ?? '';
 

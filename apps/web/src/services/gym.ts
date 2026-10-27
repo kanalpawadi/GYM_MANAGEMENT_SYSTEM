@@ -382,6 +382,23 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{ receip
   ) as { receipt_id: string; receipt_no: string; remaining: number; status: Payment['status'] };
 }
 
+/** Staff add any amount the member must pay later (migration 15). */
+export async function addCharge(memberId: string, amount: number, title: string, note?: string | null): Promise<{ payment_id: string }> {
+  if (!(amount > 0)) throw new Error('Enter the amount due.');
+  if (!title.trim()) throw new Error('Say what the amount is for.');
+  return unwrap(await supabase.rpc('add_charge', { p_member: memberId, p_amount: amount, p_title: title.trim(), p_note: note ?? null })) as { payment_id: string };
+}
+
+/** Staff add a visit on a past day (from 1 Jan 2023). */
+export async function addAttendanceDay(memberId: string, day: string): Promise<{ already: boolean }> {
+  return unwrap(await supabase.rpc('add_attendance_day', { p_member: memberId, p_day: day })) as { already: boolean };
+}
+
+export async function removeAttendance(id: string): Promise<void> {
+  const rows = unwrap(await supabase.from('attendance').delete().eq('id', id).select('id')) as { id: string }[] | null;
+  if (!rows || rows.length === 0) throw new Error("You can't remove this visit.");
+}
+
 /** Amount already received on a bill (works before migration 14 too). */
 export const paidOn = (p: Pick<Payment, 'status' | 'total_amount' | 'amount_paid'>) =>
   p.status === 'paid' ? Number(p.total_amount) : Number(p.amount_paid ?? 0);

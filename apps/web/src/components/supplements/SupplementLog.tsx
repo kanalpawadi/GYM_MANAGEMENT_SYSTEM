@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Pill, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
@@ -8,7 +9,7 @@ import { ExportMenu } from '../ui/ExportMenu';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../config/site';
 import { localDay } from '../../services/gym';
-import { SupplementEntry, TIMES_OF_DAY, TimeOfDay, addSupplement, deleteSupplement, listSupplements, timeLabel, totalSpent } from '../../services/supplements';
+import { SupplementEntry, TIMES_OF_DAY, TimeOfDay, addSupplement, deleteSupplement, listSupplements, sellSupplement, timeLabel, totalSpent } from '../../services/supplements';
 
 const fmt = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const textarea =
@@ -19,10 +20,14 @@ interface Props {
   memberName?: string;
   /** Member themself and staff can add; trainers too (role chain). */
   canEdit?: boolean;
+  /** Front desk and above: record a supplement bought at the gym with payment (paid now or later). */
+  canSell?: boolean;
+  /** Called after a gym sale so the page can refresh payments. */
+  onSold?: () => void;
 }
 
 /** Supplements a member takes, plus optional purchase details for the statement / invoice export. */
-export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit = true }) => {
+export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit = true, canSell = false, onSold }) => {
   const { profile } = useAuth();
   const [rows, setRows] = useState<SupplementEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +35,8 @@ export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit =
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
   const [bought, setBought] = useState(false);
+  const [fromGym, setFromGym] = useState(true);
+  const [pay, setPay] = useState<'cash' | 'upi' | 'due'>('cash');
   const empty = { taken_on: localDay(), supplement: '', brand: '', dose: '', time_of_day: '' as TimeOfDay | '', quantity: '', price: '', shop: '', bill_no: '', notes: '' };
   const [form, setForm] = useState(empty);
   const set = (k: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -51,7 +58,33 @@ export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit =
     setNotice('');
     setSaving(true);
     const blank = (v: string) => (v.trim() ? v.trim() : null);
+    const gymSale = canSell && bought && fromGym;
     try {
+      if (gymSale) {
+        const r = await sellSupplement(memberId, {
+          taken_on: form.taken_on || localDay(),
+          supplement: form.supplement,
+          brand: blank(form.brand),
+          dose: blank(form.dose),
+          time_of_day: (form.time_of_day || null) as TimeOfDay | null,
+          quantity: blank(form.quantity),
+          price: form.price.trim() ? Number(form.price) : null,
+          shop: null,
+          bill_no: blank(form.bill_no),
+          notes: blank(form.notes),
+          payment: pay,
+        });
+        setForm({ ...empty, taken_on: form.taken_on });
+        setBought(false);
+        setNotice(
+          r.status === 'paid'
+            ? `Sold for ${formatINR(Number(form.price))}, paid by ${pay.toUpperCase()}.${r.receipt_no ? ` Receipt ${r.receipt_no}.` : ''}`
+            : `Saved. ${formatINR(Number(form.price))} added as due in Payments.`,
+        );
+        await load();
+        onSold?.();
+        return;
+      }
       await addSupplement(memberId, profile.id, {
         taken_on: form.taken_on || localDay(),
         supplement: form.supplement,
@@ -137,13 +170,59 @@ export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit =
               <input type="checkbox" checked={bought} onChange={(e) => setBought(e.target.checked)} className="accent-gym-primary w-4 h-4" />
               <ShoppingBag className="w-4 h-4 text-gym-primary" /> I bought this (add price and bill)
             </label>
+            {bought && canSell && (
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className="text-sm font-medium text-gym-muted mb-1">Bought from</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      [true, 'The gym'],
+                      [false, 'Somewhere else'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <label
+                      key={label}
+                      className={`text-center min-h-[44px] flex items-center justify-center rounded-xl border cursor-pointer text-xs font-heading ${fromGym === value ? 'border-gym-primary bg-gym-primary/10 text-gym-primary' : 'border-gym-border text-white'}`}
+                    >
+                      <input type="radio" name="from" checked={fromGym === value} onChange={() => setFromGym(value)} className="sr-only" />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
             {bought && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Price (₹)" type="number" min="0" step="0.01" inputMode="decimal" value={form.price} onChange={set('price')} />
+                <Input label="Price (₹)" type="number" min="0" step="0.01" inputMode="decimal" value={form.price} onChange={set('price')} required={canSell && fromGym} />
                 <Input label="Quantity" value={form.quantity} onChange={set('quantity')} placeholder="e.g. 1 kg tub" maxLength={60} />
-                <Input label="Shop" value={form.shop} onChange={set('shop')} placeholder="e.g. RV Fitness desk, Amazon" maxLength={120} />
+                {!(canSell && fromGym) && <Input label="Shop" value={form.shop} onChange={set('shop')} placeholder="e.g. Amazon, medical store" maxLength={120} />}
                 <Input label="Bill / invoice no." value={form.bill_no} onChange={set('bill_no')} maxLength={60} />
               </div>
+            )}
+            {bought && canSell && fromGym && (
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className="text-sm font-medium text-gym-muted mb-1">Payment</legend>
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      ['cash', 'Paid cash'],
+                      ['upi', 'Paid UPI'],
+                      ['due', 'Pay later'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <label
+                      key={value}
+                      className={`text-center min-h-[44px] flex items-center justify-center rounded-xl border cursor-pointer text-xs font-heading ${pay === value ? 'border-gym-primary bg-gym-primary/10 text-gym-primary' : 'border-gym-border text-white'}`}
+                    >
+                      <input type="radio" name="pay" value={value} checked={pay === value} onChange={() => setPay(value)} className="sr-only" />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gym-muted">
+                  {pay === 'due' ? 'Added to Payments as an amount due; take it later with Record payment received.' : 'A paid bill and receipt are made in Payments.'}
+                </p>
+              </fieldset>
             )}
             <label className="flex flex-col gap-1.5 text-sm font-medium text-gym-muted">
               Notes
@@ -193,6 +272,11 @@ export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit =
                   </p>
                 )}
                 {r.notes && <p className="text-xs text-gray-300 mt-0.5 break-words">{r.notes}</p>}
+                {r.payment_id && (
+                  <Link to={`/invoice/${r.payment_id}`} className="inline-block text-[11px] text-gym-primary hover:underline mt-0.5">
+                    Gym sale · view bill
+                  </Link>
+                )}
               </div>
               {canEdit && (
                 <button type="button" onClick={() => remove(r)} className="p-2 text-gym-muted hover:text-gym-danger shrink-0" aria-label={`Delete ${r.supplement} on ${fmt(r.taken_on)}`}>

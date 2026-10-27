@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Flame, MapPin, QrCode } from 'lucide-react';
+import { Camera, CheckCircle2, Flame, MapPin, QrCode } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,8 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useGymSettings } from '../../content/useGymSettings';
 import { AttendanceRow, attendanceStreak, currentPosition, listAttendance, localDay, selfieCheckIn } from '../../services/gym';
 import { compressImage } from '../../utils/image';
+import { ATTENDANCE_START, AttendanceCalendar } from '../../components/attendance/AttendanceCalendar';
 
-const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const METHOD_LABEL: Record<string, string> = { qr: 'QR scan', selfie: 'Selfie', manual: 'Front desk' };
 
 export const MemberAttendance: React.FC = () => {
@@ -20,16 +20,12 @@ export const MemberAttendance: React.FC = () => {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
-  const [month, setMonth] = useState(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     if (!profile) return;
-    const since = new Date(Date.now() - 400 * 86400000).toISOString();
-    setRows(await listAttendance({ memberId: profile.id, since }));
+    // Full history since the gym's records start (Jan 2023).
+    setRows(await listAttendance({ memberId: profile.id, since: new Date(`${ATTENDANCE_START}T00:00:00+05:30`).toISOString() }));
   };
 
   useEffect(() => {
@@ -41,14 +37,8 @@ export const MemberAttendance: React.FC = () => {
   const days = useMemo(() => new Set(rows.map((r) => localDay(r.check_in))), [rows]);
   const todayKey = localDay();
   const checkedInToday = days.has(todayKey);
-  const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
-  const monthCount = rows.filter((r) => localDay(r.check_in).startsWith(monthKey)).length;
-
-  const cells = useMemo(() => {
-    const first = (month.getDay() + 6) % 7; // Monday first
-    const total = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-    return [...Array(first).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)];
-  }, [month]);
+  const thisMonth = todayKey.slice(0, 7);
+  const monthCount = rows.filter((r) => localDay(r.check_in).startsWith(thisMonth)).length;
 
   const handleSelfie = async (file?: File) => {
     if (!file || !profile) return;
@@ -134,40 +124,7 @@ export const MemberAttendance: React.FC = () => {
           </Card>
         </div>
 
-        <Card hoverEffect={false} className="flex flex-col gap-4" aria-label="Attendance calendar">
-          <div className="flex items-center justify-between">
-            <button type="button" aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="p-2 text-gym-muted hover:text-white">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h3 className="font-heading text-white">{month.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</h3>
-            <button type="button" aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="p-2 text-gym-muted hover:text-white">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] text-gym-muted font-heading">
-            {WEEK.map((d) => (
-              <span key={d}>{d}</span>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1.5">
-            {cells.map((day, i) => {
-              if (!day) return <span key={i} />;
-              const key = `${monthKey}-${String(day).padStart(2, '0')}`;
-              const hit = days.has(key);
-              return (
-                <span
-                  key={i}
-                  aria-label={hit ? `Checked in on ${key}` : undefined}
-                  className={`aspect-square rounded-lg flex items-center justify-center text-xs font-heading ${
-                    hit ? 'bg-gym-success/20 text-gym-success border border-gym-success/40' : key === todayKey ? 'border border-gym-primary text-white' : 'bg-black/40 text-gym-muted'
-                  }`}
-                >
-                  {day}
-                </span>
-              );
-            })}
-          </div>
-        </Card>
+        <AttendanceCalendar days={days} />
 
         <Card hoverEffect={false} className="flex flex-col gap-2">
           <h3 className="font-heading text-white">Recent check-ins</h3>

@@ -290,6 +290,37 @@ export function resetSupabaseMock() {
       }
       return ok(uid);
     }
+    const staffOnly = () => ['receptionist', 'manager', 'owner', 'super_admin'].includes(table('profiles').find((p) => p.id === uid)?.role);
+    if (fn === 'add_charge') {
+      if (!staffOnly()) return fail('Only gym staff can add an amount due');
+      const bill = { id: `pay-${++idCounter}`, member_id: args.p_member, plan_title: args.p_title, amount: args.p_amount, total_amount: args.p_amount, amount_paid: 0, status: 'pending', payment_mode: 'cash', notes: args.p_note, created_at: new Date().toISOString() };
+      table('payments').push(bill);
+      return ok({ payment_id: bill.id, amount: args.p_amount, title: args.p_title });
+    }
+    if (fn === 'sell_supplement') {
+      if (!staffOnly()) return fail('Only gym staff can record a supplement sale');
+      const paidNow = args.p_payment !== 'due';
+      const bill = {
+        id: `pay-${++idCounter}`, member_id: args.p_member, plan_title: `Supplement: ${args.p_supplement}${args.p_brand ? ` (${args.p_brand})` : ''}`, amount: args.p_price,
+        total_amount: args.p_price, amount_paid: paidNow ? args.p_price : 0, status: paidNow ? 'paid' : 'pending', payment_mode: args.p_payment === 'upi' ? 'upi' : 'cash', created_at: new Date().toISOString(),
+      };
+      table('payments').push(bill);
+      const receiptNo = paidNow ? `RCPT-2026-${String(++idCounter).padStart(5, '0')}` : null;
+      if (paidNow) table('payment_receipts').push({ id: `rc-${idCounter}`, receipt_no: receiptNo, payment_id: bill.id, member_id: args.p_member, amount: args.p_price, payment_mode: bill.payment_mode, received_at: new Date().toISOString() });
+      table('supplement_logs').push({
+        id: `sl-${++idCounter}`, member_id: args.p_member, taken_on: args.p_taken_on, supplement: args.p_supplement, brand: args.p_brand, dose: args.p_dose, time_of_day: args.p_time,
+        quantity: args.p_quantity, price: args.p_price, shop: 'RV Fitness (gym)', bill_no: args.p_bill_no, notes: args.p_notes, payment_id: bill.id, created_by: uid, created_at: new Date().toISOString(),
+      });
+      return ok({ payment_id: bill.id, status: bill.status, receipt_no: receiptNo, amount: args.p_price });
+    }
+    if (fn === 'add_attendance_day') {
+      const myRole = table('profiles').find((p) => p.id === uid)?.role;
+      if (!['trainer', 'receptionist', 'manager', 'owner', 'super_admin'].includes(myRole)) return fail('Only trainers and gym staff can add attendance');
+      if (args.p_day < '2023-01-01') return fail('Choose a day between 1 Jan 2023 and today');
+      const already = table('attendance').some((a) => a.member_id === args.p_member && String(a.check_in).startsWith(args.p_day));
+      if (!already) table('attendance').push({ id: `att-${++idCounter}`, member_id: args.p_member, check_in: `${args.p_day}T06:30:00.000Z`, method: 'manual', verified_by: uid });
+      return ok({ already });
+    }
     if (fn === 'record_payment') {
       const me = table('profiles').find((p) => p.id === uid);
       if (!['receptionist', 'manager', 'owner', 'super_admin'].includes(me?.role)) return fail('Only gym staff can record payments');

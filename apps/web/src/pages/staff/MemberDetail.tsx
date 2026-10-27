@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, IndianRupee, Pencil, QrCode, Trash2, Utensils } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Crown, Dumbbell, FileText, MessageCircle, IndianRupee, Pencil, Plus, QrCode, Trash2, Utensils } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -13,6 +13,8 @@ import { DeleteMemberModal } from '../../components/account/DeleteMemberModal';
 import { SupplementLog } from '../../components/supplements/SupplementLog';
 import { ChangePlanModal } from '../../components/plans/ChangePlanModal';
 import { RecordPaymentModal } from '../../components/payments/RecordPaymentModal';
+import { AddChargeModal } from '../../components/payments/AddChargeModal';
+import { AttendanceCalendar } from '../../components/attendance/AttendanceCalendar';
 import { PaymentTotals, ReceiptList, leftOn } from '../../components/payments/PaymentSummary';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, canManageData, isOwnerLevel, isStaffRole, roleRank } from '../../config/roles';
@@ -29,6 +31,9 @@ import {
   listAttendance,
   listMemberships,
   listPayments,
+  addAttendanceDay,
+  removeAttendance,
+  localDay,
   listReceipts,
   Receipt,
   markPaymentPaid,
@@ -61,6 +66,8 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [recording, setRecording] = useState(false);
+  const [charging, setCharging] = useState(false);
+  const [busyDay, setBusyDay] = useState<string | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
   const [plans, setPlans] = useState<{ diet: DietPlan | null; workout: WorkoutPlan | null }>({ diet: null, workout: null });
@@ -310,9 +317,14 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
           <div className="flex flex-col gap-4">
           <PaymentTotals payments={payments} />
           {staff && member.role === 'member' && (
-            <Button variant="primary" onClick={() => setRecording(true)} leftIcon={<IndianRupee className="w-4 h-4" />} className="sm:self-start">
-              Record payment received
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="primary" onClick={() => setRecording(true)} leftIcon={<IndianRupee className="w-4 h-4" />}>
+                Record payment received
+              </Button>
+              <Button variant="outline" onClick={() => setCharging(true)} leftIcon={<Plus className="w-4 h-4" />}>
+                Add amount due
+              </Button>
+            </div>
           )}
           <Card hoverEffect={false} className="p-0 overflow-hidden">
             <div className="overflow-x-auto">
@@ -369,6 +381,16 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
           </div>
         )}
 
+        <AddChargeModal
+          isOpen={charging}
+          member={member}
+          onClose={() => setCharging(false)}
+          onSaved={(message) => {
+            setCharging(false);
+            load().then(() => flash(message));
+          }}
+        />
+
         <RecordPaymentModal
           isOpen={recording}
           member={member}
@@ -380,9 +402,33 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
           }}
         />
 
-        {tab === 'supplements' && <SupplementLog memberId={member.id} memberName={member.full_name} canEdit={canManageData(me, member)} />}
+        {tab === 'supplements' && (
+          <SupplementLog memberId={member.id} memberName={member.full_name} canEdit={canManageData(me, member)} canSell={staff && member.role === 'member' && member.id !== me.id} onSold={() => load()} />
+        )}
 
         {tab === 'attendance' && (
+          <div className="flex flex-col gap-4">
+          <AttendanceCalendar
+            days={new Set(attendance.map((a) => localDay(a.check_in)))}
+            busyDay={busyDay}
+            onDayClick={
+              roleRank(me.role) >= 2 && member.role === 'member' && member.id !== me.id
+                ? async (day, hit) => {
+                    const pretty = new Date(`${day}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                    if (hit) {
+                      const row = attendance.find((a) => localDay(a.check_in) === day);
+                      if (!row || !window.confirm(`Remove ${member.full_name}'s visit on ${pretty}?`)) return;
+                      setBusyDay(day);
+                      await run(() => removeAttendance(row.id), `Visit on ${pretty} removed.`);
+                    } else {
+                      setBusyDay(day);
+                      await run(() => addAttendanceDay(member.id, day), `Visit added on ${pretty}.`);
+                    }
+                    setBusyDay(null);
+                  }
+                : undefined
+            }
+          />
           <Card hoverEffect={false}>
             {attendance.length === 0 ? (
               <p className="text-sm text-gym-muted">No check-ins yet.</p>
@@ -397,6 +443,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
               </ul>
             )}
           </Card>
+          </div>
         )}
 
         {isOwnerLevel(me.role) && member.role === 'member' && member.id !== me.id && (

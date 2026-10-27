@@ -29,8 +29,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 12. `12_supplements.sql`: the members' supplement log (section 22).
 13. `13_assign_membership.sql`: staff change a member's plan; the owner can set custom plans and amounts (section 25).
 14. `14_payment_receipts.sql`: money received with notes, part payments, receipts, and total paid / remaining (section 26).
+15. `15_supplement_sales_charges_past_attendance.sql`: supplement sales with payment, "Add amount due", and adding past visits (section 27).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `14`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `15`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -347,4 +348,25 @@ Open the member → **Payments** tab:
 Bills paid in other ways also get a receipt automatically: approvals, Change plan, and the quick **Paid CASH / Paid UPI** buttons.
 
 Members see the same totals and their receipts in **Portal → Payments & Invoices**. Trainers can see the totals but cannot record money.
+
+## 27. Supplement sales, amounts due and attendance since 2023
+### Supplement sold at the gym
+Front desk, manager, owner or Super Admin open the member → **Supplements**:
+1. Fill in the supplement and tick **I bought this**.
+2. **Bought from:**
+   - **The gym:** enter the price, then choose **Paid cash**, **Paid UPI** or **Pay later**.
+     - Paid: a paid bill and a receipt appear in Payments.
+     - Pay later: the amount is added as due in Payments and the member is notified. Take the money later with **Record payment received**; part payments are fine.
+   - **Somewhere else:** just a note with the shop. No gym bill.
+
+Members and trainers can still note supplements, but without the payment option.
+
+### Add amount due
+Member → **Payments** → **Add amount due**: what it is for (e.g. "Locker (Nov)"), the amount and an optional note. It shows as a due bill, is included in **Remaining**, and the member gets a notification.
+
+### Attendance since 2023
+- **Member:** **Portal → Attendance** shows every visit from **January 2023**. Use the month and year boxes to jump back. The calendar doesn't go before January 2023.
+- **Staff and trainers:** on the member's **Attendance** tab, tap a past day to **add a visit** (for records from before the app), or tap a green day to **remove** a wrong one. Visits can be added from 1 Jan 2023 up to today.
+
+**Note:** if Payments shows "No money received yet" for bills that are already paid, run migration `14`. It creates receipts for past payments.
 
