@@ -291,6 +291,21 @@ export function resetSupabaseMock() {
       return ok(uid);
     }
     const staffOnly = () => ['receptionist', 'manager', 'owner', 'super_admin'].includes(table('profiles').find((p) => p.id === uid)?.role);
+    if (fn === 'delete_supplement') {
+      const log = table('supplement_logs').find((l) => l.id === args.p_log);
+      if (!log) return fail('Entry not found');
+      let cancelled: string | null = null;
+      if (log.payment_id) {
+        if (!staffOnly()) return fail('Only gym staff can delete a supplement sale (it has a bill)');
+        const bill = table('payments').find((p) => p.id === log.payment_id);
+        if (bill && bill.status !== 'failed') {
+          bill.status = 'failed';
+          cancelled = bill.id;
+        }
+      }
+      state.tables.supplement_logs = table('supplement_logs').filter((l) => l.id !== args.p_log);
+      return ok({ deleted: args.p_log, cancelled_payment: cancelled });
+    }
     if (fn === 'add_charge') {
       if (!staffOnly()) return fail('Only gym staff can add an amount due');
       const bill = { id: `pay-${++idCounter}`, member_id: args.p_member, plan_title: args.p_title, amount: args.p_amount, total_amount: args.p_amount, amount_paid: 0, status: 'pending', payment_mode: 'cash', notes: args.p_note, created_at: new Date().toISOString() };

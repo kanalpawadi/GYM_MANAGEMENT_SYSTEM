@@ -6,9 +6,6 @@ import { localDay } from '../../services/gym';
 const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-/** Attendance history starts here. */
-export const ATTENDANCE_START = '2023-01-01';
-const START_YEAR = 2023;
 
 interface Props {
   /** Days with a check-in, as YYYY-MM-DD (India time). */
@@ -19,19 +16,19 @@ interface Props {
   title?: string;
 }
 
-/** Month calendar of check-ins, from January 2023 to this month. */
+/** Month calendar of check-ins. Any month can be opened. */
 export const AttendanceCalendar: React.FC<Props> = ({ days, onDayClick, busyDay, title }) => {
   const today = localDay();
   const now = new Date(`${today}T00:00:00`);
   const [month, setMonth] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
 
-  const minMonth = new Date(START_YEAR, 0, 1);
-  const maxMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const go = (d: Date) => setMonth(d < minMonth ? minMonth : d > maxMonth ? maxMonth : d);
+  const go = (d: Date) => setMonth(d);
 
   const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
   const monthCount = [...days].filter((d) => d.startsWith(monthKey)).length;
-  const years = Array.from({ length: now.getFullYear() - START_YEAR + 1 }, (_, i) => START_YEAR + i);
+  // Year list: 15 years back to 2 years ahead, plus whatever year is open.
+  const span = Array.from({ length: 18 }, (_, i) => now.getFullYear() - 15 + i);
+  const years = span.includes(month.getFullYear()) ? span : [...span, month.getFullYear()].sort((a, b) => a - b);
 
   const cells = useMemo(() => {
     const first = (month.getDay() + 6) % 7; // Monday first
@@ -48,7 +45,6 @@ export const AttendanceCalendar: React.FC<Props> = ({ days, onDayClick, busyDay,
         <button
           type="button"
           aria-label="Previous month"
-          disabled={month <= minMonth}
           onClick={() => go(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
           className="p-2 text-gym-muted hover:text-white disabled:opacity-30"
         >
@@ -73,7 +69,6 @@ export const AttendanceCalendar: React.FC<Props> = ({ days, onDayClick, busyDay,
         <button
           type="button"
           aria-label="Next month"
-          disabled={month >= maxMonth}
           onClick={() => go(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
           className="p-2 text-gym-muted hover:text-white disabled:opacity-30"
         >
@@ -94,11 +89,10 @@ export const AttendanceCalendar: React.FC<Props> = ({ days, onDayClick, busyDay,
           if (!day) return <span key={i} />;
           const key = `${monthKey}-${String(day).padStart(2, '0')}`;
           const hit = days.has(key);
-          const future = key > today;
           const cls = `aspect-square rounded-lg flex items-center justify-center text-xs font-heading ${
             hit ? 'bg-gym-success/20 text-gym-success border border-gym-success/40' : key === today ? 'border border-gym-primary text-white' : 'bg-black/40 text-gym-muted'
           } ${busyDay === key ? 'opacity-50' : ''}`;
-          if (onDayClick && !future) {
+          if (onDayClick) {
             return (
               <button
                 key={i}
@@ -113,7 +107,7 @@ export const AttendanceCalendar: React.FC<Props> = ({ days, onDayClick, busyDay,
             );
           }
           return (
-            <span key={i} aria-label={hit ? `Checked in on ${key}` : undefined} className={`${cls} ${future ? 'opacity-40' : ''}`}>
+            <span key={i} aria-label={hit ? `Checked in on ${key}` : undefined} className={cls}>
               {day}
             </span>
           );

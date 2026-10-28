@@ -109,11 +109,17 @@ export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit =
   };
 
   const remove = async (r: SupplementEntry) => {
-    if (!window.confirm(`Delete ${r.supplement} on ${fmt(r.taken_on)}?`)) return;
+    const question = r.payment_id
+      ? `Delete ${r.supplement} on ${fmt(r.taken_on)}? Its gym bill will be cancelled too (give the money back if it was already paid).`
+      : `Delete ${r.supplement} on ${fmt(r.taken_on)}?`;
+    if (!window.confirm(question)) return;
     setError('');
+    setNotice('');
     try {
-      await deleteSupplement(r.id);
+      const res = await deleteSupplement(r.id);
+      if (res.cancelledPayment) setNotice(`${r.supplement} deleted and its bill cancelled in Payments.`);
       await load();
+      if (res.cancelledPayment) onSold?.();
     } catch (err: any) {
       setError(err.message || 'Could not delete');
     }
@@ -163,7 +169,7 @@ export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit =
                 onChange={set('time_of_day')}
                 options={[{ label: 'Select', value: '' }, ...TIMES_OF_DAY.map((t) => ({ label: t.label, value: t.value }))]}
               />
-              <Input label="Date" type="date" value={form.taken_on} max={localDay()} onChange={set('taken_on')} required />
+              <Input label="Date" type="date" value={form.taken_on} onChange={set('taken_on')} required />
             </div>
 
             <label className="flex items-center gap-2 text-sm text-white cursor-pointer w-fit min-h-[44px]">
@@ -278,7 +284,7 @@ export const SupplementLog: React.FC<Props> = ({ memberId, memberName, canEdit =
                   </Link>
                 )}
               </div>
-              {canEdit && (
+              {canEdit && (!r.payment_id || canSell) && (
                 <button type="button" onClick={() => remove(r)} className="p-2 text-gym-muted hover:text-gym-danger shrink-0" aria-label={`Delete ${r.supplement} on ${fmt(r.taken_on)}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>

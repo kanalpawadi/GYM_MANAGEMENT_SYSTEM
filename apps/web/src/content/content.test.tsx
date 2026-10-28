@@ -40,8 +40,8 @@ describe('mergeContent', () => {
     expect(merged.plans.items).toHaveLength(DEFAULT_CONTENT.plans.items.length);
   });
 
-  it('has an editor section for every content section', () => {
-    expect(SECTIONS.map((s) => s.key).sort()).toEqual(Object.keys(DEFAULT_CONTENT).sort());
+  it('has an editor section for every content section except plans (Admin → Subscription Plans)', () => {
+    expect(SECTIONS.map((s) => s.key).sort()).toEqual(Object.keys(DEFAULT_CONTENT).filter((k) => k !== 'plans').sort());
   });
 });
 
@@ -128,15 +128,11 @@ describe('Website Editor', () => {
     expect(items[items.length - 1].title).toBe('New Squat Rack');
   });
 
-  it('shows plan prices as fixed and offers no add/remove for plans', async () => {
+  it('has no plans section: plans are managed in Admin → Subscription Plans', async () => {
     signInAs(makeProfile('super_admin'));
     renderEditor();
-    const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Membership Plans' }));
-    await user.click(await screen.findByRole('button', { name: /▸ Monthly/ }));
-    expect(screen.getByText('1500')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Add Plan' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /remove monthly/i })).not.toBeInTheDocument();
+    await screen.findByRole('button', { name: 'FAQ' });
+    expect(screen.queryByRole('button', { name: 'Membership Plans' })).not.toBeInTheDocument();
   });
 
   it('resets a section back to the original content', async () => {

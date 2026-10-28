@@ -41,7 +41,7 @@ describe('Date of birth field', () => {
     expect(screen.getByTestId('iso')).toHaveTextContent('1999-02-01');
   });
 
-  it('flags dates that do not exist or are in the future', async () => {
+  it('flags dates that do not exist; any real date is accepted', async () => {
     const spy = vi.fn();
     render(<Harness spy={spy} />);
     const box = screen.getByLabelText(/^date of birth$/i);
@@ -54,8 +54,8 @@ describe('Date of birth field', () => {
 
     await user.clear(box);
     await user.type(box, '01012030');
-    expect(screen.getByText(/cannot be in the future/i)).toBeInTheDocument();
-    expect(screen.getByTestId('iso')).toHaveTextContent('');
+    expect(screen.queryByText(/not a real date/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('iso')).toHaveTextContent('2030-01-01');
   });
 
   it('shows a saved date and keeps the calendar picker in sync', () => {

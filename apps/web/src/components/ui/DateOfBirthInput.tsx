@@ -33,15 +33,13 @@ interface Props {
   /** Called with "YYYY-MM-DD" when the typed date is complete and real, otherwise with "". `typed` is what is in the box. */
   onChange: (iso: string, typed: string) => void;
   required?: boolean;
-  /** Latest allowed date, "YYYY-MM-DD". */
-  max?: string;
 }
 
 /**
  * Date of birth that can be typed with the number keyboard (DD/MM/YYYY) or picked from a calendar.
  * Phone calendars make you scroll back decades for a birth year, so typing comes first.
  */
-export const DateOfBirthInput: React.FC<Props> = ({ label = 'Date of Birth', value, onChange, required, max }) => {
+export const DateOfBirthInput: React.FC<Props> = ({ label = 'Date of Birth', value, onChange, required }) => {
   const [text, setText] = useState(isoToDmy(value));
   const pickerRef = useRef<HTMLInputElement>(null);
   const id = 'date-of-birth';
@@ -53,13 +51,12 @@ export const DateOfBirthInput: React.FC<Props> = ({ label = 'Date of Birth', val
   }, [value]);
 
   const iso = parseDmy(text);
-  const tooLate = !!iso && !!max && iso > max;
-  const showHint = text.length === 10 && (!iso || tooLate);
+  const showHint = text.length === 10 && !iso;
 
   const update = (next: string) => {
     setText(next);
     const parsed = parseDmy(next);
-    onChange(parsed && !(max && parsed > max) ? parsed : '', next);
+    onChange(parsed ?? '', next);
   };
 
   const openCalendar = () => {
@@ -109,14 +106,13 @@ export const DateOfBirthInput: React.FC<Props> = ({ label = 'Date of Birth', val
           type="date"
           tabIndex={-1}
           aria-hidden="true"
-          max={max}
           value={iso ?? ''}
           onChange={(e) => update(isoToDmy(e.target.value))}
           className="absolute right-0 bottom-0 w-10 h-10 opacity-0 pointer-events-none"
         />
       </div>
       <span id={`${id}-hint`} className={`text-xs ${showHint ? 'text-gym-danger' : 'text-gym-muted'}`}>
-        {showHint ? (tooLate ? 'Date of birth cannot be in the future.' : 'Not a real date. Use DD/MM/YYYY, e.g. 25/08/1998.') : 'Type it, e.g. 25/08/1998, or tap the calendar.'}
+        {showHint ? 'Not a real date. Use DD/MM/YYYY, e.g. 25/08/1998.' : 'Type it, e.g. 25/08/1998, or tap the calendar.'}
       </span>
     </div>
   );

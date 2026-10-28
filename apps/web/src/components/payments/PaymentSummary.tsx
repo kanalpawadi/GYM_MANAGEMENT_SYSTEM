@@ -43,6 +43,7 @@ export const ReceiptList: React.FC<{ receipts: Receipt[] }> = ({ receipts }) => 
               </p>
               <p className="text-xs text-gym-muted">
                 {when(r.received_at)} · {r.payment?.plan_title ?? 'Payment'}
+                {r.payment?.status === 'failed' ? ' · bill cancelled' : ''}
                 {r.staff?.full_name ? ` · by ${r.staff.full_name}` : ''}
               </p>
               {r.note && <p className="text-xs text-gray-300 break-words">Note: {r.note}</p>}

@@ -61,7 +61,6 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
     if (dobTyped && !dob) return setError('Please check the date of birth (DD/MM/YYYY).');
     if (registration && !dob) return setError('Please enter your date of birth.');
     if (phone && !PHONE.test(phone.trim())) return setError('Enter a valid 10-digit Indian mobile number.');
-    if (dob && (age == null || age < 5)) return setError('Please check the date of birth.');
     const h = num(height);
     const w = num(weight);
     if (h != null && (h < 50 || h > 250)) return setError('Height should be between 50 and 250 cm.');
@@ -109,7 +108,6 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
           <Input label="Contact Number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10-digit mobile" required={registration} />
           <DateOfBirthInput
             value={dob}
-            max={new Date().toISOString().slice(0, 10)}
             required={registration}
             onChange={(iso, typed) => {
               setDob(iso);

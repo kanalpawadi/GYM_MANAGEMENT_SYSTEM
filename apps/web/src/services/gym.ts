@@ -257,7 +257,8 @@ export const payerName = (p: Pick<Payment, 'member' | 'deleted_member_label'>) =
 // ---- Staff change a member's plan (migration 13) -------------------------------------------
 
 export interface AssignPlanInput {
-  planCode: 'monthly' | 'six-month' | 'yearly' | 'custom';
+  /** A plan code from Subscription Plans, or 'custom'. */
+  planCode: string;
   start: string;
   payment: 'cash' | 'upi' | 'due';
   /** Custom amount (Gym Owner / Super Admin only). */

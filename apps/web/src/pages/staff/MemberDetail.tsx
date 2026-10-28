@@ -19,7 +19,7 @@ import { PaymentTotals, ReceiptList, leftOn } from '../../components/payments/Pa
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_LABELS, canManageData, isOwnerLevel, isStaffRole, roleRank } from '../../config/roles';
 import { formatINR, phoneDisplay } from '../../config/site';
-import { DietPlan, ProgressEntry, WorkoutPlan, assignTrainer, getPersonalPlans, listProgress, listUsers } from '../../services/portal';
+import { DietPlan, ProgressEntry, WorkoutPlan, assignTrainer, getCommonPlans, getPersonalPlans, listProgress, listUsers, removePersonalPlan } from '../../services/portal';
 import {
   AttendanceRow,
   Membership,
@@ -71,6 +71,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
   const [plans, setPlans] = useState<{ diet: DietPlan | null; workout: WorkoutPlan | null }>({ diet: null, workout: null });
+  const [commonPlans, setCommonPlans] = useState<{ diet: DietPlan | null; workout: WorkoutPlan | null }>({ diet: null, workout: null });
   const [tab, setTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -96,6 +97,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
       // Receipts arrive with migration 14; older databases just show none.
       listReceipts(memberId).catch(() => [] as Receipt[]),
     ]);
+    getCommonPlans().then(setCommonPlans).catch(() => undefined);
     setMemberships(ms);
     setPayments(ps);
     setReceipts(rc);
@@ -296,11 +298,33 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                       </ul>
                     </>
                   ) : (
-                    <p className="text-sm text-gym-muted">No personal plan. {member.membership_tier !== 'premium' ? 'This member sees the common plan.' : ''}</p>
+                    <p className="text-sm text-gym-muted">
+                      No personal plan.{' '}
+                      {(kind === 'diet' ? commonPlans.diet : commonPlans.workout)
+                        ? `Following the common plan: ${(kind === 'diet' ? commonPlans.diet : commonPlans.workout)!.title}.`
+                        : 'No common plan has been set yet.'}
+                    </p>
                   )}
-                  <Button variant="outline" size="sm" className="w-fit" onClick={() => setEditing({ kind, member })}>
-                    {plan ? 'Edit plan' : 'Create plan'}
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" className="w-fit" onClick={() => setEditing({ kind, member })}>
+                      {plan ? 'Edit plan' : 'Create plan'}
+                    </Button>
+                    {plan && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-fit text-gym-danger"
+                        leftIcon={<Trash2 className="w-4 h-4" />}
+                        onClick={() => {
+                          const label = kind === 'diet' ? 'diet' : 'workout';
+                          if (!window.confirm(`Delete ${member.full_name}'s personal ${label} plan? They will follow the common ${label} plan.`)) return;
+                          void run(() => removePersonalPlan(kind, member.id), `Personal ${label} plan deleted. ${member.full_name} now follows the common ${label} plan.`);
+                        }}
+                      >
+                        Delete plan
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               );
             })}
@@ -350,6 +374,8 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                       <td className="p-3">
                         {p.status === 'paid' ? (
                           `Paid · ${p.payment_mode.toUpperCase()}`
+                        ) : p.status === 'failed' ? (
+                          <span className="text-gym-muted line-through">Cancelled</span>
                         ) : Number(p.amount_paid ?? 0) > 0 ? (
                           <span className="text-amber-400">Part paid · {formatINR(leftOn(p))} left</span>
                         ) : (
@@ -359,6 +385,8 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                       <td className="p-3 text-right">
                         {p.status === 'paid' ? (
                           <Link to={`/invoice/${p.id}`} className="inline-flex items-center gap-1 text-gym-primary text-xs hover:underline"><FileText className="w-4 h-4" /> Invoice</Link>
+                        ) : p.status === 'failed' ? (
+                          <span className="text-xs text-gym-muted">—</span>
                         ) : staff ? (
                           <div className="flex justify-end gap-1">
                             {(['cash', 'upi'] as const).map((mode) => (

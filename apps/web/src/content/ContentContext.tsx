@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CONTENT, SectionKey, SiteContent } from './sections';
 import { fetchSavedContent } from '../services/content';
+import { listSubscriptionPlans, toSitePlan } from '../services/plans';
 import { SITE } from '../config/site';
 
 type Saved = Partial<Record<SectionKey, Record<string, unknown>>>;
@@ -43,7 +44,14 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refresh = useCallback(async () => {
     try {
-      setContent(mergeContent(await fetchSavedContent()));
+      const [saved, plans] = await Promise.all([
+        fetchSavedContent(),
+        // Owner-managed plans (migration 16); older databases keep the built-in plans.
+        listSubscriptionPlans().catch(() => []),
+      ]);
+      const merged = mergeContent(saved);
+      if (plans.length) merged.plans = { items: plans.map(toSitePlan) } as SiteContent['plans'];
+      setContent(merged);
     } catch (err) {
       // Keep showing the built-in content if Supabase is unreachable.
       console.error('Failed to load website content', err);

@@ -76,7 +76,7 @@ export const InvoicePage: React.FC = () => {
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <h1 style={{ fontSize: 20 }}>{payment.status === 'paid' ? 'TAX INVOICE / RECEIPT' : 'PAYMENT DUE'}</h1>
+                <h1 style={{ fontSize: 20 }}>{payment.status === 'paid' ? 'TAX INVOICE / RECEIPT' : payment.status === 'failed' ? 'CANCELLED BILL' : 'PAYMENT DUE'}</h1>
                 <p className="muted">Invoice no: <strong>{payment.gst_invoice_no || 'Pending'}</strong></p>
                 <p className="muted">Date: {fmt(payment.paid_at || payment.created_at)}</p>
               </div>
@@ -92,7 +92,7 @@ export const InvoicePage: React.FC = () => {
               <div style={{ textAlign: 'right' }}>
                 <p className="muted">STATUS</p>
                 <span className="badge" style={payment.status === 'paid' ? undefined : { background: '#fff7e6', color: '#b45309' }}>
-                  {payment.status === 'paid' ? `PAID · ${payment.payment_mode.toUpperCase()}` : 'DUE'}
+                  {payment.status === 'paid' ? `PAID · ${payment.payment_mode.toUpperCase()}` : payment.status === 'failed' ? 'CANCELLED' : 'DUE'}
                 </span>
               </div>
             </div>

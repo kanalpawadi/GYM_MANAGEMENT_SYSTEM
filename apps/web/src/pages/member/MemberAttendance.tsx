@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useGymSettings } from '../../content/useGymSettings';
 import { AttendanceRow, attendanceStreak, currentPosition, listAttendance, localDay, selfieCheckIn } from '../../services/gym';
 import { compressImage } from '../../utils/image';
-import { ATTENDANCE_START, AttendanceCalendar } from '../../components/attendance/AttendanceCalendar';
+import { AttendanceCalendar } from '../../components/attendance/AttendanceCalendar';
 
 const METHOD_LABEL: Record<string, string> = { qr: 'QR scan', selfie: 'Selfie', manual: 'Front desk' };
 
@@ -24,8 +24,8 @@ export const MemberAttendance: React.FC = () => {
 
   const load = async () => {
     if (!profile) return;
-    // Full history since the gym's records start (Jan 2023).
-    setRows(await listAttendance({ memberId: profile.id, since: new Date(`${ATTENDANCE_START}T00:00:00+05:30`).toISOString() }));
+    // Full history, so any month on the calendar shows its visits.
+    setRows(await listAttendance({ memberId: profile.id }));
   };
 
   useEffect(() => {

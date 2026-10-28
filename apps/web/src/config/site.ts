@@ -42,7 +42,8 @@ export const mapEmbedSrc = (query = `${SITE.name} ${SITE.location}`) =>
 export const formatINR = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
 
 export interface MembershipPlan {
-  id: 'monthly' | 'six-month' | 'yearly';
+  /** Plan code, e.g. 'monthly'. The owner can add more in Admin → Subscription Plans. */
+  id: string;
   title: string;
   months: number;
   price: number;

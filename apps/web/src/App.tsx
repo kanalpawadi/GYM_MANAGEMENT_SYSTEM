@@ -59,6 +59,7 @@ import { AttendanceScanner } from './pages/staff/AttendanceScanner';
 import { MemberDetail } from './pages/staff/MemberDetail';
 import { InvoicePage } from './pages/InvoicePage';
 import { ReceiptPage } from './pages/ReceiptPage';
+import { AdminPlans } from './pages/admin/AdminPlans';
 import { AdminFinancials } from './pages/admin/AdminFinancials';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminSettings } from './pages/admin/AdminSettings';
@@ -157,6 +158,14 @@ export const App: React.FC = () => {
                           element={
                             <ProtectedRoute allowedRoles={ADMIN_ROLES}>
                               <AdminUsers />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="plans"
+                          element={
+                            <ProtectedRoute allowedRoles={CONTENT_EDITOR_ROLES}>
+                              <AdminPlans />
                             </ProtectedRoute>
                           }
                         />

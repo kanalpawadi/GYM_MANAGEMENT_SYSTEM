@@ -381,31 +381,6 @@ export const SECTIONS: SectionDef[] = [
     ],
   },
   {
-    key: 'plans',
-    label: 'Membership Plans',
-    description:
-      'Plan names, descriptions and features. Prices and durations are fixed here because the payment server charges them; ask your developer to change a price.',
-    fields: [
-      {
-        key: 'items',
-        label: 'Plans',
-        type: 'list',
-        itemLabel: 'Plan',
-        titleKey: 'title',
-        fixed: true,
-        fields: [
-          { key: 'title', label: 'Plan name', type: 'text' },
-          { key: 'price', label: 'Price (₹)', type: 'readonly' },
-          { key: 'months', label: 'Duration (months)', type: 'readonly' },
-          { key: 'badge', label: 'Badge', type: 'text' },
-          { key: 'description', label: 'Description', type: 'textarea' },
-          { key: 'features', label: 'Features', type: 'stringList', itemLabel: 'Feature' },
-          { key: 'highlight', label: 'Highlight this plan', type: 'boolean' },
-        ],
-      },
-    ],
-  },
-  {
     key: 'trainers',
     label: 'Trainers',
     description: 'Coaches shown on the Trainers page. Category is used for the filter buttons.',

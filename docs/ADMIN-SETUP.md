@@ -30,8 +30,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 13. `13_assign_membership.sql`: staff change a member's plan; the owner can set custom plans and amounts (section 25).
 14. `14_payment_receipts.sql`: money received with notes, part payments, receipts, and total paid / remaining (section 26).
 15. `15_supplement_sales_charges_past_attendance.sql`: supplement sales with payment, "Add amount due", and adding past visits (section 27).
+16. `16_plans_cancel_bills_no_date_limits.sql`: owner-managed subscription plans, cancelling a supplement sale's bill, and no date limits (section 28).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `15`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `16`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -84,7 +85,7 @@ Rules enforced by the database:
 How it behaves:
 - Images upload to the `site-media` storage bucket, max 5 MB each.
 - **Reset to Original** returns a section to the built-in content.
-- Plan **prices** are fixed in code (`apps/web/src/config/site.ts` and `apps/api/lib/plans.ts`) because the payment server charges them.
+- Plans and prices are no longer in the Website Editor. The owner manages them in **Admin → Subscription Plans** (section 28).
 
 To let the Gym Owner edit content too:
 - In `04_roles_plans_content.sql`, change `can_edit_content()` to `('super_admin', 'owner')`.
@@ -369,4 +370,28 @@ Member → **Payments** → **Add amount due**: what it is for (e.g. "Locker (No
 - **Staff and trainers:** on the member's **Attendance** tab, tap a past day to **add a visit** (for records from before the app), or tap a green day to **remove** a wrong one. Visits can be added from 1 Jan 2023 up to today.
 
 **Note:** if Payments shows "No money received yet" for bills that are already paid, run migration `14`. It creates receipts for past payments.
+
+## 28. Subscription plans, cancelled supplement bills, workout fallback and dates
+### Subscription plans (Gym Owner and Super Admin)
+**Admin → Subscription Plans:**
+- **Add plan:** name, months, price, description, features (one per line), badge, display order, and highlight.
+- **Edit:** change the price, length or text. New prices apply to new requests and **Change plan**; existing memberships and bills keep their price.
+- **Remove:** hides the plan from the website and plan requests. Members already on it keep their membership. Removed plans are listed underneath with **Restore**.
+
+The website's Plans page, the home page, member plan requests, Generate payment and Change plan all use these plans, and the discount switch still applies. Migration 16 starts you with Monthly ₹1,500, Six Month ₹7,500 and Yearly ₹12,000.
+
+### Deleting a supplement sale
+When staff delete a supplement entry that was sold at the gym, its bill is **cancelled** too. It shows as "Cancelled" in Payments and invoices, and is left out of the totals. If the member had already paid, give the money back; the receipt stays for your records.
+
+Members can't delete gym-sale entries.
+
+### Workout / diet plan falls back to the common plan
+On a member's page → **Diet & Workout**, **Delete plan** removes their personal plan, which is kept in history. The member then automatically follows the gym's **common** diet or workout plan.
+
+### No date limits
+Any date is accepted for:
+- the attendance calendar and adding visits (any month, past or future)
+- plan start dates in Change plan
+- supplement dates
+- dates of birth (the date only has to be a real date)
 

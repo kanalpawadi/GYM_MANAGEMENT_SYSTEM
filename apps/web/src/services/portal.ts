@@ -113,6 +113,18 @@ export async function getActivePlans(memberId: string) {
   };
 }
 
+/**
+ * Removes a member's personal diet or workout plan. It is kept as history (inactive),
+ * and the member automatically follows the gym's common plan again.
+ */
+export async function removePersonalPlan(kind: 'diet' | 'workout', memberId: string): Promise<void> {
+  const tableName = kind === 'diet' ? 'diet_plans' : 'workout_plans';
+  const rows = unwrap(
+    await supabase.from(tableName).update({ is_active: false }).eq('member_id', memberId).eq('is_active', true).select('id'),
+  ) as { id: string }[] | null;
+  if (!rows || rows.length === 0) throw new Error('There is no personal plan to remove.');
+}
+
 /** Only the member's own personal plans (for the trainer's editor). */
 export async function getPersonalPlans(memberId: string) {
   const [diet, workout] = await Promise.all([

@@ -155,6 +155,8 @@ export const AdminFinancials: React.FC = () => {
                         <Link to={`/invoice/${p.id}`} className="inline-flex items-center gap-1 text-xs text-gym-success hover:underline">
                           <FileText className="w-4 h-4" /> Paid · {p.payment_mode.toUpperCase()}
                         </Link>
+                      ) : p.status === 'failed' ? (
+                        <span className="text-xs text-gym-muted line-through">Cancelled</span>
                       ) : (
                         <div className="flex justify-end gap-1">
                           <Button variant="outline" size="sm" onClick={() => markPaid(p, 'cash')}>Paid Cash</Button>

@@ -104,22 +104,31 @@ describe('Add amount due', () => {
   });
 });
 
-describe('Attendance since 2023', () => {
-  it('the member calendar loads history from 1 Jan 2023 and goes back to Jan 2023 only', async () => {
-    seed('attendance', [{ id: 'old', member_id: 'aayush', check_in: '2023-03-15T06:30:00.000Z', method: 'manual' }]);
+describe('Attendance calendar (no date limits)', () => {
+  it('the member calendar loads the full history and can go back past 2023', async () => {
+    seed('attendance', [
+      { id: 'old', member_id: 'aayush', check_in: '2023-03-15T06:30:00.000Z', method: 'manual' },
+      { id: 'older', member_id: 'aayush', check_in: '2019-06-01T06:30:00.000Z', method: 'manual' },
+    ]);
     signInAs(aayush);
     renderPortal(<Routes><Route path="*" element={<MemberAttendance />} /></Routes>);
     const user = userEvent.setup();
 
     const calendar = await screen.findByLabelText(/attendance calendar/i);
     const year = within(calendar).getByLabelText('Year');
-    expect(within(year).getAllByRole('option')[0]).toHaveTextContent('2023');
     await user.selectOptions(year, '2023');
     await user.selectOptions(within(calendar).getByLabelText('Month'), '2'); // March
     expect(await within(calendar).findByLabelText('Checked in on 2023-03-15')).toBeInTheDocument();
 
     await user.selectOptions(within(calendar).getByLabelText('Month'), '0');
-    expect(within(calendar).getByRole('button', { name: /previous month/i })).toBeDisabled();
+    const prev = within(calendar).getByRole('button', { name: /previous month/i });
+    expect(prev).toBeEnabled();
+    await user.click(prev);
+    expect(within(calendar).getByLabelText('Year')).toHaveValue('2022');
+
+    await user.selectOptions(within(calendar).getByLabelText('Year'), '2019');
+    await user.selectOptions(within(calendar).getByLabelText('Month'), '5');
+    expect(await within(calendar).findByLabelText('Checked in on 2019-06-01')).toBeInTheDocument();
   });
 
   it('a trainer taps a past day to add a visit, and taps it again to remove it', async () => {

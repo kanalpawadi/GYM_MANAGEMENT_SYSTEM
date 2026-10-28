@@ -143,7 +143,7 @@ export const ChangePlanModal: React.FC<Props> = ({ isOpen, member, current, canS
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input label="Starts on" type="date" value={start} min={addDays(today, -31)} onChange={(e) => setStart(e.target.value)} />
+          <Input label="Starts on" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
           <Input
             label="Amount (₹)"
             type="number"

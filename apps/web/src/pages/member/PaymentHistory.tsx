@@ -143,6 +143,8 @@ export const PaymentHistory: React.FC = () => {
                     <td className="p-4">
                       {p.status === 'paid' ? (
                         <span className="text-xs font-heading text-gym-success">Paid · {p.payment_mode.toUpperCase()}</span>
+                      ) : p.status === 'failed' ? (
+                        <span className="text-xs font-heading text-gym-muted line-through">Cancelled</span>
                       ) : Number(p.amount_paid ?? 0) > 0 ? (
                         <span className="text-xs font-heading text-amber-400">Part paid · {formatINR(leftOn(p))} left</span>
                       ) : (
@@ -154,6 +156,8 @@ export const PaymentHistory: React.FC = () => {
                         <Link to={`/invoice/${p.id}`} className="inline-flex items-center gap-1 text-gym-primary hover:underline text-xs font-heading">
                           <FileText className="w-4 h-4" /> View / PDF
                         </Link>
+                      ) : p.status === 'failed' ? (
+                        <span className="text-xs text-gym-muted">—</span>
                       ) : (
                         <PayOnlineButton amount={Number(p.total_amount)} />
                       )}

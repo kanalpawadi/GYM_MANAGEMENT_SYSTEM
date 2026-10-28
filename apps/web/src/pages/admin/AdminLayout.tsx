@@ -20,6 +20,7 @@ import {
   Megaphone,
   Menu,
   X,
+  Tags,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -121,6 +122,11 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
       : []),
     ...(canEditContent(profile?.role)
       ? [
+          {
+            name: 'Subscription Plans',
+            path: '/admin/plans',
+            icon: <Tags className="w-5 h-5" />,
+          },
           {
             name: 'Website Editor',
             path: '/admin/content',

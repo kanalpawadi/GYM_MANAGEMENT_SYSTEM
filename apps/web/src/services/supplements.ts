@@ -82,9 +82,15 @@ export async function addSupplement(memberId: string, authorId: string, input: S
   );
 }
 
-export async function deleteSupplement(id: string): Promise<void> {
+/** Deletes an entry; a gym sale's bill is cancelled with it (migration 16). */
+export async function deleteSupplement(id: string): Promise<{ cancelledPayment: string | null }> {
+  const { data, error } = await supabase.rpc('delete_supplement', { p_log: id });
+  if (!error) return { cancelledPayment: (data as { cancelled_payment?: string | null } | null)?.cancelled_payment ?? null };
+  if (!/delete_supplement|schema cache|does not exist/i.test(error.message)) throw new Error(friendlyError(error.message));
+  // Database before migration 16: plain delete.
   const rows = unwrap(await supabase.from('supplement_logs').delete().eq('id', id).select('id')) as { id: string }[] | null;
   if (!rows || rows.length === 0) throw new Error("You can't delete this entry.");
+  return { cancelledPayment: null };
 }
 
 /** Total of the prices entered (purchases only). */
