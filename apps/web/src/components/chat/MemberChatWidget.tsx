@@ -49,7 +49,7 @@ export const MemberChatWidget: React.FC = () => {
             {(
               [
                 ['messages', 'Messages', <MessageCircle key="m" className="w-4 h-4" />],
-                ['assistant', 'Health Assistant', <Bot key="b" className="w-4 h-4" />],
+                ['assistant', 'AI Trainer', <Bot key="b" className="w-4 h-4" />],
               ] as const
             ).map(([key, label, icon]) => (
               <button

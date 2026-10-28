@@ -1,16 +1,46 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bot, RotateCcw, Send } from 'lucide-react';
-import { ASSISTANT_MAX_CHARS, AssistantTurn, askHealthAssistant } from '../../services/healthAssistant';
+import { ASSISTANT_MAX_CHARS, AssistantTurn, TrainerLanguage, askHealthAssistant } from '../../services/healthAssistant';
 
 const STORAGE_KEY = 'rv_health_assistant';
-const SUGGESTIONS = [
-  'How much protein should I eat daily?',
-  'Give me a beginner 3-day workout plan',
-  'Veg diet for fat loss',
-  'How much water should I drink?',
-];
-const WELCOME =
-  "Hi! I'm the RV Fitness health assistant. Ask me about workouts, diet, water, sleep or recovery. I'm not a doctor, so for injuries or medical problems please see a doctor and your trainer.";
+const LANGUAGE_KEY = 'rv_trainer_language';
+
+/** Everything the trainer chat says, in English, Hindi and Marathi. */
+const COPY: Record<TrainerLanguage, { label: string; welcome: string; suggestions: string[]; placeholder: string; thinking: string }> = {
+  en: {
+    label: 'English',
+    welcome:
+      "Hi! I'm Coach RV, your RV Fitness AI trainer 💪 Ask me about workouts, diet, water, sleep or recovery. I'm not a doctor, so for injuries or medical problems please see a doctor and your gym trainer.",
+    suggestions: ['Beginner 3-day workout plan', 'How much protein do I need daily?', 'Veg diet for fat loss', 'How much water should I drink?'],
+    placeholder: 'Ask a health question',
+    thinking: 'Coach is typing…',
+  },
+  hi: {
+    label: 'हिंदी',
+    welcome:
+      'नमस्ते! मैं कोच RV हूँ, आपका RV Fitness AI ट्रेनर 💪 वर्कआउट, डाइट, पानी, नींद या रिकवरी के बारे में पूछिए। मैं डॉक्टर नहीं हूँ, इसलिए चोट या बीमारी के लिए डॉक्टर और अपने जिम ट्रेनर से मिलें।',
+    suggestions: ['शुरुआती 3 दिन का वर्कआउट प्लान', 'रोज़ कितना प्रोटीन चाहिए?', 'वज़न घटाने के लिए शाकाहारी डाइट', 'दिन में कितना पानी पीना चाहिए?'],
+    placeholder: 'अपने ट्रेनर से पूछिए',
+    thinking: 'कोच लिख रहे हैं…',
+  },
+  mr: {
+    label: 'मराठी',
+    welcome:
+      'नमस्कार! मी कोच RV, तुमचा RV Fitness AI ट्रेनर 💪 वर्कआउट, डाएट, पाणी, झोप किंवा रिकव्हरीबद्दल विचारा. मी डॉक्टर नाही, त्यामुळे दुखापत किंवा आजारासाठी डॉक्टर आणि तुमच्या जिम ट्रेनरला भेटा.',
+    suggestions: ['नवशिक्यांसाठी ३ दिवसांचा वर्कआउट प्लॅन', 'रोज किती प्रोटीन हवे?', 'वजन कमी करण्यासाठी शाकाहारी डाएट', 'दिवसाला किती पाणी प्यावे?'],
+    placeholder: 'तुमच्या ट्रेनरला विचारा',
+    thinking: 'कोच लिहित आहेत…',
+  },
+};
+
+function loadLanguage(): TrainerLanguage {
+  try {
+    const saved = localStorage.getItem(LANGUAGE_KEY);
+    return saved === 'hi' || saved === 'mr' ? saved : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 function loadTurns(): AssistantTurn[] {
   try {
@@ -21,9 +51,11 @@ function loadTurns(): AssistantTurn[] {
   }
 }
 
-/** Grok-powered assistant that only answers health and fitness questions (rules live on the server). */
+/** "Coach RV": AI trainer that only answers fitness questions, in English, Hindi or Marathi (rules live on the server). */
 export const HealthAssistant: React.FC = () => {
   const [turns, setTurns] = useState<AssistantTurn[]>(loadTurns);
+  const [language, setLanguage] = useState<TrainerLanguage>(loadLanguage);
+  const copy = COPY[language];
   const [draft, setDraft] = useState('');
   const [thinking, setThinking] = useState(false);
   const [error, setError] = useState('');
@@ -47,22 +79,46 @@ export const HealthAssistant: React.FC = () => {
     setError('');
     setThinking(true);
     try {
-      const reply = await askHealthAssistant(next);
+      const reply = await askHealthAssistant(next, language);
       setTurns((t) => [...t, { role: 'assistant', content: reply }]);
     } catch (err: any) {
-      setError(err.message || 'The health assistant could not answer right now.');
+      setError(err.message || 'The AI trainer could not answer right now.');
     } finally {
       setThinking(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0" aria-label="Health assistant">
+    <div className="flex flex-col h-full min-h-0" aria-label="AI trainer">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gym-border" role="radiogroup" aria-label="Trainer language">
+        <span className="text-[11px] text-gym-muted font-heading uppercase">Coach RV · AI trainer</span>
+        <div className="flex gap-1">
+          {(['en', 'hi', 'mr'] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              role="radio"
+              aria-checked={language === l}
+              onClick={() => {
+                setLanguage(l);
+                try {
+                  localStorage.setItem(LANGUAGE_KEY, l);
+                } catch {
+                  // storage unavailable: the choice lasts for this visit
+                }
+              }}
+              className={`px-2.5 py-1 rounded-full text-xs font-heading border ${language === l ? 'bg-gold-gradient text-black border-transparent' : 'border-gym-border text-gym-muted hover:text-white'}`}
+            >
+              {COPY[l].label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2 bg-black/30" role="log" aria-live="polite">
-        <Bubble from="assistant">{WELCOME}</Bubble>
+        <Bubble from="assistant">{copy.welcome}</Bubble>
         {turns.length === 0 && (
           <div className="flex flex-wrap gap-1.5 mt-1">
-            {SUGGESTIONS.map((s) => (
+            {copy.suggestions.map((s) => (
               <button
                 key={s}
                 type="button"
@@ -81,7 +137,7 @@ export const HealthAssistant: React.FC = () => {
         ))}
         {thinking && (
           <Bubble from="assistant">
-            <span className="text-gym-muted">Thinking…</span>
+            <span className="text-gym-muted">{copy.thinking}</span>
           </Bubble>
         )}
         <div ref={bottomRef} />
@@ -110,7 +166,7 @@ export const HealthAssistant: React.FC = () => {
           </button>
         )}
         <label className="flex-1">
-          <span className="sr-only">Ask the health assistant</span>
+          <span className="sr-only">Ask the AI trainer</span>
           <textarea
             rows={1}
             value={draft}
@@ -122,7 +178,7 @@ export const HealthAssistant: React.FC = () => {
                 void ask(draft);
               }
             }}
-            placeholder="Ask a health question"
+            placeholder={copy.placeholder}
             className="w-full resize-none max-h-28 bg-black text-white border border-gym-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-gym-primary"
           />
         </label>

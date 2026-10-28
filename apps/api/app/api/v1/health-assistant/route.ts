@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return fail(429, 'RATE_LIMITED', "You've asked a lot of questions in a short time. Please wait a few minutes.");
     }
 
-    const reply = await askGrok(parsed.data.messages);
+    const reply = await askGrok(parsed.data.messages, fetch, parsed.data.language ?? 'en');
     return NextResponse.json({ success: true, reply });
   } catch (err: any) {
     if (err instanceof AssistantError) return fail(err.status, 'ASSISTANT_ERROR', err.message);

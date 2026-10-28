@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('Member chat popup', () => {
-  it('opens from the floating button with Messages and Health Assistant tabs', async () => {
+  it('opens from the floating button with Messages and AI Trainer tabs', async () => {
     seed('profiles', [coach]);
     signInAs(asha);
     renderPortal(<MemberChatWidget />);
@@ -33,8 +33,8 @@ describe('Member chat popup', () => {
     const dialog = screen.getByRole('dialog', { name: 'Chat' });
     expect(await within(dialog).findByRole('button', { name: /chat with coach arjun/i })).toBeInTheDocument();
 
-    await user.click(within(dialog).getByRole('tab', { name: /health assistant/i }));
-    expect(within(dialog).getByText(/I'm the RV Fitness health assistant/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('tab', { name: /ai trainer/i }));
+    expect(within(dialog).getByText(/I'm Coach RV, your RV Fitness AI trainer/)).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', { name: 'Chat' })).not.toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('Health assistant', () => {
     renderPortal(<HealthAssistant />);
     const user = userEvent.setup();
 
-    await user.type(screen.getByLabelText(/ask the health assistant/i), 'How much water should I drink?{Enter}');
+    await user.type(screen.getByLabelText(/ask the ai trainer/i), 'How much water should I drink?{Enter}');
     expect(await screen.findByText('Drink about 3 litres of water a day.')).toBeInTheDocument();
 
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
@@ -79,7 +79,7 @@ describe('Health assistant', () => {
     signInAs(asha);
     apiReply({ error: { message: 'The health assistant is not set up yet. Please ask the gym to add the Grok API key.' } }, 503);
     renderPortal(<HealthAssistant />);
-    await userEvent.setup().type(screen.getByLabelText(/ask the health assistant/i), 'Diet tips?{Enter}');
+    await userEvent.setup().type(screen.getByLabelText(/ask the ai trainer/i), 'Diet tips?{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent(/not set up yet/);
   });
 
@@ -87,7 +87,7 @@ describe('Health assistant', () => {
     signInAs(asha);
     apiReply({ success: true, reply: 'Sleep 7 to 9 hours.' });
     const first = renderPortal(<HealthAssistant />);
-    await userEvent.setup().type(screen.getByLabelText(/ask the health assistant/i), 'How much sleep?{Enter}');
+    await userEvent.setup().type(screen.getByLabelText(/ask the ai trainer/i), 'How much sleep?{Enter}');
     await screen.findByText('Sleep 7 to 9 hours.');
     first.unmount();
     renderPortal(<HealthAssistant />);

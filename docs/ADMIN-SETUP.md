@@ -409,3 +409,26 @@ What happens:
 - Its receipts are marked **void** with the reason, and the receipt page shows "VOID RECEIPT".
 - **Kept for the accounts:** the entry is not erased, so invoice numbers stay in order. It records who deleted it, when, and why. The member also sees "Cancelled · Reason: …".
 
+## 30. AI trainer "Coach RV" (English, हिंदी, मराठी)
+The assistant in the member chat (**AI Trainer** tab) acts only as an RV Fitness gym trainer:
+- **Topics:** workouts with sets × reps, diet, water, sleep, recovery and motivation.
+- **Everything else:** it politely says it can only help with training.
+- **Safety:** it is not a doctor. It won't diagnose or change medicines, and for emergencies it tells people to call 108 / 112.
+
+**Languages:** members tap **English**, **हिंदी** or **मराठी** at the top of the chat. The greeting, suggestions and replies switch to that language, and the choice is remembered. If a member writes in another of the three languages, or in Hinglish, Coach RV answers in the same style.
+
+### Switch it on (one time)
+The AI only answers once a key is set on the **API** project in Vercel → Settings → Environment Variables:
+
+| Name | Value (Groq, free tier) |
+|---|---|
+| `XAI_API_KEY` | your Groq key from console.groq.com/keys (starts with `gsk_`) |
+| `XAI_BASE_URL` | `https://api.groq.com/openai/v1` |
+| `XAI_MODEL` | `llama-3.3-70b-versatile` (handles Hindi and Marathi) |
+
+Then **Redeploy** the API project.
+
+Using a Grok key from console.x.ai (starts with `xai-`) instead? Set only `XAI_API_KEY`.
+
+Until a key is set, the chat says "The health assistant is not set up yet".
+
