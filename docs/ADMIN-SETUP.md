@@ -31,8 +31,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 14. `14_payment_receipts.sql`: money received with notes, part payments, receipts, and total paid / remaining (section 26).
 15. `15_supplement_sales_charges_past_attendance.sql`: supplement sales with payment, "Add amount due", and adding past visits (section 27).
 16. `16_plans_cancel_bills_no_date_limits.sql`: owner-managed subscription plans, cancelling a supplement sale's bill, and no date limits (section 28).
+17. `17_cancel_payment_with_reason.sql`: the owner deletes a payment entered by mistake, with a reason (section 29).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `16`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `17`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -394,4 +395,17 @@ Any date is accepted for:
 - plan start dates in Change plan
 - supplement dates
 - dates of birth (the date only has to be a real date)
+
+## 29. Deleting a payment entered by mistake
+Only the **Gym Owner** and **Super Admin** can do this.
+
+1. Open the member → **Payments**.
+2. Each payment row has a 🗑 **delete** button. Press it on the wrong entry, e.g. the second of two identical ₹2,500 payments.
+3. Choose a reason (*Same amount entered twice*, *Wrong member*, *Wrong amount*, *Entered by mistake*) or type your own. **A reason is required.**
+4. Press **Delete payment**.
+
+What happens:
+- The entry shows as **Cancelled** with its reason, and is left out of **Total billed**, **Total paid** and **Remaining**.
+- Its receipts are marked **void** with the reason, and the receipt page shows "VOID RECEIPT".
+- **Kept for the accounts:** the entry is not erased, so invoice numbers stay in order. It records who deleted it, when, and why. The member also sees "Cancelled · Reason: …".
 

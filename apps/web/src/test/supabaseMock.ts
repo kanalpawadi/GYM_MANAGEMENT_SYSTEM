@@ -291,6 +291,21 @@ export function resetSupabaseMock() {
       return ok(uid);
     }
     const staffOnly = () => ['receptionist', 'manager', 'owner', 'super_admin'].includes(table('profiles').find((p) => p.id === uid)?.role);
+    if (fn === 'cancel_payment') {
+      const myRole = table('profiles').find((p) => p.id === uid)?.role;
+      if (!['owner', 'super_admin'].includes(myRole)) return fail('Only the gym owner or Super Admin can delete a payment');
+      if (!args.p_reason || args.p_reason.trim().length < 3) return fail('Please write why this payment is being deleted');
+      const bill = table('payments').find((p) => p.id === args.p_payment);
+      if (!bill) return fail('Payment not found');
+      if (bill.status === 'failed') return fail('This payment was already deleted');
+      Object.assign(bill, { status: 'failed', cancel_reason: args.p_reason.trim() });
+      let voided = 0;
+      for (const r of table('payment_receipts').filter((x) => x.payment_id === bill.id && !x.voided_at)) {
+        Object.assign(r, { voided_at: new Date().toISOString(), void_reason: args.p_reason.trim() });
+        voided++;
+      }
+      return ok({ payment_id: bill.id, receipts_voided: voided, amount: bill.total_amount });
+    }
     if (fn === 'delete_supplement') {
       const log = table('supplement_logs').find((l) => l.id === args.p_log);
       if (!log) return fail('Entry not found');

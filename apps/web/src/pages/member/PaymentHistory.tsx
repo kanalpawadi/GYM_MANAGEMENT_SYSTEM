@@ -144,7 +144,10 @@ export const PaymentHistory: React.FC = () => {
                       {p.status === 'paid' ? (
                         <span className="text-xs font-heading text-gym-success">Paid · {p.payment_mode.toUpperCase()}</span>
                       ) : p.status === 'failed' ? (
-                        <span className="text-xs font-heading text-gym-muted line-through">Cancelled</span>
+                        <span className="flex flex-col">
+                          <span className="text-xs font-heading text-gym-muted line-through">Cancelled</span>
+                          {p.cancel_reason && <span className="text-[11px] text-gym-muted">Reason: {p.cancel_reason}</span>}
+                        </span>
                       ) : Number(p.amount_paid ?? 0) > 0 ? (
                         <span className="text-xs font-heading text-amber-400">Part paid · {formatINR(leftOn(p))} left</span>
                       ) : (

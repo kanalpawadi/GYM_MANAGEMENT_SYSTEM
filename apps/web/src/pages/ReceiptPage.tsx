@@ -77,7 +77,7 @@ export const ReceiptPage: React.FC = () => {
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <h1 style={{ fontSize: 20 }}>PAYMENT RECEIPT</h1>
+                <h1 style={{ fontSize: 20 }}>{receipt.voided_at ? 'VOID RECEIPT' : 'PAYMENT RECEIPT'}</h1>
                 <p className="muted">
                   Receipt no: <strong>{receipt.receipt_no}</strong>
                 </p>
@@ -139,6 +139,11 @@ export const ReceiptPage: React.FC = () => {
               </table>
             )}
 
+            {receipt.voided_at && (
+              <p className="muted" style={{ marginTop: 16, color: '#b91c1c' }}>
+                This receipt is void. The payment was deleted{receipt.void_reason ? `: ${receipt.void_reason}` : ''}.
+              </p>
+            )}
             {receipt.note && (
               <p className="muted" style={{ marginTop: 16 }}>
                 Note: {receipt.note}

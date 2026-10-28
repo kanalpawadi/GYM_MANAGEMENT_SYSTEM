@@ -14,6 +14,7 @@ import { SupplementLog } from '../../components/supplements/SupplementLog';
 import { ChangePlanModal } from '../../components/plans/ChangePlanModal';
 import { RecordPaymentModal } from '../../components/payments/RecordPaymentModal';
 import { AddChargeModal } from '../../components/payments/AddChargeModal';
+import { DeletePaymentModal } from '../../components/payments/DeletePaymentModal';
 import { AttendanceCalendar } from '../../components/attendance/AttendanceCalendar';
 import { PaymentTotals, ReceiptList, leftOn } from '../../components/payments/PaymentSummary';
 import { useAuth } from '../../context/AuthContext';
@@ -67,6 +68,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [recording, setRecording] = useState(false);
   const [charging, setCharging] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
   const [busyDay, setBusyDay] = useState<string | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
@@ -375,7 +377,10 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                         {p.status === 'paid' ? (
                           `Paid · ${p.payment_mode.toUpperCase()}`
                         ) : p.status === 'failed' ? (
-                          <span className="text-gym-muted line-through">Cancelled</span>
+                          <span className="flex flex-col">
+                            <span className="text-gym-muted line-through">Cancelled</span>
+                            {p.cancel_reason && <span className="text-[11px] text-gym-muted">Reason: {p.cancel_reason}</span>}
+                          </span>
                         ) : Number(p.amount_paid ?? 0) > 0 ? (
                           <span className="text-amber-400">Part paid · {formatINR(leftOn(p))} left</span>
                         ) : (
@@ -383,6 +388,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                         )}
                       </td>
                       <td className="p-3 text-right">
+                        <div className="inline-flex items-center justify-end gap-2">
                         {p.status === 'paid' ? (
                           <Link to={`/invoice/${p.id}`} className="inline-flex items-center gap-1 text-gym-primary text-xs hover:underline"><FileText className="w-4 h-4" /> Invoice</Link>
                         ) : p.status === 'failed' ? (
@@ -398,6 +404,18 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                         ) : (
                           <span className="text-xs text-gym-muted">Awaiting payment</span>
                         )}
+                        {isOwnerLevel(me.role) && p.status !== 'failed' && (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingPayment(p)}
+                            className="p-1.5 rounded-lg text-gym-muted hover:text-gym-danger hover:bg-gym-danger/10"
+                            aria-label={`Delete payment ${p.gst_invoice_no || p.plan_title || ''}`.trim()}
+                            title="Delete this payment entry"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -408,6 +426,15 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
           <ReceiptList receipts={receipts} />
           </div>
         )}
+
+        <DeletePaymentModal
+          payment={deletingPayment}
+          onClose={() => setDeletingPayment(null)}
+          onDeleted={(message) => {
+            setDeletingPayment(null);
+            load().then(() => flash(message));
+          }}
+        />
 
         <AddChargeModal
           isOpen={charging}

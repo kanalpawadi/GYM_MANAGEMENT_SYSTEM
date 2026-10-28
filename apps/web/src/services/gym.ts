@@ -243,6 +243,8 @@ export interface Payment {
   created_at: string;
   member?: Pick<UserProfile, 'full_name' | 'phone' | 'email' | 'member_code'> | null;
   membership?: Pick<Membership, 'start_date' | 'end_date'> | null;
+  /** Why the owner deleted this entry (migration 17). */
+  cancel_reason?: string | null;
   /** Received so far on this bill (part payments, migration 14). */
   amount_paid?: number | null;
   /** Set when the member was deleted: the payment is kept for the accounts (migration 11). */
@@ -341,6 +343,9 @@ export interface Receipt {
   note: string | null;
   received_by: string | null;
   received_at: string;
+  /** Set when the owner deleted the payment this receipt belongs to. */
+  voided_at?: string | null;
+  void_reason?: string | null;
   payment?: Pick<Payment, 'id' | 'plan_title' | 'total_amount' | 'amount_paid' | 'status' | 'gst_invoice_no' | 'deleted_member_label'> | null;
   member?: Pick<UserProfile, 'full_name' | 'member_code' | 'phone' | 'email'> | null;
   staff?: Pick<UserProfile, 'full_name'> | null;
@@ -381,6 +386,12 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{ receip
       p_title: input.paymentId ? null : input.title ?? null,
     }),
   ) as { receipt_id: string; receipt_no: string; remaining: number; status: Payment['status'] };
+}
+
+/** Owner / Super Admin delete a payment entry made by mistake; a reason is required (migration 17). */
+export async function cancelPayment(paymentId: string, reason: string): Promise<{ receipts_voided: number }> {
+  if (reason.trim().length < 3) throw new Error('Please write why this payment is being deleted.');
+  return unwrap(await supabase.rpc('cancel_payment', { p_payment: paymentId, p_reason: reason.trim() })) as { receipts_voided: number };
 }
 
 /** Staff add any amount the member must pay later (migration 15). */

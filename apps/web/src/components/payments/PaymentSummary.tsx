@@ -36,9 +36,9 @@ export const ReceiptList: React.FC<{ receipts: Receipt[] }> = ({ receipts }) => 
     ) : (
       <ul className="divide-y divide-gym-border">
         {receipts.map((r) => (
-          <li key={r.id} className="py-2.5 flex items-start justify-between gap-3">
+          <li key={r.id} className={`py-2.5 flex items-start justify-between gap-3 ${r.voided_at ? 'opacity-60' : ''}`}>
             <div className="min-w-0">
-              <p className="text-white font-heading">
+              <p className={`text-white font-heading ${r.voided_at ? 'line-through' : ''}`}>
                 {formatINR(Number(r.amount))} <span className="text-xs text-gym-muted font-body">· {r.payment_mode.toUpperCase()}</span>
               </p>
               <p className="text-xs text-gym-muted">
@@ -47,6 +47,7 @@ export const ReceiptList: React.FC<{ receipts: Receipt[] }> = ({ receipts }) => 
                 {r.staff?.full_name ? ` · by ${r.staff.full_name}` : ''}
               </p>
               {r.note && <p className="text-xs text-gray-300 break-words">Note: {r.note}</p>}
+              {r.voided_at && <p className="text-xs text-gym-danger break-words">Deleted{r.void_reason ? `: ${r.void_reason}` : ''}</p>}
             </div>
             <Link to={`/receipt/${r.id}`} className="inline-flex items-center gap-1 text-xs text-gym-primary hover:underline shrink-0" aria-label={`Receipt ${r.receipt_no}`}>
               <ReceiptText className="w-4 h-4" /> {r.receipt_no}
