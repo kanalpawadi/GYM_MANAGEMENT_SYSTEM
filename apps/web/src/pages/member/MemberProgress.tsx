@@ -53,8 +53,20 @@ const PhotoInput: React.FC<{ label: string; file: File | null; onChange: (f: Fil
   );
 };
 
-export const MemberProgress: React.FC = () => {
+interface ProgressProps {
+  /** Staff view: the member whose progress is shown (defaults to the signed-in member). */
+  memberId?: string;
+  memberName?: string;
+  /** Inside the member page tab: no page title. */
+  embedded?: boolean;
+}
+
+/** Body composition audit / progress tracker. Members log their own; trainer, owner and Super Admin can log for them. */
+export const MemberProgress: React.FC<ProgressProps> = ({ memberId, memberName, embedded = false }) => {
   const { profile } = useAuth();
+  const targetId = memberId ?? profile?.id;
+  const targetName = memberName ?? profile?.full_name ?? 'Member';
+  const forSomeoneElse = !!memberId && memberId !== profile?.id;
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -73,12 +85,12 @@ export const MemberProgress: React.FC = () => {
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
-    if (!profile) return;
-    listProgress(profile.id)
+    if (!targetId) return;
+    listProgress(targetId)
       .then(setEntries)
       .catch((err: Error) => setLoadError(err.message))
       .finally(() => setLoading(false));
-  }, [profile]);
+  }, [targetId]);
 
   const chartData = useMemo(
     () =>
@@ -104,13 +116,13 @@ export const MemberProgress: React.FC = () => {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
-    if (!weight && !front && !side) return setFormError('Add at least your weight or a photo.');
+    if (!targetId) return;
+    if (!weight && !front && !side) return setFormError(forSomeoneElse ? 'Add at least the weight or a photo.' : 'Add at least your weight or a photo.');
     setSaving(true);
     setFormError('');
     try {
       const saved = await addProgress(
-        profile.id,
+        targetId,
         { date, weight_kg: num(weight), body_fat_pct: num(bodyFat), chest_cm: num(chest), waist_cm: num(waist), bicep_cm: num(bicep), notes: notes.trim() || null },
         { front, side },
       );
@@ -136,17 +148,25 @@ export const MemberProgress: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Body Metrics & Progress Tracker | RV Fitness</title>
-      </Helmet>
+      {!embedded && (
+        <Helmet>
+          <title>Body Metrics & Progress Tracker | RV Fitness</title>
+        </Helmet>
+      )}
 
-      <div className="max-w-4xl mx-auto flex flex-col gap-8">
+      <div className={`${embedded ? '' : 'max-w-4xl mx-auto'} flex flex-col gap-8`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-heading text-gym-primary uppercase tracking-widest">BODY COMPOSITION AUDIT</span>
-            <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
-              PROGRESS <span className="text-gym-primary">TRACKER</span>
-            </h1>
+            {embedded ? (
+              <h2 className="text-2xl font-heading text-white uppercase tracking-wide mt-1">
+                PROGRESS <span className="text-gym-primary">TRACKER</span>
+              </h2>
+            ) : (
+              <h1 className="text-4xl font-heading text-white uppercase tracking-wide mt-1">
+                PROGRESS <span className="text-gym-primary">TRACKER</span>
+              </h1>
+            )}
           </div>
           <Button variant="primary" onClick={() => setShowModal(true)} leftIcon={<Plus className="w-4 h-4" />}>
             Log Progress & Photos
@@ -155,7 +175,9 @@ export const MemberProgress: React.FC = () => {
 
         <p className="text-xs text-gym-muted flex items-start gap-2 bg-gym-surface border border-gym-border rounded-xl p-3">
           <Lock className="w-4 h-4 text-gym-primary shrink-0" />
-          Your body photos are private. Only you, your assigned trainer and the gym owner can see them. They are never shown on the website.
+          {forSomeoneElse
+            ? `Entries you log appear on ${targetName}'s Body Metrics page too. Photos stay private: only ${targetName}, their trainer and the gym owner can see them.`
+            : 'Your body photos are private. Only you, your assigned trainer and the gym owner can see them. They are never shown on the website.'}
         </p>
 
         {loadError && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{loadError}</div>}
@@ -181,12 +203,12 @@ export const MemberProgress: React.FC = () => {
 
         <Card className="border-gym-border bg-gym-surface flex flex-col gap-4" hoverEffect={false}>
           <h3 className="text-lg font-heading text-white uppercase">PROGRESS HISTORY</h3>
-          {loading ? <p className="text-sm text-gym-muted">Loading...</p> : <ProgressTimeline entries={entries} memberName={profile?.full_name ?? 'Member'} onDelete={handleDelete} />}
+          {loading ? <p className="text-sm text-gym-muted">Loading...</p> : <ProgressTimeline entries={entries} memberName={targetName} onDelete={handleDelete} />}
         </Card>
 
         <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="LOG PROGRESS" maxWidth="xl">
           <form onSubmit={handleAdd} className="flex flex-col gap-4">
-            <Input label="Date" type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} required />
+            <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             <div className="grid grid-cols-2 gap-3">
               <Input label="Weight (kg)" type="number" step="0.1" min="20" max="300" value={weight} onChange={(e) => setWeight(e.target.value)} />
               <Input label="Body Fat (%)" type="number" step="0.1" min="2" max="70" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} />

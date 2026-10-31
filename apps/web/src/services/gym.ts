@@ -388,6 +388,27 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{ receip
   ) as { receipt_id: string; receipt_no: string; remaining: number; status: Payment['status'] };
 }
 
+export interface MembershipCheck {
+  expired: boolean;
+  days_left: number | null;
+  ends_on: string | null;
+}
+
+/**
+ * The signed-in member's plan check (migration 18): sends an ended plan back to admission
+ * approval and adds the "ends in N days" reminder. Returns null on older databases.
+ */
+export async function checkMyMembership(): Promise<MembershipCheck | null> {
+  const { data, error } = await supabase.rpc('check_my_membership');
+  return error ? null : (data as MembershipCheck);
+}
+
+/** Staff: runs the expiry check for every member (quietly ignored on older databases). */
+export async function runMembershipExpiry(): Promise<number> {
+  const { data, error } = await supabase.rpc('run_membership_expiry');
+  return error ? 0 : Number(data ?? 0);
+}
+
 /** Owner / Super Admin delete a payment entry made by mistake; a reason is required (migration 17). */
 export async function cancelPayment(paymentId: string, reason: string): Promise<{ receipts_voided: number }> {
   if (reason.trim().length < 3) throw new Error('Please write why this payment is being deleted.');

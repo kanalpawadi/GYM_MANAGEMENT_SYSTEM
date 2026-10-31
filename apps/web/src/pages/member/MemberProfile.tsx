@@ -37,7 +37,7 @@ export const MemberProfile: React.FC = () => {
           </div>
         </Card>
 
-        {profile && <ProfileDetailsForm target={profile} onSaved={refreshProfile} />}
+        {profile && <ProfileDetailsForm target={profile} onSaved={refreshProfile} showHealth={false} />}
       </div>
     </>
   );

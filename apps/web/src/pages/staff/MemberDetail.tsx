@@ -12,6 +12,7 @@ import { PlanEditorModal, PlanTarget } from '../../components/plans/PlanEditorMo
 import { DeleteMemberModal } from '../../components/account/DeleteMemberModal';
 import { SupplementLog } from '../../components/supplements/SupplementLog';
 import { ChangePlanModal } from '../../components/plans/ChangePlanModal';
+import { MemberProgress } from '../member/MemberProgress';
 import { RecordPaymentModal } from '../../components/payments/RecordPaymentModal';
 import { AddChargeModal } from '../../components/payments/AddChargeModal';
 import { DeletePaymentModal } from '../../components/payments/DeletePaymentModal';
@@ -333,11 +334,14 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
           </div>
         )}
 
-        {tab === 'progress' && (
-          <Card hoverEffect={false}>
-            <ProgressTimeline entries={progress} memberName={member.full_name} />
-          </Card>
-        )}
+        {tab === 'progress' &&
+          (roleRank(me.role) >= 2 && member.role === 'member' && member.id !== me.id ? (
+            <MemberProgress memberId={member.id} memberName={member.full_name} embedded />
+          ) : (
+            <Card hoverEffect={false}>
+              <ProgressTimeline entries={progress} memberName={member.full_name} />
+            </Card>
+          ))}
 
         {tab === 'payments' && (
           <div className="flex flex-col gap-4">

@@ -20,7 +20,13 @@ const state = {
   failures: {} as Record<string, string>,
   uploads: [] as { bucket: string; path: string; file: unknown }[],
   removed: [] as { bucket: string; path: string }[],
+  membershipCheck: { expired: false, days_left: null as number | null, ends_on: null as string | null },
 };
+
+/** What check_my_membership returns in the next test (plan expiry / days left). */
+export function setMembershipCheck(check: { expired: boolean; days_left: number | null; ends_on: string | null }) {
+  state.membershipCheck = check;
+}
 
 const makeSession = (profile: UserProfile): FakeSession => ({
   access_token: `token-${profile.id}`,
@@ -240,6 +246,7 @@ export function resetSupabaseMock() {
   state.failures = {};
   state.uploads = [];
   state.removed = [];
+  state.membershipCheck = { expired: false, days_left: null, ends_on: null };
 
   // Fresh vi.fn()s per test so implementations survive vi.restoreAllMocks() in setup.ts.
   supabaseMock.auth = {
@@ -291,6 +298,8 @@ export function resetSupabaseMock() {
       return ok(uid);
     }
     const staffOnly = () => ['receptionist', 'manager', 'owner', 'super_admin'].includes(table('profiles').find((p) => p.id === uid)?.role);
+    if (fn === 'check_my_membership') return ok(state.membershipCheck);
+    if (fn === 'run_membership_expiry') return ok(0);
     if (fn === 'cancel_payment') {
       const myRole = table('profiles').find((p) => p.id === uid)?.role;
       if (!['owner', 'super_admin'].includes(myRole)) return fail('Only the gym owner or Super Admin can delete a payment');

@@ -13,11 +13,18 @@ const qr = vi.hoisted(() => ({
   boxVisibleAtStart: null as null | boolean,
   startError: null as unknown,
   fileText: 'RVF1.asha.1.sig' as string | null,
+  cameras: [] as { id: string; label: string }[],
+  startedWith: null as unknown,
 }));
 vi.mock('html5-qrcode', () => ({
+  Html5QrcodeSupportedFormats: { QR_CODE: 0 },
   Html5Qrcode: class {
+    static async getCameras() {
+      return qr.cameras;
+    }
     constructor(private id: string) {}
-    async start(_camera: unknown, config: unknown, onScan: (t: string) => void) {
+    async start(camera: unknown, config: unknown, onScan: (t: string) => void) {
+      qr.startedWith = camera;
       if (qr.startError) throw qr.startError;
       const box = document.getElementById(this.id)!;
       qr.boxVisibleAtStart = !box.className.split(/\s+/).includes('hidden');
@@ -38,6 +45,9 @@ const page = () => renderPortal(<Routes><Route path="*" element={<AttendanceScan
 
 beforeEach(() => {
   qr.onScan = null;
+  qr.cameras = [];
+  qr.startedWith = null;
+  localStorage.clear();
   qr.config = null;
   qr.boxVisibleAtStart = null;
   qr.startError = null;

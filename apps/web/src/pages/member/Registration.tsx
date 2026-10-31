@@ -79,6 +79,17 @@ export const Registration: React.FC = () => {
                 </p>
               </div>
 
+              {status === 'incomplete' && profile.approval_note && (
+                <div role="alert" className="bg-amber-400/10 border border-amber-400/60 text-amber-300 p-4 rounded-xl text-sm flex gap-2">
+                  <AlertTriangle className="w-5 h-5 shrink-0" />
+                  <div>
+                    <p className="font-heading">Admission renewal</p>
+                    <p className="mt-1">{profile.approval_note}</p>
+                    <p className="mt-1">Check your details and press Submit for Approval. The gym will approve you again.</p>
+                  </div>
+                </div>
+              )}
+
               {status === 'rejected' && !editing && (
                 <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-4 rounded-xl text-sm flex gap-2">
                   <AlertTriangle className="w-5 h-5 shrink-0" />

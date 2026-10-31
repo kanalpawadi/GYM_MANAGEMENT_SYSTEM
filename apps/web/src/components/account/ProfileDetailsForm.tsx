@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { DateOfBirthInput } from '../ui/DateOfBirthInput';
+import { HeightInput } from '../ui/HeightInput';
 import { ProfilePatch, ageFromDob, updateProfile } from '../../services/gym';
 import type { UserProfile } from '../../types';
 
@@ -18,12 +19,14 @@ interface Props {
   onSaved?: () => void | Promise<void>;
   /** Registration: phone and date of birth are required and `onSubmit` sends the form instead of saving the profile. */
   registration?: boolean;
+  /** Show the Medicines & health section (staff see it; members' own profile hides it). */
+  showHealth?: boolean;
   onSubmit?: (patch: ProfilePatch) => Promise<void>;
   submitLabel?: string;
 }
 
 /** Personal and health details. Used by members (own profile) and by staff/trainers (role chain). */
-export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registration = false, onSubmit, submitLabel = 'Save Details' }) => {
+export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registration = false, onSubmit, submitLabel = 'Save Details', showHealth = true }) => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [dob, setDob] = useState('');
@@ -134,11 +137,12 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
             onChange={(e) => setBloodGroup(e.target.value)}
             options={[{ label: 'Select', value: '' }, ...BLOOD_GROUPS.map((b) => ({ label: b, value: b }))]}
           />
-          <Input label="Height (cm)" type="number" step="0.1" value={height} onChange={(e) => setHeight(e.target.value)} />
+          <HeightInput value={height} onChange={setHeight} />
           <Input label="Weight (kg)" type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} />
         </div>
       </Card>
 
+      {showHealth && (
       <Card hoverEffect={false} className="space-y-4">
         <h3 className="text-lg font-heading text-white flex items-center gap-2">
           <Pill className="w-5 h-5 text-gym-primary" /> Medicines & health
@@ -154,6 +158,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
           <textarea rows={3} value={healthNotes} onChange={(e) => setHealthNotes(e.target.value)} placeholder="Injuries, surgeries, conditions..." className={textarea} />
         </label>
       </Card>
+      )}
 
       <Button type="submit" variant="primary" isLoading={saving}>{submitLabel}</Button>
     </form>

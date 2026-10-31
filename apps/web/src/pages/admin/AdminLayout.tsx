@@ -30,6 +30,7 @@ import { NotificationBell } from '../../components/account/NotificationBell';
 import { ROLE_LABELS, canEditContent, isAdminRole } from '../../config/roles';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { useUnreadMessages } from '../../components/chat/useUnreadMessages';
+import { runMembershipExpiry } from '../../services/gym';
 
 export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, logout } = useAuth();
@@ -43,6 +44,17 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Close the phone menu after navigating.
   useEffect(() => setMenuOpen(false), [location.pathname]);
+
+  // Once per visit: members whose plan ended go back for approval; renewal reminders go out.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('rv_expiry_checked')) return;
+      sessionStorage.setItem('rv_expiry_checked', '1');
+    } catch {
+      // storage unavailable: just run it
+    }
+    void runMembershipExpiry();
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;

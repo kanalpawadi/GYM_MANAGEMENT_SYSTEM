@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -39,10 +40,12 @@ export const Modal: React.FC<ModalProps> = ({
     '2xl': 'max-w-2xl',
   };
 
-  return (
+  // Rendered at page level: inside an animated card, "fixed" would stay trapped in the card
+  // and later content (or the phone bottom bar) would draw over the window.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -58,7 +61,7 @@ export const Modal: React.FC<ModalProps> = ({
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className={`relative w-full ${maxWidthClasses[maxWidth]} bg-gym-surface border border-gym-border rounded-3xl shadow-2xl p-6 z-10 max-h-[90vh] overflow-y-auto text-white`}
+            className={`relative w-full ${maxWidthClasses[maxWidth]} bg-gym-surface border border-gym-border rounded-3xl shadow-2xl p-4 sm:p-6 z-10 max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain text-white`}
           >
             <div className="flex items-center justify-between pb-4 border-b border-gym-border mb-4">
               {title ? (
@@ -78,6 +81,7 @@ export const Modal: React.FC<ModalProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };

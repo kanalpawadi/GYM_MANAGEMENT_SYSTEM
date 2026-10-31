@@ -87,12 +87,14 @@ describe('Profile photo', () => {
 });
 
 describe('My Profile details', () => {
-  it('loads and saves contact, date of birth, blood group, height, weight and medicines', async () => {
-    signInAs({ ...asha, phone: '9822012345', health_notes: 'Knee pain' });
+  it('loads and saves contact, date of birth, blood group, height and weight (no medicines section for members)', async () => {
+    signInAs({ ...asha, phone: '9822012345', health_notes: 'Knee pain', medicines: 'Thyroxine' });
     page(<MemberProfile />);
     const user = userEvent.setup();
     expect(await screen.findByDisplayValue('9822012345')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Knee pain')).toBeInTheDocument();
+    // Medicines & health are hidden on the member's own profile (staff still see them).
+    expect(screen.queryByLabelText(/medicines currently taking/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/medicines & health/i)).not.toBeInTheDocument();
     // Emergency contact is no longer asked for.
     expect(screen.queryByLabelText(/contact person name/i)).not.toBeInTheDocument();
 
@@ -102,9 +104,8 @@ describe('My Profile details', () => {
     expect(dob).toHaveValue('01/05/1995');
     expect(screen.getByLabelText('Age')).toHaveTextContent(/\d+ years/);
     await user.selectOptions(screen.getByLabelText(/blood group/i), 'O+');
-    await user.type(screen.getByLabelText(/height/i), '172');
+    await user.type(screen.getByLabelText('Height (cm)'), '172');
     await user.type(screen.getByLabelText(/weight/i), '70.5');
-    await user.type(screen.getByLabelText(/medicines currently taking/i), 'None');
     await user.click(screen.getByRole('button', { name: /save details/i }));
 
     expect(await screen.findByText(/details saved/i)).toBeInTheDocument();
@@ -114,7 +115,8 @@ describe('My Profile details', () => {
       blood_group: 'O+',
       height_cm: 172,
       weight_kg: 70.5,
-      medicines: 'None',
+      // Hidden fields keep their saved values.
+      medicines: 'Thyroxine',
       health_notes: 'Knee pain',
     });
   });
@@ -132,7 +134,7 @@ describe('My Profile details', () => {
     signInAs(asha);
     page(<MemberProfile />);
     const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/height/i), '900');
+    await user.type(await screen.findByLabelText('Height (cm)'), '900');
     await user.click(screen.getByRole('button', { name: /save details/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/height should be between/i);
   });

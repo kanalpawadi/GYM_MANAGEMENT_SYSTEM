@@ -18,6 +18,22 @@ export const qrBox = (width: number, height: number) => {
   return { width: side, height: side };
 };
 
+const CAMERA_KEY = 'rv_scanner_camera';
+
+/**
+ * Picks the phone's main back camera. Samsung and other phones list several back lenses
+ * (ultra-wide, telephoto, macro); the ultra-wide can't focus close enough to read a QR.
+ */
+export function pickBackCamera(cameras: { id: string; label: string }[]): string | null {
+  if (!cameras.length) return null;
+  const back = cameras.filter((c) => /back|rear|environment|facing back/i.test(c.label));
+  const plain = back.filter((c) => !/ultra|wide|tele|depth|macro|zoom/i.test(c.label));
+  // Samsung names them "camera2 0, facing back", "camera2 2, facing back"...: the lowest number is the main lens.
+  const lens = (label: string) => Number(/camera\d*\s+(\d+)/i.exec(label)?.[1] ?? /(\d+)/.exec(label)?.[1] ?? 99);
+  const byIndex = (list: typeof cameras) => [...list].sort((a, b) => lens(a.label) - lens(b.label));
+  return (byIndex(plain)[0] ?? byIndex(back)[0] ?? cameras[cameras.length - 1]).id;
+}
+
 /** Plain-language reason why the camera could not start. */
 export function cameraErrorMessage(err: unknown): string {
   const text = `${(err as { name?: string })?.name ?? ''} ${(err as { message?: string })?.message ?? err ?? ''}`;
@@ -41,6 +57,8 @@ export const AttendanceScanner: React.FC = () => {
   const { profile } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [cameraId, setCameraId] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState('');
   const [members, setMembers] = useState<UserProfile[]>([]);
@@ -81,7 +99,7 @@ export const AttendanceScanner: React.FC = () => {
     }
   };
 
-  const startCamera = async () => {
+  const startCamera = async (wanted?: string) => {
     setError('');
     setResult(null);
     // Show the camera box first: the scanner measures it when it starts, and a hidden
@@ -89,12 +107,34 @@ export const AttendanceScanner: React.FC = () => {
     setStarting(true);
     await new Promise((r) => requestAnimationFrame(() => r(null)));
     try {
-      const { Html5Qrcode } = await import('html5-qrcode');
-      const scanner = new Html5Qrcode(READER_ID, false);
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+      // Listing cameras asks for permission once; then we can choose the main back lens.
+      const list = await Html5Qrcode.getCameras().catch(() => [] as { id: string; label: string }[]);
+      setCameras(list);
+      let saved: string | null = null;
+      try {
+        saved = localStorage.getItem(CAMERA_KEY);
+      } catch {
+        // storage unavailable
+      }
+      const chosen = wanted ?? (saved && list.some((c) => c.id === saved) ? saved : pickBackCamera(list));
+      setCameraId(chosen);
+
+      const scanner = new Html5Qrcode(READER_ID, {
+        verbose: false,
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        // Uses Android's built-in QR reader when available: much better on Samsung phones.
+        useBarCodeDetectorIfSupported: true,
+      });
       scannerRef.current = scanner;
+      const sharp = { width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] };
       await scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: qrBox, aspectRatio: 1 },
+        chosen ?? { facingMode: 'environment' },
+        {
+          fps: 15,
+          qrbox: qrBox,
+          videoConstraints: chosen ? { deviceId: { exact: chosen }, ...sharp } : { facingMode: 'environment', ...sharp },
+        },
         (text: string) => void handleToken(text),
         () => undefined,
       );
@@ -180,16 +220,42 @@ export const AttendanceScanner: React.FC = () => {
               className={`w-full max-w-sm mx-auto rounded-xl overflow-hidden bg-black ${scanning || starting ? 'block min-h-[260px]' : 'hidden'}`}
             />
             <div id={PHOTO_READER_ID} className="hidden" />
+            {scanning && cameras.length > 1 && (
+              <label className="flex flex-col gap-1 text-xs text-gym-muted">
+                Camera (try another if the QR isn't read)
+                <select
+                  aria-label="Camera"
+                  value={cameraId ?? ''}
+                  onChange={async (e) => {
+                    const id = e.target.value;
+                    try {
+                      localStorage.setItem(CAMERA_KEY, id);
+                    } catch {
+                      // storage unavailable
+                    }
+                    await stopCamera();
+                    await startCamera(id);
+                  }}
+                  className="min-h-[40px] bg-black text-white border border-gym-border rounded-xl px-3 text-sm focus:outline-none focus:border-gym-primary"
+                >
+                  {cameras.map((c, i) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label || `Camera ${i + 1}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {scanning ? (
               <Button variant="outline" onClick={stopCamera} leftIcon={<CameraOff className="w-4 h-4" />}>Stop camera</Button>
             ) : (
-              <Button variant="primary" onClick={startCamera} isLoading={starting} leftIcon={<Camera className="w-4 h-4" />}>Start camera</Button>
+              <Button variant="primary" onClick={() => startCamera()} isLoading={starting} leftIcon={<Camera className="w-4 h-4" />}>Start camera</Button>
             )}
             <label className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-gym-border text-sm font-heading text-white hover:border-gym-primary cursor-pointer">
               <ImageUp className="w-4 h-4 text-gym-primary" /> Scan from photo
               <input type="file" accept="image/*" className="sr-only" onChange={scanPhoto} aria-label="Scan QR from photo" />
             </label>
-            {scanning && <p className="text-xs text-gym-muted text-center">Hold the member's QR inside the box, about 15–25 cm from the camera.</p>}
+            {scanning && <p className="text-xs text-gym-muted text-center">Hold the member's QR inside the box, about 15–25 cm away. Ask them to turn their screen brightness up.</p>}
 
             {result && (
               <div

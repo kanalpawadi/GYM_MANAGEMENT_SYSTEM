@@ -78,9 +78,9 @@ export const DigitalCard: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="bg-white p-3 rounded-2xl shrink-0" aria-label="Your QR pass">
               {token ? (
-                <QRCodeSVG value={token} size={176} level="M" />
+                <QRCodeSVG value={token} size={220} level="M" marginSize={2} />
               ) : (
-                <div className="w-[176px] h-[176px] flex items-center justify-center text-xs text-gray-500 text-center px-3">{error || 'Loading...'}</div>
+                <div className="w-[220px] h-[220px] flex items-center justify-center text-xs text-gray-500 text-center px-3">{error || 'Loading...'}</div>
               )}
               <p className="text-[11px] text-gray-600 text-center mt-2 flex items-center justify-center gap-1">
                 <RefreshCw className="w-3 h-3" /> New code in {seconds}s

@@ -25,6 +25,7 @@ import { Avatar } from '../../components/account/Avatar';
 import { NotificationBell } from '../../components/account/NotificationBell';
 import { ROLE_LABELS, roleRank } from '../../config/roles';
 import { MemberChatWidget } from '../../components/chat/MemberChatWidget';
+import { MembershipCheck, checkMyMembership } from '../../services/gym';
 
 const navItems = [
   { name: 'Dashboard', short: 'Home', path: '/portal/dashboard', icon: LayoutDashboard },
@@ -43,13 +44,30 @@ const navItems = [
 const BOTTOM_PATHS = ['/portal/dashboard', '/portal/plans', '/portal/digital-card', '/portal/attendance'];
 
 export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { profile, logout } = useAuth();
+  const { profile, logout, refreshProfile } = useAuth();
+  const [planCheck, setPlanCheck] = useState<MembershipCheck | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => setMoreOpen(false), [location.pathname]);
+
+  // Plan check on opening the portal: an ended plan sends the member back to the admission
+  // form (approval again); 5 days or fewer left shows the renewal banner.
+  useEffect(() => {
+    if (profile?.role !== 'member') return;
+    let alive = true;
+    checkMyMembership().then((r) => {
+      if (!alive || !r) return;
+      if (r.expired) void refreshProfile();
+      else setPlanCheck(r);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
   useEffect(() => {
     if (!moreOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMoreOpen(false);
@@ -146,6 +164,23 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
           ))}
         </div>
       </div>
+
+      {/* Recharge-style reminder when the plan ends within 5 days */}
+      {planCheck && planCheck.days_left != null && planCheck.days_left <= 5 && (
+        <div role="status" className="bg-amber-400/15 border-b border-amber-400/50 text-amber-300 text-sm px-4 py-2.5">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <span>
+              {planCheck.days_left === 0
+                ? 'Your membership ends today.'
+                : `Your membership ends in ${planCheck.days_left} day${planCheck.days_left === 1 ? '' : 's'}${planCheck.ends_on ? ` (${new Date(`${planCheck.ends_on}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})` : ''}.`}{' '}
+              Renew now to keep training without a break.
+            </span>
+            <Link to="/portal/checkout" className="font-heading text-amber-200 underline underline-offset-2">
+              Renew now
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Main Portal Content Container (extra bottom space on phones for the tab bar) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 md:py-8 flex-1 w-full">{children}</div>

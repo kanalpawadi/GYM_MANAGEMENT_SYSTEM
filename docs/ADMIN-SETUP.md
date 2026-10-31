@@ -32,8 +32,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 15. `15_supplement_sales_charges_past_attendance.sql`: supplement sales with payment, "Add amount due", and adding past visits (section 27).
 16. `16_plans_cancel_bills_no_date_limits.sql`: owner-managed subscription plans, cancelling a supplement sale's bill, and no date limits (section 28).
 17. `17_cancel_payment_with_reason.sql`: the owner deletes a payment entered by mistake, with a reason (section 29).
+18. `18_membership_expiry_and_staff_progress.sql`: ended plans go back to admission approval, 5-day renewal reminders, and staff adding progress photos (section 31).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `17`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `18`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -431,4 +432,45 @@ Then **Redeploy** the API project.
 Using a Grok key from console.x.ai (starts with `xai-`) instead? Set only `XAI_API_KEY`.
 
 Until a key is set, the chat says "The health assistant is not set up yet".
+
+## 31. Plan expiry, reminders, progress by staff, height in feet, Samsung scanning
+### When a plan ends: admission again
+The day after a member's last plan day, if they have no plan covering today or later:
+- their ID goes back for approval
+- the next time they open the portal they see the **admission form**, like a first registration, with "Your membership ended on …"
+- they check their details and press **Submit for Approval**
+- the owner approves them in **Admin → Approvals**, and they can then renew
+
+The member and the owner both get a notification.
+
+The check runs whenever a member opens the portal, and once per visit when staff open the admin panel. If your Supabase project has **pg_cron** turned on (Database → Extensions), it also runs every night at 00:05.
+
+### Recharge-style reminders
+With **5 days or fewer** left on a plan:
+- a notification goes out once a day ("Your plan ends in 3 days")
+- the portal shows a yellow **Renew now** banner
+
+### Body progress by trainer, owner and Super Admin
+On a member's page → **Progress**, staff see the same **Body Composition Audit / Progress Tracker** as the member. They can **Log Progress & Photos** for the member, and the entries appear on the member's Body Metrics page.
+
+### Height in feet
+In profile and registration forms, tap **feet** next to Height and type feet and inches (e.g. 5 ft 7 in). It is saved as centimetres (170.2 cm).
+
+### Medicines & health
+This section is hidden on the member's own profile. Staff still see and edit it on the member's page → **Profile**.
+
+### Scanning on Samsung phones
+The scanner now:
+- picks the phone's main back camera
+- uses Android's built-in QR reader
+- keeps the picture sharp with continuous focus
+
+If a QR still isn't read, choose another lens from the **Camera** list under the picture, or use **Scan from photo**. Ask the member to turn their screen brightness up. The member's QR is now larger, with a white border.
+
+### AI trainer says "Could not reach the health assistant"
+The API only accepts the website address set in **`ALLOWED_ORIGIN`**. In Vercel → the **API** project → Settings → Environment Variables, set:
+
+`ALLOWED_ORIGIN` = `https://rv-fitness-five.vercel.app` (your website address, no slash at the end)
+
+Then redeploy the API project. The same setting fixes the website's contact and visit-booking forms.
 
