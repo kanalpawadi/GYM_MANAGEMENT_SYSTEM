@@ -1,6 +1,34 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppNotification, listNotifications, markNotificationsRead } from '../../services/gym';
+
+/** The page a notification is about, in the panel the bell is shown in (member portal, trainer panel or admin). */
+export function notificationLink(type: string, pathname: string): string {
+  if (pathname.startsWith('/portal')) {
+    const member: Record<string, string> = {
+      plan_request: '/portal/checkout',
+      renewal: '/portal/checkout',
+      renewal_reminder: '/portal/checkout',
+      payment: '/portal/payments',
+      notice: '/portal/notices',
+      registration: '/portal/dashboard',
+    };
+    return member[type] ?? '/portal/dashboard';
+  }
+  if (pathname.startsWith('/trainer')) {
+    return type === 'notice' ? '/trainer/notices' : '/trainer/dashboard';
+  }
+  const admin: Record<string, string> = {
+    plan_request: '/admin/requests',
+    registration: '/admin/requests',
+    renewal: '/admin/requests',
+    payment: '/admin/financials',
+    notice: '/admin/notices',
+    content: '/admin/content',
+  };
+  return admin[type] ?? '/admin/dashboard';
+}
 
 const timeAgo = (iso: string) => {
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -14,6 +42,8 @@ export const NotificationBell: React.FC = () => {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   const load = () => listNotifications().then(setItems).catch(() => undefined);
 
@@ -66,10 +96,22 @@ export const NotificationBell: React.FC = () => {
           ) : (
             <ul className="max-h-80 overflow-y-auto divide-y divide-gym-border">
               {items.map((n) => (
-                <li key={n.id} className="px-4 py-3">
-                  <p className="text-sm text-white">{n.title}</p>
-                  <p className="text-xs text-gym-muted">{n.message}</p>
-                  <p className="text-[10px] text-gym-muted mt-1">{timeAgo(n.created_at)}</p>
+                <li key={n.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate(notificationLink(n.type, pathname));
+                    }}
+                    className="w-full text-left px-4 py-3 flex items-center gap-2 hover:bg-gym-surfaceHover"
+                  >
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm text-white">{n.title}</span>
+                      <span className="block text-xs text-gym-muted">{n.message}</span>
+                      <span className="block text-[10px] text-gym-muted mt-1">{timeAgo(n.created_at)}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-gym-muted shrink-0" />
+                  </button>
                 </li>
               ))}
             </ul>

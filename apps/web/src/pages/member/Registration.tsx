@@ -104,6 +104,7 @@ export const Registration: React.FC = () => {
               <ProfileDetailsForm
                 target={profile}
                 registration
+                showHealth={false}
                 submitLabel={status === 'pending' ? 'Update & Send Again' : 'Submit for Approval'}
                 onSubmit={async (patch) => {
                   await submitRegistration({

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  QrCode,
+  ScanLine,
   CreditCard,
   Receipt,
   CalendarCheck,
@@ -32,7 +32,7 @@ const navItems = [
   { name: 'My Diet & Workout', short: 'Plans', path: '/portal/plans', icon: Utensils },
   { name: 'Supplements', short: 'Supplements', path: '/portal/supplements', icon: Pill },
   { name: 'Notices', short: 'Notices', path: '/portal/notices', icon: Megaphone },
-  { name: 'Digital QR Card', short: 'QR Pass', path: '/portal/digital-card', icon: QrCode },
+  { name: 'Scan Gym QR', short: 'Check in', path: '/portal/check-in', icon: ScanLine },
   { name: 'Renew / Change Plan', short: 'Renew', path: '/portal/checkout', icon: CreditCard },
   { name: 'Payments & Invoices', short: 'Payments', path: '/portal/payments', icon: Receipt },
   { name: 'Attendance', short: 'Attendance', path: '/portal/attendance', icon: CalendarCheck },
@@ -41,7 +41,7 @@ const navItems = [
 ];
 
 // Phone bottom bar: the four most used pages; everything else is under "More".
-const BOTTOM_PATHS = ['/portal/dashboard', '/portal/plans', '/portal/digital-card', '/portal/attendance'];
+const BOTTOM_PATHS = ['/portal/dashboard', '/portal/plans', '/portal/check-in', '/portal/attendance'];
 
 export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, logout, refreshProfile } = useAuth();
@@ -129,9 +129,9 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
                 <Button variant="outline" size="sm">{staffLink.label}</Button>
               </Link>
             )}
-            <Link to="/portal/digital-card">
-              <Button variant="primary" size="sm" leftIcon={<QrCode className="w-4 h-4" />}>
-                Show QR Pass
+            <Link to="/portal/check-in">
+              <Button variant="primary" size="sm" leftIcon={<ScanLine className="w-4 h-4" />}>
+                Scan Gym QR
               </Button>
             </Link>
             <Button variant="ghost" size="sm" onClick={() => setShowPassword(true)} leftIcon={<KeyRound className="w-4 h-4" />}>

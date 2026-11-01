@@ -6,6 +6,9 @@ import { GymCheckIn } from './GymCheckIn';
 import { MemberAttendance } from './MemberAttendance';
 import { AttendanceScanner } from '../staff/AttendanceScanner';
 import { gymQrLink, gymTokenFromScan } from '../../services/gym';
+import { NotificationBell, notificationLink } from '../../components/account/NotificationBell';
+import { Registration } from './Registration';
+import { CurrentPath } from '../../test/renderPortal';
 import { makeProfile, seed, signInAs, supabaseMock, table } from '../../test/supabaseMock';
 import { renderPortal } from '../../test/renderPortal';
 
@@ -55,9 +58,21 @@ describe('Trainer shows the check-in QR', () => {
     renderPortal(<Routes><Route path="*" element={<AttendanceScanner />} /></Routes>);
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /show check-in qr/i }));
-    await user.click(await screen.findByRole('button', { name: /full screen/i }));
-    expect(screen.getByRole('dialog', { name: 'Check-in QR' })).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: /^full screen/i }));
+    // Rendered at page level, not trapped inside the card (its blur effect broke "fixed").
+    const dialog = screen.getByRole('dialog', { name: 'Check-in QR' });
+    expect(dialog.parentElement).toBe(document.body);
+    expect(document.body.style.overflow).toBe('hidden');
     await user.click(screen.getByRole('button', { name: /exit full screen/i }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe('');
+
+    await user.click(screen.getByRole('button', { name: /^full screen/i }));
+    await user.click(screen.getByRole('button', { name: /close full screen/i }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^full screen/i }));
+    await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -80,7 +95,7 @@ describe('Member scans the gym QR', () => {
     signInAs(asha);
     renderPortal(<Routes><Route path="*" element={<MemberAttendance />} /></Routes>);
     expect(await screen.findByRole('link', { name: /scan gym qr/i })).toHaveAttribute('href', '/portal/check-in');
-    expect(screen.getByRole('link', { name: /show qr to a trainer/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /show qr to a trainer/i })).not.toBeInTheDocument();
   });
 
   it('scanning with the in-app camera checks the member in', async () => {
@@ -128,5 +143,38 @@ describe('Member scans the gym QR', () => {
     expect(await screen.findByText('Checked in! Have a great workout.')).toBeInTheDocument();
     expect(getCurrentPosition).toHaveBeenCalled();
     expect(table('attendance')[0]).toMatchObject({ latitude: 18.5201 });
+  });
+});
+
+describe('Notifications open their section', () => {
+  it('links by type and by panel', () => {
+    expect(notificationLink('payment', '/portal/dashboard')).toBe('/portal/payments');
+    expect(notificationLink('notice', '/portal/plans')).toBe('/portal/notices');
+    expect(notificationLink('renewal_reminder', '/portal/dashboard')).toBe('/portal/checkout');
+    expect(notificationLink('registration', '/admin/dashboard')).toBe('/admin/requests');
+    expect(notificationLink('plan_request', '/admin/members')).toBe('/admin/requests');
+    expect(notificationLink('content', '/admin/dashboard')).toBe('/admin/content');
+    expect(notificationLink('notice', '/trainer/dashboard')).toBe('/trainer/notices');
+    expect(notificationLink('something_new', '/admin/x')).toBe('/admin/dashboard');
+  });
+
+  it('tapping a notification goes to that page', async () => {
+    seed('notifications', [{ id: 'n1', user_id: 'asha', title: 'Payment due', message: 'Protein: ₹2000', type: 'payment', is_read: false, created_at: new Date().toISOString() }]);
+    signInAs(asha);
+    renderPortal(<Routes><Route path="*" element={<><NotificationBell /><CurrentPath /></>} /></Routes>, { route: '/portal/dashboard' });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /notifications \(1 new\)/i }));
+    await user.click(screen.getByRole('button', { name: /payment due/i }));
+    expect(screen.getByTestId('path')).toHaveTextContent('/portal/payments');
+    expect(screen.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
+  });
+});
+
+describe('First registration form', () => {
+  it('does not ask about medicines', async () => {
+    signInAs({ ...asha, approval_status: 'incomplete' });
+    renderPortal(<Routes><Route path="*" element={<Registration />} /></Routes>, { route: '/register' });
+    expect(await screen.findByRole('button', { name: /submit for approval/i })).toBeInTheDocument();
+    expect(screen.queryByText(/medicines/i)).not.toBeInTheDocument();
   });
 });

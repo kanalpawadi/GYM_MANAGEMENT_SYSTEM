@@ -57,7 +57,7 @@ describe('Member portal on phones', () => {
     const user = userEvent.setup();
 
     const bar = await screen.findByRole('navigation', { name: /portal menu/i });
-    expect(within(bar).getAllByRole('link').map((l) => l.textContent)).toEqual(['Home', 'Plans', 'QR Pass', 'Attendance']);
+    expect(within(bar).getAllByRole('link').map((l) => l.textContent)).toEqual(['Home', 'Plans', 'Check in', 'Attendance']);
     expect(within(bar).getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
 
     await user.click(within(bar).getByRole('button', { name: /more/i }));

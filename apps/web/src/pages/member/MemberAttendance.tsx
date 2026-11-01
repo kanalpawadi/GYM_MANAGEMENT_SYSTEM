@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Camera, CheckCircle2, Flame, MapPin, QrCode, ScanLine } from 'lucide-react';
+import { Camera, CheckCircle2, Flame, MapPin, ScanLine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -83,9 +83,6 @@ export const MemberAttendance: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link to="/portal/check-in" className="flex-1">
                 <Button variant="primary" className="w-full" leftIcon={<ScanLine className="w-4 h-4" />}>Scan gym QR</Button>
-              </Link>
-              <Link to="/portal/digital-card" className="flex-1">
-                <Button variant="outline" className="w-full" leftIcon={<QrCode className="w-4 h-4" />}>Show QR to a trainer</Button>
               </Link>
               {settings.geofence.enabled && (
                 <>

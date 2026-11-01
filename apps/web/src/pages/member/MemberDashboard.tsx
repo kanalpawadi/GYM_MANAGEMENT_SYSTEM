@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { Flame, Award, Activity, QrCode, CreditCard, Utensils, Receipt, CalendarCheck } from 'lucide-react';
+import { Flame, Award, Activity, ScanLine, CreditCard, Utensils, Receipt, CalendarCheck } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { MyTrainerCard } from '../../components/account/MyTrainerCard';
 import { NoticeBoard } from '../../components/notices/NoticeBoard';
@@ -13,7 +13,7 @@ import { ProgressEntry, listProgress } from '../../services/portal';
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 const QUICK_LINKS = [
-  { to: '/portal/digital-card', label: 'Show QR Pass', hint: 'Check in at reception', icon: QrCode },
+  { to: '/portal/check-in', label: 'Scan Gym QR', hint: "Check in with the trainer's QR", icon: ScanLine },
   { to: '/portal/plans', label: 'My Diet & Workout', hint: "Today's plan from your trainer", icon: Utensils },
   { to: '/portal/checkout', label: 'Renew / Change Plan', hint: 'Send a request to the gym', icon: CreditCard },
   { to: '/portal/payments', label: 'Invoices', hint: 'View and download receipts', icon: Receipt },

@@ -125,7 +125,7 @@ describe('Attendance', () => {
   it('hides selfie check-in while geofencing is off', async () => {
     signInAs(asha);
     page(<MemberAttendance />);
-    expect(await screen.findByRole('button', { name: /show qr to a trainer/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /scan gym qr/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /selfie check-in/i })).not.toBeInTheDocument();
   });
 
