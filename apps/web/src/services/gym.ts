@@ -3,6 +3,7 @@
 // Every call is checked by row level security (migration 07).
 import { supabase } from '../lib/supabase';
 import { friendlyError, validateImage } from './portal';
+import { isMissingColumn, isMissingFunctionArg, selectWithNewColumns } from './columns';
 import type { UserProfile } from '../types';
 
 function unwrap<T>({ data, error }: { data: T; error: { message: string } | null }): T {
@@ -63,22 +64,37 @@ export function applyDiscount(price: number, discount?: DiscountSetting | null):
 
 const MEMBER_COLUMNS =
   'id, full_name, email, phone, role, avatar_url, assigned_trainer_id, dob, blood_group, height_cm, weight_kg, medicines, health_notes, membership_tier, member_code, created_at';
+/** Food type and freeze (migration 20). */
+const MEMBER_COLUMNS_20 = 'food_preference, frozen_at, frozen_reason';
 
 export async function getProfile(id: string): Promise<UserProfile | null> {
-  return unwrap(await supabase.from('profiles').select(MEMBER_COLUMNS).eq('id', id).maybeSingle()) as UserProfile | null;
+  return unwrap(
+    await selectWithNewColumns((cols) => supabase.from('profiles').select(cols).eq('id', id).maybeSingle(), MEMBER_COLUMNS, MEMBER_COLUMNS_20),
+  ) as UserProfile | null;
 }
 
 export async function listMembers(): Promise<UserProfile[]> {
-  return (unwrap(await supabase.from('profiles').select(MEMBER_COLUMNS).eq('role', 'member').order('full_name', { ascending: true })) ??
-    []) as UserProfile[];
+  return (unwrap(
+    await selectWithNewColumns(
+      (cols) => supabase.from('profiles').select(cols).eq('role', 'member').order('full_name', { ascending: true }),
+      MEMBER_COLUMNS,
+      MEMBER_COLUMNS_20,
+    ),
+  ) ?? []) as unknown as UserProfile[];
 }
 
 export type ProfilePatch = Partial<
-  Pick<UserProfile, 'full_name' | 'phone' | 'dob' | 'blood_group' | 'height_cm' | 'weight_kg' | 'medicines' | 'health_notes' | 'membership_tier' | 'avatar_url'>
+  Pick<UserProfile, 'full_name' | 'phone' | 'dob' | 'blood_group' | 'height_cm' | 'weight_kg' | 'medicines' | 'health_notes' | 'membership_tier' | 'avatar_url' | 'food_preference'>
 >;
 
 export async function updateProfile(id: string, patch: ProfilePatch): Promise<void> {
-  const rows = unwrap(await supabase.from('profiles').update(patch).eq('id', id).select('id')) as { id: string }[] | null;
+  let res = await supabase.from('profiles').update(patch).eq('id', id).select('id');
+  // Database without migration 20 yet: save everything except the food type.
+  if (isMissingColumn(res.error) && 'food_preference' in patch) {
+    const { food_preference: _skip, ...rest } = patch;
+    res = await supabase.from('profiles').update(rest).eq('id', id).select('id');
+  }
+  const rows = unwrap(res) as { id: string }[] | null;
   if (!rows || rows.length === 0) throw new Error("You don't have permission to change this person's details.");
 }
 
@@ -190,12 +206,12 @@ export interface RegistrationDetails {
   weight_kg?: number | null;
   medicines?: string | null;
   health_notes?: string | null;
+  food_preference?: 'veg' | 'nonveg' | 'veg_egg' | null;
 }
 
 /** Member sends their registration form; it waits for the owner's approval. */
 export async function submitRegistration(d: RegistrationDetails): Promise<UserProfile> {
-  return unwrap(
-    await supabase.rpc('submit_registration', {
+  const args = {
       p_full_name: d.full_name,
       p_phone: d.phone,
       p_dob: d.dob,
@@ -204,8 +220,42 @@ export async function submitRegistration(d: RegistrationDetails): Promise<UserPr
       p_weight_kg: d.weight_kg ?? null,
       p_medicines: d.medicines ?? null,
       p_health_notes: d.health_notes ?? null,
-    }),
-  ) as UserProfile;
+      p_food_preference: d.food_preference ?? null,
+  };
+  let res = await supabase.rpc('submit_registration', args);
+  // Database without migration 20 yet: register without the food type.
+  if (isMissingFunctionArg(res.error)) {
+    const { p_food_preference: _skip, ...older } = args;
+    res = await supabase.rpc('submit_registration', older);
+  }
+  return unwrap(res) as UserProfile;
+}
+
+// ---- Freeze (owner and Super Admin, migration 20) ---------------------------
+
+export interface MemberFreeze {
+  id: string;
+  member_id: string;
+  frozen_at: string;
+  reason: string;
+  unfrozen_at: string | null;
+  days_added: number | null;
+}
+
+/** Owner freezes a member: no portal, no check-in; plan days are paused. */
+export async function freezeMember(memberId: string, reason: string): Promise<UserProfile> {
+  return unwrap(await supabase.rpc('freeze_member', { p_member: memberId, p_reason: reason.trim() })) as UserProfile;
+}
+
+/** Unfreezes the member and adds the frozen days to their plan. */
+export async function unfreezeMember(memberId: string): Promise<{ days_added: number }> {
+  return unwrap(await supabase.rpc('unfreeze_member', { p_member: memberId })) as { days_added: number };
+}
+
+export async function listFreezes(memberId: string): Promise<MemberFreeze[]> {
+  return (unwrap(
+    await supabase.from('member_freezes').select('*').eq('member_id', memberId).order('frozen_at', { ascending: false }),
+  ) ?? []) as MemberFreeze[];
 }
 
 export async function listPendingRegistrations(): Promise<UserProfile[]> {

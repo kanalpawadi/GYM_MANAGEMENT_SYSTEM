@@ -116,6 +116,7 @@ export const Registration: React.FC = () => {
                     weight_kg: patch.weight_kg,
                     medicines: patch.medicines,
                     health_notes: patch.health_notes,
+                    food_preference: patch.food_preference,
                   });
                 }}
                 onSaved={async () => {

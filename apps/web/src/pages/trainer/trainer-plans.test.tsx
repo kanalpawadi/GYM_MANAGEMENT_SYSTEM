@@ -137,9 +137,9 @@ describe('Member "My Diet & Workout" page', () => {
 
   it('does not show another member their plan', async () => {
     seed('diet_plans', [{ id: 'p', member_id: 'ravi', title: 'Ravi Only', meals: [], is_active: true, created_at: '2026-01-01' }]);
-    signInAs(asha);
+    signInAs({ ...asha, food_preference: 'veg' });
     renderMemberPlans();
-    expect(await screen.findByText(/hasn't assigned a diet plan yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/No Pure Veg diet plan yet/i)).toBeInTheDocument();
     expect(screen.queryByText('Ravi Only')).not.toBeInTheDocument();
   });
 

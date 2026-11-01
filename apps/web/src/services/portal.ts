@@ -1,6 +1,8 @@
 // Portal data that lives in Supabase (protected by row level security).
 import { supabase } from '../lib/supabase';
 import type { UserProfile, UserRole } from '../types';
+import type { FoodType } from '../config/food';
+import { isMissingColumn, selectWithNewColumns } from './columns';
 
 export interface DietMeal {
   time: string;
@@ -34,6 +36,8 @@ export interface WorkoutPlan {
 }
 
 const PROFILE_COLUMNS = 'id, full_name, email, phone, role, avatar_url, assigned_trainer_id, membership_tier, member_code, created_at';
+/** Food type and freeze (migration 20). */
+const PROFILE_COLUMNS_20 = 'food_preference, frozen_at';
 
 export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -69,7 +73,9 @@ function unwrap<T>({ data, error }: { data: T; error: { message: string } | null
 // ---- Users & roles ---------------------------------------------------------
 
 export async function listUsers(): Promise<UserProfile[]> {
-  return unwrap(await supabase.from('profiles').select(PROFILE_COLUMNS).order('created_at', { ascending: false })) ?? [];
+  return (unwrap(
+    await selectWithNewColumns((cols) => supabase.from('profiles').select(cols).order('created_at', { ascending: false }), PROFILE_COLUMNS, PROFILE_COLUMNS_20),
+  ) ?? []) as unknown as UserProfile[];
 }
 
 export async function updateUserRole(userId: string, role: UserRole): Promise<void> {
@@ -82,27 +88,45 @@ export async function assignTrainer(memberId: string, trainerId: string | null):
 
 /** All members (role chain: trainers and above can see every member). */
 export async function listTrainees(_viewer?: UserProfile): Promise<UserProfile[]> {
-  return unwrap(await supabase.from('profiles').select(PROFILE_COLUMNS).eq('role', 'member').order('full_name', { ascending: true })) ?? [];
+  return (unwrap(
+    await selectWithNewColumns(
+      (cols) => supabase.from('profiles').select(cols).eq('role', 'member').order('full_name', { ascending: true }),
+      PROFILE_COLUMNS,
+      PROFILE_COLUMNS_20,
+    ),
+  ) ?? []) as unknown as UserProfile[];
 }
 
 // ---- Diet & workout plans --------------------------------------------------
 
-async function latestActive<T>(tableName: 'diet_plans' | 'workout_plans', memberId: string | null): Promise<T | null> {
+async function latestActive<T>(tableName: 'diet_plans' | 'workout_plans', memberId: string | null, foodType?: FoodType | null): Promise<T | null> {
   let q = supabase.from(tableName).select('*').eq('is_active', true);
   q = memberId ? q.eq('member_id', memberId) : q.eq('is_common', true);
-  const rows = unwrap(await q.order('created_at', { ascending: false }).limit(1)) as T[] | null;
+  // Common diet plans: one per food type (Pure Veg / Non-Veg / Veg + Egg).
+  const byFood = !memberId && tableName === 'diet_plans';
+  if (byFood) {
+    if (!foodType) return null;
+    q = q.eq('food_type', foodType);
+  }
+  let res = await q.order('created_at', { ascending: false }).limit(1);
+  // Database without migration 20 yet: the one common diet plan for everyone.
+  if (byFood && isMissingColumn(res.error)) {
+    res = await supabase.from(tableName).select('*').eq('is_active', true).eq('is_common', true).order('created_at', { ascending: false }).limit(1);
+  }
+  const rows = unwrap(res) as T[] | null;
   return rows?.[0] ?? null;
 }
 
 /**
  * The plans a member should follow: their personal plan from a trainer if they have
- * one (premium members), otherwise the gym's common plan (normal members).
+ * one (premium members), otherwise the gym's common plan (normal members). The common
+ * diet plan is the one for the member's food type; none if they haven't chosen one.
  */
-export async function getActivePlans(memberId: string) {
+export async function getActivePlans(memberId: string, foodType?: FoodType | null) {
   const [diet, workout, commonDiet, commonWorkout] = await Promise.all([
     latestActive<DietPlan>('diet_plans', memberId),
     latestActive<WorkoutPlan>('workout_plans', memberId),
-    latestActive<DietPlan>('diet_plans', null),
+    latestActive<DietPlan>('diet_plans', null, foodType),
     latestActive<WorkoutPlan>('workout_plans', null),
   ]);
   return {
@@ -134,9 +158,10 @@ export async function getPersonalPlans(memberId: string) {
   return { diet, workout };
 }
 
-export async function getCommonPlans() {
+/** The common workout plan and the common diet plan for one food type. */
+export async function getCommonPlans(foodType?: FoodType | null) {
   const [diet, workout] = await Promise.all([
-    latestActive<DietPlan>('diet_plans', null),
+    latestActive<DietPlan>('diet_plans', null, foodType),
     latestActive<WorkoutPlan>('workout_plans', null),
   ]);
   return { diet, workout };
@@ -146,12 +171,22 @@ async function replaceCommonPlan(tableName: 'diet_plans' | 'workout_plans', row:
   const saved = unwrap(
     await supabase.from(tableName).insert({ ...row, member_id: null, is_common: true, is_active: true }).select().single(),
   ) as { id: string };
-  unwrap(await supabase.from(tableName).update({ is_active: false }).eq('is_common', true).eq('is_active', true).neq('id', saved.id));
+  // Diet: replaces only the plan for the same food type.
+  let older = supabase.from(tableName).update({ is_active: false }).eq('is_common', true).eq('is_active', true).neq('id', saved.id);
+  if (row.food_type) older = older.eq('food_type', row.food_type as string);
+  unwrap(await older);
   return saved;
 }
 
-export async function saveCommonDietPlan(plan: { title: string; meals: DietMeal[]; notes?: string }, author: UserProfile) {
-  return replaceCommonPlan('diet_plans', { title: plan.title, meals: plan.meals, notes: plan.notes || null, created_by: author.id, trainer_name: author.full_name });
+export async function saveCommonDietPlan(plan: { title: string; meals: DietMeal[]; notes?: string }, author: UserProfile, foodType: FoodType) {
+  return replaceCommonPlan('diet_plans', {
+    title: plan.title,
+    meals: plan.meals,
+    notes: plan.notes || null,
+    food_type: foodType,
+    created_by: author.id,
+    trainer_name: author.full_name,
+  });
 }
 
 export async function saveCommonWorkoutPlan(plan: { title: string; schedule: WorkoutDay[]; notes?: string }, author: UserProfile) {

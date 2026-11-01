@@ -8,6 +8,7 @@ import { DateOfBirthInput } from '../ui/DateOfBirthInput';
 import { HeightInput } from '../ui/HeightInput';
 import { ProfilePatch, ageFromDob, updateProfile } from '../../services/gym';
 import type { UserProfile } from '../../types';
+import { FOOD_TYPES, FoodType } from '../../config/food';
 
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const PHONE = /^[6-9]\d{9}$/;
@@ -36,6 +37,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
   const [weight, setWeight] = useState('');
   const [medicines, setMedicines] = useState('');
   const [healthNotes, setHealthNotes] = useState('');
+  const [foodPref, setFoodPref] = useState<FoodType | ''>('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState('');
   const [error, setError] = useState('');
@@ -50,6 +52,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
     setWeight(target.weight_kg != null ? String(target.weight_kg) : '');
     setMedicines(target.medicines ?? '');
     setHealthNotes(target.health_notes ?? '');
+    setFoodPref(target.food_preference ?? '');
   }, [target.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const age = ageFromDob(dob);
@@ -63,6 +66,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
     if (registration && !phone.trim()) return setError('Please enter your mobile number.');
     if (dobTyped && !dob) return setError('Please check the date of birth (DD/MM/YYYY).');
     if (registration && !dob) return setError('Please enter your date of birth.');
+    if (registration && !foodPref) return setError('Please choose your food type: Pure Veg, Non-Veg or Veg + Egg.');
     if (phone && !PHONE.test(phone.trim())) return setError('Enter a valid 10-digit Indian mobile number.');
     const h = num(height);
     const w = num(weight);
@@ -77,6 +81,7 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
       weight_kg: w,
       medicines: medicines.trim() || null,
       health_notes: healthNotes.trim() || null,
+      food_preference: foodPref || null,
     };
     setSaving(true);
     try {
@@ -122,6 +127,27 @@ export const ProfileDetailsForm: React.FC<Props> = ({ target, onSaved, registrat
             <span className="min-h-[44px] flex items-center px-4 rounded-xl border border-gym-border bg-black/40 text-white text-sm" aria-label="Age">
               {age != null ? `${age} years` : 'Add date of birth'}
             </span>
+          </div>
+        </div>
+        <div role="radiogroup" aria-label="Food type" className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-gym-muted">
+            Food type{registration ? ' *' : ''} <span className="text-xs">(your common diet plan is chosen by this)</span>
+          </span>
+          <div className="grid grid-cols-3 gap-2">
+            {FOOD_TYPES.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                role="radio"
+                aria-checked={foodPref === f.value}
+                onClick={() => setFoodPref(f.value)}
+                className={`min-h-[44px] px-2 rounded-xl border text-sm font-heading flex items-center justify-center gap-2 ${
+                  foodPref === f.value ? 'border-gym-primary bg-gym-primary/15 text-white' : 'border-gym-border text-gym-muted hover:text-white'
+                }`}
+              >
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.dot}`} aria-hidden="true" /> {f.label}
+              </button>
+            ))}
           </div>
         </div>
       </Card>

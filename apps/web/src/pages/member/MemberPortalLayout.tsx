@@ -17,6 +17,7 @@ import {
   X,
   ShieldCheck,
   Pill,
+  Snowflake,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -86,6 +87,34 @@ export const MemberPortalLayout: React.FC<{ children: React.ReactNode }> = ({ ch
   const bottomItems = navItems.filter((i) => BOTTOM_PATHS.includes(i.path));
   const moreItems = navItems.filter((i) => !BOTTOM_PATHS.includes(i.path));
   const moreActive = moreItems.some((i) => isActive(i.path));
+
+  // Frozen by the owner: nothing in the portal can be used until the gym unfreezes the account.
+  if (profile?.role === 'member' && profile.frozen_at) {
+    return (
+      <div className="min-h-screen bg-gym-bg flex items-center justify-center p-4">
+        <div role="alert" className="w-full max-w-md bg-gym-surface border border-sky-400/40 rounded-3xl p-6 flex flex-col items-center text-center gap-4">
+          <span className="w-14 h-14 rounded-full bg-sky-400/15 text-sky-300 flex items-center justify-center">
+            <Snowflake className="w-7 h-7" />
+          </span>
+          <h1 className="font-heading text-2xl text-white uppercase tracking-wide">Account frozen</h1>
+          <p className="text-sm text-gym-muted">
+            Your RV Fitness account was frozen by the gym on{' '}
+            {new Date(profile.frozen_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.
+          </p>
+          {profile.frozen_reason && (
+            <p className="text-sm text-white bg-black/40 border border-gym-border rounded-xl p-3 w-full">
+              <span className="text-gym-muted">Reason: </span>
+              {profile.frozen_reason}
+            </p>
+          )}
+          <p className="text-xs text-gym-muted">Your plan days are paused and will be added back when the gym unfreezes your account. Please contact the gym.</p>
+          <Button variant="outline" onClick={handleLogout} leftIcon={<LogOut className="w-4 h-4" />}>
+            Sign Out
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gym-bg flex flex-col">

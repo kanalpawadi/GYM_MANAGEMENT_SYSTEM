@@ -24,6 +24,11 @@ export interface UserProfile {
   /** New members register and wait for the owner's approval (migration 09). */
   approval_status?: ApprovalStatus;
   approval_note?: string | null;
+  /** Pure Veg / Non-Veg / Veg + Egg (migration 20). */
+  food_preference?: 'veg' | 'nonveg' | 'veg_egg' | null;
+  /** Set while the owner has frozen the account (migration 20). */
+  frozen_at?: string | null;
+  frozen_reason?: string | null;
   registration_submitted_at?: string | null;
   created_at: string;
 }

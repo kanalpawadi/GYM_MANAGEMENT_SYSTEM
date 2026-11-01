@@ -35,7 +35,7 @@ export const TodayPlanPopup: React.FC = () => {
   useEffect(() => {
     if (!profile || profile.role !== 'member') return;
     let stop: (() => void) | undefined;
-    Promise.all([getActivePlans(profile.id), getWater(profile.id)])
+    Promise.all([getActivePlans(profile.id, profile.food_preference), getWater(profile.id)])
       .then(([plans, water]) => {
         setDiet(plans.diet);
         setWorkout(plans.workout);

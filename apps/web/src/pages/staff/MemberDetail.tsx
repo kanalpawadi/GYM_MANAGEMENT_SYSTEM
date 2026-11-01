@@ -9,6 +9,8 @@ import { Avatar } from '../../components/account/Avatar';
 import { ProfileDetailsForm } from '../../components/account/ProfileDetailsForm';
 import { ProgressTimeline } from '../../components/progress/ProgressTimeline';
 import { PlanEditorModal, PlanTarget } from '../../components/plans/PlanEditorModal';
+import { FreezeMemberCard } from '../../components/account/FreezeMemberCard';
+import { FOOD_TYPES } from '../../config/food';
 import { DeleteMemberModal } from '../../components/account/DeleteMemberModal';
 import { SupplementLog } from '../../components/supplements/SupplementLog';
 import { ChangePlanModal } from '../../components/plans/ChangePlanModal';
@@ -100,7 +102,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
       // Receipts arrive with migration 14; older databases just show none.
       listReceipts(memberId).catch(() => [] as Receipt[]),
     ]);
-    getCommonPlans().then(setCommonPlans).catch(() => undefined);
+    getCommonPlans(m.food_preference).then(setCommonPlans).catch(() => undefined);
     setMemberships(ms);
     setPayments(ps);
     setReceipts(rc);
@@ -168,6 +170,22 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
                 {member.member_code || '—'} · {ROLE_LABELS[member.role]}
                 {member.role === 'member' ? ` · ${member.membership_tier === 'premium' ? 'Premium' : 'Normal'}` : ''}
               </p>
+              {member.role === 'member' && (
+                <p className="flex flex-wrap gap-1.5 mt-1">
+                  {(() => {
+                    const food = FOOD_TYPES.find((f) => f.value === member.food_preference);
+                    return (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full border border-gym-border text-white inline-flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${food ? food.dot : 'bg-gym-muted'}`} aria-hidden="true" />
+                        {food ? food.label : 'Food type not set'}
+                      </span>
+                    );
+                  })()}
+                  {member.frozen_at && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full border border-sky-400/50 text-sky-300">Frozen</span>
+                  )}
+                </p>
+              )}
               <p className="text-xs text-gym-muted break-all">
                 {member.phone ? phoneDisplay(member.phone) : 'No phone'} · {member.email}
               </p>
@@ -194,6 +212,10 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
             )}
           </div>
         </Card>
+
+        {member.role === 'member' && member.id !== me.id && (
+          <FreezeMemberCard member={member} canFreeze={isOwnerLevel(me.role)} onChanged={async (msg) => { await load(); flash(msg); }} onError={setError} />
+        )}
 
         {notice && (
           <div role="status" className="bg-gym-success/20 border border-gym-success text-gym-success p-3 rounded-xl flex items-center gap-2 text-sm">

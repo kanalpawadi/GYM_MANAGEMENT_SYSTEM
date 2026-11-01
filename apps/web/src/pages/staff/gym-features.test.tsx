@@ -286,8 +286,8 @@ describe('Daily plan pop-up', () => {
   });
 
   it('shows the gym\'s common plan to a normal member without a personal plan', async () => {
-    seed('diet_plans', [{ id: 'c1', member_id: null, is_common: true, title: 'Common Plan', meals: [{ name: 'Lunch', time: '1 PM', items: 'Dal rice' }], is_active: true, created_at: '2026-10-01' }]);
-    signInAs(asha);
+    seed('diet_plans', [{ id: 'c1', member_id: null, is_common: true, food_type: 'veg', title: 'Common Plan', meals: [{ name: 'Lunch', time: '1 PM', items: 'Dal rice' }], is_active: true, created_at: '2026-10-01' }]);
+    signInAs({ ...asha, food_preference: 'veg' });
     page(<MemberDashboard />);
     const popup = await screen.findByRole('dialog', { name: /today/i });
     expect(within(popup).getByText('Dal rice')).toBeInTheDocument();

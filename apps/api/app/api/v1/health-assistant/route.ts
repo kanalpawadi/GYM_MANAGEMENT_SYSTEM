@@ -31,13 +31,19 @@ export async function POST(request: Request) {
     const { data: auth, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !auth?.user) return fail(401, 'UNAUTHENTICATED', 'Your session has expired. Please sign in again.');
 
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('role, approval_status')
-      .eq('id', auth.user.id)
-      .maybeSingle();
+    type ProfileRow = { role: string; approval_status?: string | null; frozen_at?: string | null } | null;
+    const readProfile = async (columns: string) => {
+      const { data, error } = await supabaseAdmin.from('profiles').select(columns).eq('id', auth.user.id).maybeSingle();
+      return { profile: data as unknown as ProfileRow, error };
+    };
+    let { profile, error: profileError } = await readProfile('role, approval_status, frozen_at');
+    // Database without migration 20 yet (no frozen_at column): read it the old way.
+    if (profileError) ({ profile } = await readProfile('role, approval_status'));
     if (!profile || profile.role === 'visitor' || (profile.role === 'member' && (profile.approval_status ?? 'approved') !== 'approved')) {
       return fail(403, 'NOT_ALLOWED', 'The health assistant opens once the gym approves your registration.');
+    }
+    if (profile.role === 'member' && profile.frozen_at) {
+      return fail(403, 'ACCOUNT_FROZEN', 'Your account is frozen by the gym. Please contact the gym.');
     }
 
     let body: unknown;

@@ -4,7 +4,9 @@ import { Utensils, Dumbbell, Clock, UserCheck } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { DietPlan, WorkoutPlan, getActivePlans } from '../../services/portal';
+import { Link } from 'react-router-dom';
 import { MyTrainerCard } from '../../components/account/MyTrainerCard';
+import { foodLabel } from '../../config/food';
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -39,7 +41,7 @@ export const MemberPlans: React.FC = () => {
 
   useEffect(() => {
     if (!profile) return;
-    getActivePlans(profile.id)
+    getActivePlans(profile.id, profile.food_preference)
       .then((plans) => {
         setDiet(plans.diet);
         setWorkout(plans.workout);
@@ -100,7 +102,19 @@ export const MemberPlans: React.FC = () => {
                   {diet.notes && <p className="text-sm text-gym-muted whitespace-pre-line border-l-2 border-gym-primary pl-3">{diet.notes}</p>}
                 </>
               ) : (
-                <EmptyPlan what="diet plan" />
+                !profile?.food_preference ? (
+                  <p className="text-sm text-gym-muted">
+                    Choose your food type (Pure Veg, Non-Veg or Veg + Egg) in{' '}
+                    <Link to="/portal/profile" className="text-gym-primary underline">
+                      My Profile
+                    </Link>{' '}
+                    to see your diet plan.
+                  </p>
+                ) : (
+                  <p className="text-sm text-gym-muted">
+                    No {foodLabel(profile.food_preference)} diet plan yet. Your trainer will add it soon.
+                  </p>
+                )
               )}
             </Card>
 

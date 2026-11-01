@@ -13,6 +13,7 @@ export function notificationLink(type: string, pathname: string): string {
       payment: '/portal/payments',
       notice: '/portal/notices',
       registration: '/portal/dashboard',
+      freeze: '/portal/dashboard',
     };
     return member[type] ?? '/portal/dashboard';
   }

@@ -182,3 +182,16 @@ describe('Long earlier answers', () => {
     expect((await res.json()).error.message).toBe('Messages can be up to 1000 characters.');
   });
 });
+
+describe('Frozen accounts', () => {
+  it('a frozen member cannot use the AI trainer', async () => {
+    const { supabaseAdmin } = (await import('@/lib/supabase')) as any;
+    supabaseAdmin.maybeSingle.mockResolvedValueOnce({ data: { role: 'member', approval_status: 'approved', frozen_at: '2026-11-01T00:00:00Z' }, error: null });
+    process.env.XAI_API_KEY = 'gsk_abc';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const res = await ask();
+    expect(res.status).toBe(403);
+    expect((await res.json()).error.message).toMatch(/frozen/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});

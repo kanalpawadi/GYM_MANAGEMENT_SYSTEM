@@ -34,8 +34,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 17. `17_cancel_payment_with_reason.sql`: the owner deletes a payment entered by mistake, with a reason (section 29).
 18. `18_membership_expiry_and_staff_progress.sql`: ended plans go back to admission approval, 5-day renewal reminders, and staff adding progress photos (section 31).
 19. `19_gym_qr_check_in.sql`: the trainer shows a check-in QR and members scan it (section 32).
+20. `20_freeze_and_food_type.sql`: freeze a member's account with a reason, and Pure Veg / Non-Veg / Veg + Egg diet plans (section 33).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `19`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `20`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -492,4 +493,28 @@ A photo of the QR stops working within about a minute. For more safety, turn on 
 
 ### Still available
 Trainers scanning a member's QR pass, finding a member by name, and selfie check-in all work as before.
+
+## 33. Freeze a member, and food type (Veg / Non-Veg / Veg + Egg)
+### Freezing an account (owner and Super Admin)
+1. Open the member's page and press **Freeze account**.
+2. Write the reason (the member sees it), e.g. "Fees pending for 2 months" or "Medical leave", and press **Freeze**.
+
+While frozen:
+- the member sees only an **Account frozen** screen with the reason
+- they can't check in (QR, selfie or front desk), request a plan or use the AI trainer
+- their plan days are paused, so the plan doesn't run out while frozen
+
+Press **Unfreeze** on the member's page to make the account active again. The frozen days are added to the member's plan: the current plan ends later, and a plan that hadn't started yet moves forward. Past freezes are listed under **Freeze history**. Trainers can see that a member is frozen but can't freeze or unfreeze.
+
+### Food type
+- New members choose **Pure Veg**, **Non-Veg** or **Veg + Egg** on the registration form (required).
+- Existing members choose it in **My Profile** (Edit profile). Staff can also set it on the member's page → **Profile**.
+- The member's page shows the food type next to their name.
+
+### Common diet plans for each food type
+Trainer Panel → **Common Diet** now asks which members the plan is for: **Pure Veg**, **Non-Veg** or **Veg + Egg**. Each food type has its own common plan, and saving one doesn't replace the others.
+
+Members without a personal diet plan see the common plan for **their** food type. If there is no plan for their type yet, they see "No … diet plan yet" (nothing else). Members who haven't chosen a food type are asked to choose it in My Profile.
+
+Your existing common diet plan became the **Pure Veg** plan. Open Common Diet → choose a type to add the other two.
 

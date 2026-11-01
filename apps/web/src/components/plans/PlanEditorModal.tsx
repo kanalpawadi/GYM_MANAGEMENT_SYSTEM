@@ -14,6 +14,7 @@ import {
   saveWorkoutPlan,
 } from '../../services/portal';
 import type { UserProfile } from '../../types';
+import { FOOD_TYPES, FoodType, foodLabel } from '../../config/food';
 
 const textareaClass =
   'w-full bg-black text-white border border-gym-border rounded-xl p-3 text-sm font-body focus:outline-none focus:border-gym-primary';
@@ -43,9 +44,18 @@ export const PlanEditorModal: React.FC<Props> = ({ target, author, onClose, onSa
   const [days, setDays] = useState<WorkoutDay[]>(EMPTY_DAYS);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  // Common diet plans: one each for Pure Veg, Non-Veg and Veg + Egg members.
+  const [foodType, setFoodType] = useState<FoodType>('veg');
 
   const isCommon = target?.member === 'common';
-  const forName = !target ? '' : isCommon ? 'All normal members' : (target.member as UserProfile).full_name;
+  const isCommonDiet = isCommon && target?.kind === 'diet';
+  const forName = !target
+    ? ''
+    : isCommonDiet
+      ? `${foodLabel(foodType)} members`
+      : isCommon
+        ? 'All normal members'
+        : (target.member as UserProfile).full_name;
 
   useEffect(() => {
     if (!target) return;
@@ -54,7 +64,7 @@ export const PlanEditorModal: React.FC<Props> = ({ target, author, onClose, onSa
     setNotes('');
     setMeals(EMPTY_MEALS);
     setDays(EMPTY_DAYS);
-    const load = isCommon ? getCommonPlans() : getPersonalPlans((target.member as UserProfile).id);
+    const load = isCommon ? getCommonPlans(foodType) : getPersonalPlans((target.member as UserProfile).id);
     load
       .then((current) => {
         if (target.kind === 'diet' && current.diet) {
@@ -69,7 +79,7 @@ export const PlanEditorModal: React.FC<Props> = ({ target, author, onClose, onSa
         }
       })
       .catch((err: Error) => setFormError(`Could not load the current plan: ${err.message}`));
-  }, [target]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [target, foodType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +91,7 @@ export const PlanEditorModal: React.FC<Props> = ({ target, author, onClose, onSa
         const filled = meals.filter((m) => m.name.trim() || m.items.trim());
         if (!filled.length) throw new Error('Add at least one meal.');
         const plan = { title, meals: filled, notes };
-        if (isCommon) await saveCommonDietPlan(plan, author);
+        if (isCommon) await saveCommonDietPlan(plan, author, foodType);
         else await saveDietPlan((target.member as UserProfile).id, plan, author);
       } else {
         const filled = days.filter((d) => d.day.trim() || d.exercises.trim());
@@ -90,7 +100,7 @@ export const PlanEditorModal: React.FC<Props> = ({ target, author, onClose, onSa
         if (isCommon) await saveCommonWorkoutPlan(plan, author);
         else await saveWorkoutPlan((target.member as UserProfile).id, plan, author);
       }
-      onSaved(`${target.kind === 'diet' ? 'Diet' : 'Workout'} plan "${title}" sent to ${isCommon ? 'all normal members' : forName}.`);
+      onSaved(`${target.kind === 'diet' ? 'Diet' : 'Workout'} plan "${title}" sent to ${isCommonDiet ? `all ${forName}` : isCommon ? 'all normal members' : forName}.`);
     } catch (err: any) {
       setFormError(err.message || 'Could not save the plan');
     } finally {
@@ -104,9 +114,32 @@ export const PlanEditorModal: React.FC<Props> = ({ target, author, onClose, onSa
   return (
     <Modal isOpen={!!target} onClose={onClose} maxWidth="2xl" title={target ? `${target.kind === 'diet' ? 'DIET' : 'WORKOUT'} PLAN · ${forName}` : ''}>
       <form onSubmit={handleSave} className="flex flex-col gap-4">
+        {isCommonDiet && (
+          <div role="radiogroup" aria-label="Diet plan for" className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-gym-muted">This diet plan is for</span>
+            <div className="grid grid-cols-3 gap-2">
+              {FOOD_TYPES.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={foodType === f.value}
+                  onClick={() => setFoodType(f.value)}
+                  className={`min-h-[44px] px-2 rounded-xl border text-sm font-heading flex items-center justify-center gap-2 ${
+                    foodType === f.value ? 'border-gym-primary bg-gym-primary/15 text-white' : 'border-gym-border text-gym-muted hover:text-white'
+                  }`}
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${f.dot}`} aria-hidden="true" /> {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {isCommon && (
           <p className="text-xs text-gym-muted bg-gym-primary/10 border border-gym-primary/30 rounded-xl p-3">
-            This common plan is shown to every member who doesn't have a personal plan (normal members).
+            {isCommonDiet
+              ? `Shown to every ${foodLabel(foodType)} member who doesn't have a personal diet plan. Saving replaces only the ${foodLabel(foodType)} plan.`
+              : "This common plan is shown to every member who doesn't have a personal plan (normal members)."}
           </p>
         )}
         <Input

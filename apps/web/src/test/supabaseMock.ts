@@ -436,12 +436,31 @@ export function resetSupabaseMock() {
       if (!me) return fail('Account not found');
       if (me.role !== 'member' || me.approval_status === 'approved') return fail('Your registration is already approved');
       if (!/^[6-9]\d{9}$/.test(args.p_phone ?? '')) return fail('Enter a valid 10-digit mobile number');
+      if (!['veg', 'nonveg', 'veg_egg'].includes(args.p_food_preference)) return fail('Please choose your food type: Pure Veg, Non-Veg or Veg + Egg');
       Object.assign(me, {
         full_name: args.p_full_name, phone: args.p_phone, dob: args.p_dob, blood_group: args.p_blood_group, height_cm: args.p_height_cm,
-        weight_kg: args.p_weight_kg, medicines: args.p_medicines, health_notes: args.p_health_notes,
+        weight_kg: args.p_weight_kg, medicines: args.p_medicines, health_notes: args.p_health_notes, food_preference: args.p_food_preference,
         approval_status: 'pending', approval_note: null, registration_submitted_at: new Date().toISOString(),
       });
       return ok({ ...me });
+    }
+    if (fn === 'freeze_member' || fn === 'unfreeze_member') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (!['owner', 'super_admin'].includes(me?.role)) return fail(`Only the owner can ${fn === 'freeze_member' ? 'freeze' : 'unfreeze'} a member`);
+      const m = table('profiles').find((p) => p.id === args.p_member);
+      if (!m) return fail('Member not found');
+      if (fn === 'freeze_member') {
+        if (String(args.p_reason ?? '').trim().length < 3) return fail('Please write the reason for freezing');
+        if (m.frozen_at) return fail('This member is already frozen');
+        Object.assign(m, { frozen_at: new Date().toISOString(), frozen_reason: args.p_reason, frozen_by: uid });
+        table('member_freezes').push({ id: `fz-${++idCounter}`, member_id: m.id, frozen_at: m.frozen_at, frozen_by: uid, reason: args.p_reason, unfrozen_at: null, days_added: null });
+        return ok({ ...m });
+      }
+      if (!m.frozen_at) return fail('This member is not frozen');
+      Object.assign(m, { frozen_at: null, frozen_reason: null, frozen_by: null });
+      const open = table('member_freezes').find((f) => f.member_id === m.id && !f.unfrozen_at);
+      if (open) Object.assign(open, { unfrozen_at: new Date().toISOString(), days_added: 3 });
+      return ok({ days_added: 3 });
     }
     if (fn === 'decide_registration') {
       const me = table('profiles').find((p) => p.id === uid);
