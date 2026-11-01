@@ -13,14 +13,22 @@ import { makeProfile, seed, signInAs, supabaseMock, table } from '../../test/sup
 import { renderPortal } from '../../test/renderPortal';
 
 // Stand-in for the html5-qrcode library: lets tests "show" a QR to the camera.
-const qr = vi.hoisted(() => ({ onScan: null as null | ((text: string) => void), fileText: '' }));
+const qr = vi.hoisted(() => ({
+  onScan: null as null | ((text: string) => void),
+  fileText: '',
+  // Each start() throws the next error in this list; an empty list means the camera starts.
+  startErrors: [] as unknown[],
+  starts: [] as unknown[],
+}));
 vi.mock('html5-qrcode', () => ({
   Html5QrcodeSupportedFormats: { QR_CODE: 0 },
   Html5Qrcode: class {
     static async getCameras() {
       return [];
     }
-    async start(_camera: unknown, _config: unknown, onScan: (t: string) => void) {
+    async start(camera: unknown, _config: unknown, onScan: (t: string) => void) {
+      qr.starts.push(camera);
+      if (qr.startErrors.length) throw qr.startErrors.shift();
       qr.onScan = onScan;
     }
     async stop() {}
@@ -38,6 +46,8 @@ const link = gymQrLink('RVFG1.coach.1.sig', 'https://rv-fitness-five.vercel.app'
 beforeEach(() => {
   qr.onScan = null;
   qr.fileText = '';
+  qr.startErrors = [];
+  qr.starts = [];
 });
 
 describe('Trainer shows the check-in QR', () => {
@@ -229,5 +239,49 @@ describe('First registration form', () => {
     renderPortal(<Routes><Route path="*" element={<Registration />} /></Routes>, { route: '/register' });
     expect(await screen.findByRole('button', { name: /submit for approval/i })).toBeInTheDocument();
     expect(screen.queryByText(/medicines/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('Member camera that will not open', () => {
+  const named = (name: string, message = '') => Object.assign(new Error(message), { name });
+  const open = async () => {
+    signInAs(asha);
+    renderPortal(<Routes><Route path="*" element={<GymCheckIn />} /></Routes>);
+    await userEvent.setup().click(screen.getByRole('button', { name: /start camera/i }));
+  };
+
+  it('tries simpler camera settings when the phone refuses the first try', async () => {
+    qr.startErrors = [named('OverconstrainedError'), named('AbortError', 'Timeout starting video source')];
+    await open();
+    expect(await screen.findByRole('button', { name: /stop camera/i }, { timeout: 3000 })).toBeInTheDocument();
+    expect(qr.starts).toHaveLength(3);
+    expect(qr.starts[1]).toEqual({ facingMode: 'environment' });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('when nothing works, tells the member to take a photo of the QR', async () => {
+    qr.startErrors = Array(5).fill(named('AbortError', 'Timeout starting video source'));
+    await open();
+    const alert = await screen.findByRole('alert', {}, { timeout: 3000 });
+    expect(alert).toHaveTextContent(/could not open the camera/i);
+    expect(alert).toHaveTextContent(/take a photo of the qr/i);
+    expect(alert).not.toHaveTextContent(/name search/i);
+    expect(screen.getByLabelText(/scan qr from photo/i)).toHaveAttribute('capture', 'environment');
+  });
+
+  it('a blocked permission is not retried', async () => {
+    qr.startErrors = [named('NotAllowedError', 'Permission denied')];
+    await open();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/camera permission was blocked/i);
+    expect(qr.starts).toHaveLength(1);
+  });
+
+  it('a photo of the QR checks the member in', async () => {
+    seed('profiles', [coach]);
+    qr.fileText = link;
+    signInAs(asha);
+    renderPortal(<Routes><Route path="*" element={<GymCheckIn />} /></Routes>);
+    await userEvent.setup().upload(screen.getByLabelText(/scan qr from photo/i), new File(['img'], 'qr.jpg', { type: 'image/jpeg' }));
+    expect(await screen.findByText('Checked in! Have a great workout.')).toBeInTheDocument();
   });
 });

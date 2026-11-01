@@ -93,6 +93,8 @@ export const GymCheckIn: React.FC = () => {
               onReset={() => setResult(null)}
               stopSignal={stopSignal}
               hint="Hold the trainer's QR inside the box."
+              fallbackHint={'Tap "Take a photo of the QR" below and photograph the trainer\'s QR instead.'}
+              photoFromCamera
             />
           )}
 

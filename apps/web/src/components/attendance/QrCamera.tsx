@@ -24,23 +24,30 @@ export function pickBackCamera(cameras: { id: string; label: string }[]): string
   return (byIndex(plain)[0] ?? byIndex(back)[0] ?? cameras[cameras.length - 1]).id;
 }
 
+const STAFF_FALLBACK = 'Use "Scan from photo" or the name search below.';
+
+const errorText = (err: unknown) => `${(err as { name?: string })?.name ?? ''} ${(err as { message?: string })?.message ?? err ?? ''}`.trim();
+const isPermissionError = (err: unknown) => /NotAllowed|Permission|denied/i.test(errorText(err));
+
 /** Plain-language reason why the camera could not start. */
-export function cameraErrorMessage(err: unknown): string {
-  const text = `${(err as { name?: string })?.name ?? ''} ${(err as { message?: string })?.message ?? err ?? ''}`;
+export function cameraErrorMessage(err: unknown, fallback = STAFF_FALLBACK): string {
+  const text = errorText(err);
   if (typeof window !== 'undefined' && window.isSecureContext === false) {
-    return 'The camera only works on a secure (https://) website. Open the live site, or use the name search below.';
+    return `The camera only works on a secure (https://) website. Open the live site. ${fallback}`;
   }
-  if (/NotAllowed|Permission|denied/i.test(text)) {
+  if (isPermissionError(err)) {
     return 'Camera permission was blocked. Allow the camera for this site in the browser settings (lock icon in the address bar), then press Start camera again.';
   }
-  if (/NotFound|no camera|Requested device not found|OverconstrainedError/i.test(text)) {
-    return 'No camera was found on this device. Use "Scan from photo" or the name search below.';
+  if (/NotFound|no camera|Requested device not found/i.test(text)) {
+    return `No camera was found on this device. ${fallback}`;
   }
   if (/NotReadable|in use|Could not start video source/i.test(text)) {
-    return 'The camera is being used by another app. Close it and press Start camera again.';
+    return `The camera is being used by another app. Close other camera apps and press Start camera again. ${fallback}`;
   }
-  return 'Could not open the camera. Use "Scan from photo" or the name search below.';
+  return `Could not open the camera. ${fallback}`;
 }
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface QrCameraProps {
   /** Called with the text of each QR read. Scanning pauses until it finishes, plus 2.5 s. */
@@ -53,10 +60,23 @@ interface QrCameraProps {
   /** Stops the camera (e.g. after a successful check-in). */
   stopSignal?: number;
   idPrefix?: string;
+  /** What to do instead when the camera won't open. */
+  fallbackHint?: string;
+  /** "Scan from photo" opens the phone's back camera directly instead of the gallery. */
+  photoFromCamera?: boolean;
 }
 
 /** Live camera QR reader with a camera picker and a "Scan from photo" fallback. */
-export const QrCamera: React.FC<QrCameraProps> = ({ onToken, onError, onReset, hint, stopSignal, idPrefix = 'rv-qr' }) => {
+export const QrCamera: React.FC<QrCameraProps> = ({
+  onToken,
+  onError,
+  onReset,
+  hint,
+  stopSignal,
+  idPrefix = 'rv-qr',
+  fallbackHint = STAFF_FALLBACK,
+  photoFromCamera = false,
+}) => {
   const readerId = `${idPrefix}-reader`;
   const photoReaderId = `${idPrefix}-photo-reader`;
   const [scanning, setScanning] = useState(false);
@@ -117,28 +137,53 @@ export const QrCamera: React.FC<QrCameraProps> = ({ onToken, onError, onReset, h
       const chosen = wanted ?? (saved && list.some((c) => c.id === saved) ? saved : pickBackCamera(list));
       setCameraId(chosen);
 
-      const scanner = new Html5Qrcode(readerId, {
-        verbose: false,
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-        // Uses Android's built-in QR reader when available: much better on Samsung phones.
-        useBarCodeDetectorIfSupported: true,
-      });
-      scannerRef.current = scanner;
       const sharp = { width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] };
-      await scanner.start(
-        chosen ?? { facingMode: 'environment' },
-        {
-          fps: 15,
-          qrbox: qrBox,
-          videoConstraints: chosen ? { deviceId: { exact: chosen }, ...sharp } : { facingMode: 'environment', ...sharp },
-        },
-        (text: string) => void handleText(text),
-        () => undefined,
-      );
+      // Many Android phones refuse the first try: a lens id or HD/focus settings they don't
+      // support, or the camera not yet free after the permission check. Try simpler settings.
+      const attempts: { camera: string | MediaTrackConstraints; video?: MediaTrackConstraints }[] = [
+        chosen
+          ? { camera: chosen, video: { deviceId: { exact: chosen }, ...sharp } }
+          : { camera: { facingMode: 'environment' }, video: { facingMode: 'environment', ...sharp } },
+        { camera: { facingMode: 'environment' } },
+        ...(list.length ? [{ camera: list[list.length - 1].id }] : []),
+        { camera: { facingMode: 'user' } },
+      ];
+      let lastError: unknown = null;
+      for (const [i, attempt] of attempts.entries()) {
+        if (i > 0) await wait(400);
+        const scanner = new Html5Qrcode(readerId, {
+          verbose: false,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          // Uses Android's built-in QR reader when available: much better on Samsung phones.
+          useBarCodeDetectorIfSupported: true,
+        });
+        try {
+          await scanner.start(
+            attempt.camera,
+            { fps: 15, qrbox: qrBox, ...(attempt.video ? { videoConstraints: attempt.video } : {}) },
+            (text: string) => void handleText(text),
+            () => undefined,
+          );
+          scannerRef.current = scanner;
+          lastError = null;
+          break;
+        } catch (err) {
+          lastError = err;
+          try {
+            scanner.clear();
+          } catch {
+            // nothing to clear
+          }
+          // A blocked permission won't change by retrying.
+          if (isPermissionError(err)) break;
+        }
+      }
+      if (lastError) throw lastError;
       setScanning(true);
     } catch (err) {
       scannerRef.current = null;
-      onError(cameraErrorMessage(err));
+      console.warn('Camera could not start', err);
+      onError(cameraErrorMessage(err, fallbackHint));
       setScanning(false);
     } finally {
       setStarting(false);
@@ -207,8 +252,15 @@ export const QrCamera: React.FC<QrCameraProps> = ({ onToken, onError, onReset, h
         <Button variant="primary" onClick={() => startCamera()} isLoading={starting} leftIcon={<Camera className="w-4 h-4" />}>Start camera</Button>
       )}
       <label className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-gym-border text-sm font-heading text-white hover:border-gym-primary cursor-pointer">
-        <ImageUp className="w-4 h-4 text-gym-primary" /> Scan from photo
-        <input type="file" accept="image/*" className="sr-only" onChange={scanPhoto} aria-label="Scan QR from photo" />
+        <ImageUp className="w-4 h-4 text-gym-primary" /> {photoFromCamera ? 'Take a photo of the QR' : 'Scan from photo'}
+        <input
+          type="file"
+          accept="image/*"
+          {...(photoFromCamera ? { capture: 'environment' as const } : {})}
+          className="sr-only"
+          onChange={scanPhoto}
+          aria-label="Scan QR from photo"
+        />
       </label>
       {scanning && hint && <p className="text-xs text-gym-muted text-center">{hint}</p>}
     </>
