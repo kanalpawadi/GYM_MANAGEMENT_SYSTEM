@@ -56,6 +56,7 @@ import { AdminMembers } from './pages/admin/AdminMembers';
 import { AdminLeads } from './pages/admin/AdminLeads';
 import { AdminRequests } from './pages/admin/AdminRequests';
 import { AttendanceScanner } from './pages/staff/AttendanceScanner';
+import { GymCheckIn } from './pages/member/GymCheckIn';
 import { MemberDetail } from './pages/staff/MemberDetail';
 import { InvoicePage } from './pages/InvoicePage';
 import { ReceiptPage } from './pages/ReceiptPage';
@@ -106,6 +107,7 @@ export const App: React.FC = () => {
                         <Route path="checkout" element={<MembershipCheckout />} />
                         <Route path="payments" element={<PaymentHistory />} />
                         <Route path="attendance" element={<MemberAttendance />} />
+                        <Route path="check-in" element={<GymCheckIn />} />
                         <Route path="progress" element={<MemberProgress />} />
                         <Route path="profile" element={<MemberProfile />} />
                         <Route path="messages" element={<MessagesPage />} />

@@ -1,72 +1,30 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Camera, CameraOff, CheckCircle2, ImageUp, Search, XCircle } from 'lucide-react';
+import { CheckCircle2, QrCode, Search, XCircle } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Avatar } from '../../components/account/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { QrCamera } from '../../components/attendance/QrCamera';
+import { GymQrDisplay } from '../../components/attendance/GymQrDisplay';
 import { AttendanceRow, ScanResult, checkInByQr, listAttendance, listMembers, staffCheckIn } from '../../services/gym';
 import type { UserProfile } from '../../types';
 
-const READER_ID = 'rv-qr-reader';
-const PHOTO_READER_ID = 'rv-qr-photo-reader';
-
-/** Scan box: 70% of the camera view (a fixed size breaks on small or not-yet-sized views). */
-export const qrBox = (width: number, height: number) => {
-  const side = Math.max(120, Math.floor(Math.min(width, height) * 0.7));
-  return { width: side, height: side };
-};
-
-const CAMERA_KEY = 'rv_scanner_camera';
+export { cameraErrorMessage, pickBackCamera, qrBox } from '../../components/attendance/QrCamera';
 
 /**
- * Picks the phone's main back camera. Samsung and other phones list several back lenses
- * (ultra-wide, telephoto, macro); the ultra-wide can't focus close enough to read a QR.
+ * Attendance desk: show the gym QR for members to scan, scan a member's QR pass,
+ * or find the member by name.
  */
-export function pickBackCamera(cameras: { id: string; label: string }[]): string | null {
-  if (!cameras.length) return null;
-  const back = cameras.filter((c) => /back|rear|environment|facing back/i.test(c.label));
-  const plain = back.filter((c) => !/ultra|wide|tele|depth|macro|zoom/i.test(c.label));
-  // Samsung names them "camera2 0, facing back", "camera2 2, facing back"...: the lowest number is the main lens.
-  const lens = (label: string) => Number(/camera\d*\s+(\d+)/i.exec(label)?.[1] ?? /(\d+)/.exec(label)?.[1] ?? 99);
-  const byIndex = (list: typeof cameras) => [...list].sort((a, b) => lens(a.label) - lens(b.label));
-  return (byIndex(plain)[0] ?? byIndex(back)[0] ?? cameras[cameras.length - 1]).id;
-}
-
-/** Plain-language reason why the camera could not start. */
-export function cameraErrorMessage(err: unknown): string {
-  const text = `${(err as { name?: string })?.name ?? ''} ${(err as { message?: string })?.message ?? err ?? ''}`;
-  if (typeof window !== 'undefined' && window.isSecureContext === false) {
-    return 'The camera only works on a secure (https://) website. Open the live site, or use the name search below.';
-  }
-  if (/NotAllowed|Permission|denied/i.test(text)) {
-    return 'Camera permission was blocked. Allow the camera for this site in the browser settings (lock icon in the address bar), then press Start camera again.';
-  }
-  if (/NotFound|no camera|Requested device not found|OverconstrainedError/i.test(text)) {
-    return 'No camera was found on this device. Use "Scan from photo" or the name search below.';
-  }
-  if (/NotReadable|in use|Could not start video source/i.test(text)) {
-    return 'The camera is being used by another app. Close it and press Start camera again.';
-  }
-  return 'Could not open the camera. Use "Scan from photo" or the name search below.';
-}
-
-/** Trainers and front desk scan a member's QR pass (or search by name) to mark attendance. */
 export const AttendanceScanner: React.FC = () => {
   const { profile } = useAuth();
-  const [scanning, setScanning] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
-  const [cameraId, setCameraId] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState('');
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState('');
   const [today, setToday] = useState<AttendanceRow[]>([]);
   const [notice, setNotice] = useState('');
-  const scannerRef = useRef<any>(null);
-  const busyRef = useRef(false);
 
   const loadToday = () => {
     const midnight = new Date();
@@ -77,14 +35,9 @@ export const AttendanceScanner: React.FC = () => {
   useEffect(() => {
     listMembers().then(setMembers).catch(() => undefined);
     loadToday();
-    return () => {
-      scannerRef.current?.stop?.().catch(() => undefined);
-    };
   }, []);
 
   const handleToken = async (token: string) => {
-    if (busyRef.current) return;
-    busyRef.current = true;
     setError('');
     try {
       const r = await checkInByQr(token);
@@ -93,85 +46,7 @@ export const AttendanceScanner: React.FC = () => {
     } catch (err: any) {
       setResult(null);
       setError(err.message || 'Could not read this pass');
-    } finally {
-      // Small pause so one QR isn't scanned many times in a row.
-      setTimeout(() => (busyRef.current = false), 2500);
     }
-  };
-
-  const startCamera = async (wanted?: string) => {
-    setError('');
-    setResult(null);
-    // Show the camera box first: the scanner measures it when it starts, and a hidden
-    // (0 px wide) box gives it nothing to read, so QR codes are never detected.
-    setStarting(true);
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
-      // Listing cameras asks for permission once; then we can choose the main back lens.
-      const list = await Html5Qrcode.getCameras().catch(() => [] as { id: string; label: string }[]);
-      setCameras(list);
-      let saved: string | null = null;
-      try {
-        saved = localStorage.getItem(CAMERA_KEY);
-      } catch {
-        // storage unavailable
-      }
-      const chosen = wanted ?? (saved && list.some((c) => c.id === saved) ? saved : pickBackCamera(list));
-      setCameraId(chosen);
-
-      const scanner = new Html5Qrcode(READER_ID, {
-        verbose: false,
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-        // Uses Android's built-in QR reader when available: much better on Samsung phones.
-        useBarCodeDetectorIfSupported: true,
-      });
-      scannerRef.current = scanner;
-      const sharp = { width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] };
-      await scanner.start(
-        chosen ?? { facingMode: 'environment' },
-        {
-          fps: 15,
-          qrbox: qrBox,
-          videoConstraints: chosen ? { deviceId: { exact: chosen }, ...sharp } : { facingMode: 'environment', ...sharp },
-        },
-        (text: string) => void handleToken(text),
-        () => undefined,
-      );
-      setScanning(true);
-    } catch (err) {
-      scannerRef.current = null;
-      setError(cameraErrorMessage(err));
-      setScanning(false);
-    } finally {
-      setStarting(false);
-    }
-  };
-
-  // Fallback when the live camera doesn't work: take or pick a photo of the member's QR.
-  const scanPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setError('');
-    setResult(null);
-    if (scanning) await stopCamera();
-    try {
-      const { Html5Qrcode } = await import('html5-qrcode');
-      const reader = new Html5Qrcode(PHOTO_READER_ID, false);
-      const text = await reader.scanFile(file, false);
-      reader.clear();
-      busyRef.current = false;
-      await handleToken(text);
-    } catch {
-      setError('No QR code found in that photo. Hold the phone closer so the QR fills the picture, and try again.');
-    }
-  };
-
-  const stopCamera = async () => {
-    await scannerRef.current?.stop?.().catch(() => undefined);
-    scannerRef.current = null;
-    setScanning(false);
   };
 
   const matches = useMemo(() => {
@@ -211,51 +86,23 @@ export const AttendanceScanner: React.FC = () => {
           </h1>
         </div>
 
+        <Card hoverEffect={false} className="flex flex-col gap-3" aria-label="Check-in QR for members">
+          <h3 className="font-heading text-white flex items-center gap-2"><QrCode className="w-5 h-5 text-gym-primary" /> Members scan to check in</h3>
+          <p className="text-sm text-gym-muted">
+            Keep this QR on the screen. Members scan it with their phone to mark their own attendance. It changes every 30 seconds, so a photo of it can't be reused later.
+          </p>
+          <GymQrDisplay today={today} onRefreshToday={loadToday} />
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card hoverEffect={false} className="flex flex-col gap-4" aria-label="QR scanner">
             <h3 className="font-heading text-white">Scan member's QR pass</h3>
-            <div
-              id={READER_ID}
-              data-testid="qr-camera"
-              className={`w-full max-w-sm mx-auto rounded-xl overflow-hidden bg-black ${scanning || starting ? 'block min-h-[260px]' : 'hidden'}`}
+            <QrCamera
+              onToken={handleToken}
+              onError={setError}
+              onReset={() => setResult(null)}
+              hint="Hold the member's QR inside the box, about 15–25 cm away. Ask them to turn their screen brightness up."
             />
-            <div id={PHOTO_READER_ID} className="hidden" />
-            {scanning && cameras.length > 1 && (
-              <label className="flex flex-col gap-1 text-xs text-gym-muted">
-                Camera (try another if the QR isn't read)
-                <select
-                  aria-label="Camera"
-                  value={cameraId ?? ''}
-                  onChange={async (e) => {
-                    const id = e.target.value;
-                    try {
-                      localStorage.setItem(CAMERA_KEY, id);
-                    } catch {
-                      // storage unavailable
-                    }
-                    await stopCamera();
-                    await startCamera(id);
-                  }}
-                  className="min-h-[40px] bg-black text-white border border-gym-border rounded-xl px-3 text-sm focus:outline-none focus:border-gym-primary"
-                >
-                  {cameras.map((c, i) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label || `Camera ${i + 1}`}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {scanning ? (
-              <Button variant="outline" onClick={stopCamera} leftIcon={<CameraOff className="w-4 h-4" />}>Stop camera</Button>
-            ) : (
-              <Button variant="primary" onClick={() => startCamera()} isLoading={starting} leftIcon={<Camera className="w-4 h-4" />}>Start camera</Button>
-            )}
-            <label className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-gym-border text-sm font-heading text-white hover:border-gym-primary cursor-pointer">
-              <ImageUp className="w-4 h-4 text-gym-primary" /> Scan from photo
-              <input type="file" accept="image/*" className="sr-only" onChange={scanPhoto} aria-label="Scan QR from photo" />
-            </label>
-            {scanning && <p className="text-xs text-gym-muted text-center">Hold the member's QR inside the box, about 15–25 cm away. Ask them to turn their screen brightness up.</p>}
 
             {result && (
               <div
@@ -314,7 +161,7 @@ export const AttendanceScanner: React.FC = () => {
                 <li key={a.id} className="py-2 flex justify-between gap-2">
                   <span className="text-white">{a.member?.full_name ?? 'Member'} <span className="text-xs text-gym-muted">{a.member?.member_code}</span></span>
                   <span className="text-gym-muted text-xs">
-                    {new Date(a.check_in).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })} · {a.method === 'qr' ? 'QR' : a.method === 'selfie' ? 'Selfie' : 'Desk'}
+                    {new Date(a.check_in).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })} · {a.method === 'qr' ? 'QR' : a.method === 'gym_qr' ? 'Gym QR' : a.method === 'selfie' ? 'Selfie' : 'Desk'}
                   </span>
                 </li>
               ))}

@@ -33,8 +33,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 16. `16_plans_cancel_bills_no_date_limits.sql`: owner-managed subscription plans, cancelling a supplement sale's bill, and no date limits (section 28).
 17. `17_cancel_payment_with_reason.sql`: the owner deletes a payment entered by mistake, with a reason (section 29).
 18. `18_membership_expiry_and_staff_progress.sql`: ended plans go back to admission approval, 5-day renewal reminders, and staff adding progress photos (section 31).
+19. `19_gym_qr_check_in.sql`: the trainer shows a check-in QR and members scan it (section 32).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `18`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `19`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -473,4 +474,22 @@ The API only accepts the website address set in **`ALLOWED_ORIGIN`**. In Vercel 
 `ALLOWED_ORIGIN` = `https://rv-fitness-five.vercel.app` (your website address, no slash at the end)
 
 Then redeploy the API project. The same setting fixes the website's contact and visit-booking forms.
+
+## 32. Members scan the trainer's QR to check in
+### Trainer or front desk
+1. Open **Scan Attendance** (Trainer Panel) or **Admin → Attendance**.
+2. Press **Show check-in QR**. Press **Full screen** on a tablet or desk screen.
+3. Keep it on screen. The QR changes every 30 seconds, and the latest check-ins appear under it.
+
+### Member
+- **Portal → Attendance → Scan gym QR**, then point the phone at the QR, or
+- scan it with the phone's normal camera app: it opens the website and checks them in. If they are not signed in, they sign in and scan again.
+
+Each member is checked in once a day, and the trainer who showed the QR is saved as the one who verified it.
+
+### Stopping people checking in from outside
+A photo of the QR stops working within about a minute. For more safety, turn on **Selfie check-in (geofencing)** in Gym Settings: the member's phone location must then also be inside the gym when they scan.
+
+### Still available
+Trainers scanning a member's QR pass, finding a member by name, and selfie check-in all work as before.
 

@@ -494,6 +494,35 @@ export async function checkInByQr(token: string): Promise<ScanResult> {
   return unwrap(await supabase.rpc('check_in_by_qr', { p_token: token.trim() })) as ScanResult;
 }
 
+/** Trainer / front desk screen: the gym check-in QR (changes every 30 seconds). */
+export async function getGymQrToken(): Promise<{ token: string; seconds_left: number }> {
+  return unwrap(await supabase.rpc('my_gym_qr_token')) as { token: string; seconds_left: number };
+}
+
+/** Web address inside the gym QR, so a phone's normal camera app opens the check-in page. */
+export function gymQrLink(token: string, origin = window.location.origin): string {
+  return `${origin}/portal/check-in?t=${encodeURIComponent(token)}`;
+}
+
+/** Finds the gym check-in code in a scanned QR (the web address or the bare code). */
+export function gymTokenFromScan(text: string): string {
+  const match = /RVFG1\.[0-9a-z-]+\.\d+\.[0-9a-z]+/i.exec(decodeURIComponent(text.trim()));
+  return match ? match[0] : text.trim();
+}
+
+export interface GymCheckInResult {
+  already_checked_in: boolean;
+  status: 'active' | 'inactive';
+  staff_name: string | null;
+}
+
+/** Member scanned the gym QR. Location is needed only when geofencing is on. */
+export async function checkInWithGymQr(token: string, coords?: { lat: number; lng: number }): Promise<GymCheckInResult> {
+  return unwrap(
+    await supabase.rpc('check_in_with_gym_qr', { p_token: gymTokenFromScan(token), p_lat: coords?.lat ?? null, p_lng: coords?.lng ?? null }),
+  ) as GymCheckInResult;
+}
+
 /** Staff marks attendance for a member found by name, phone or member code. */
 export async function staffCheckIn(memberId: string, staffId: string): Promise<{ already: boolean }> {
   const midnight = new Date();

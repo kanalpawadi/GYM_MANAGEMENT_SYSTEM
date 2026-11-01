@@ -537,6 +537,26 @@ export function resetSupabaseMock() {
       return ok({ member_id: member.id, full_name: member.full_name, member_code: member.member_code ?? null, avatar_url: member.avatar_url ?? null,
         status: active ? 'active' : 'inactive', already_checked_in: already });
     }
+    if (fn === 'my_gym_qr_token') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (!me || ['member', 'visitor'].includes(me.role)) return fail('Only trainers and gym staff can show the check-in QR');
+      return ok({ token: `RVFG1.${uid}.1.sig`, seconds_left: 20 });
+    }
+    if (fn === 'check_in_with_gym_qr') {
+      const me = table('profiles').find((p) => p.id === uid);
+      if (me?.role !== 'member') return fail('Only members check in with the gym QR');
+      const parts = String(args.p_token).split('.');
+      if (parts[0] !== 'RVFG1' || parts.length !== 4) return fail('This is not the RV Fitness check-in QR');
+      if (parts[3] !== 'sig') return fail("This QR has expired. Please scan the QR on the trainer's screen again.");
+      const g = table('settings').find((r) => r.key === 'geofence')?.value;
+      if (g?.enabled && (args.p_lat == null || args.p_lng == null)) return fail('Please allow location access so we can confirm you are at the gym.');
+      const today = new Date().toLocaleDateString('en-CA');
+      const already = table('attendance').some((a) => a.member_id === uid && new Date(a.check_in).toLocaleDateString('en-CA') === today);
+      if (!already) table('attendance').push({ id: `att-${++idCounter}`, member_id: uid, check_in: new Date().toISOString(), method: 'gym_qr', verified_by: parts[1], latitude: args.p_lat });
+      const active = table('memberships').some((m) => m.member_id === uid && m.status === 'active');
+      const staff = table('profiles').find((p) => p.id === parts[1]);
+      return ok({ already_checked_in: already, status: active ? 'active' : 'inactive', staff_name: staff?.full_name ?? null });
+    }
     if (fn === 'self_check_in') {
       const g = table('settings').find((r) => r.key === 'geofence')?.value;
       if (!g?.enabled) return fail('Selfie check-in is turned off. Please ask a trainer to scan your QR pass.');
