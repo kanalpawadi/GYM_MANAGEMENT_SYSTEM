@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bot, RotateCcw, Send } from 'lucide-react';
+import { ChatText } from './ChatText';
 import { ASSISTANT_MAX_CHARS, AssistantTurn, TrainerLanguage, askHealthAssistant } from '../../services/healthAssistant';
 
 const STORAGE_KEY = 'rv_health_assistant';
@@ -132,7 +133,7 @@ export const HealthAssistant: React.FC = () => {
         )}
         {turns.map((t, i) => (
           <Bubble key={i} from={t.role}>
-            {t.content}
+            {t.role === 'assistant' ? <ChatText text={t.content} /> : t.content}
           </Bubble>
         ))}
         {thinking && (

@@ -42,7 +42,12 @@ SAFETY:
 
 LANGUAGE: The member chose ${name}. Always reply in ${name}${language === 'en' ? '' : ' using Devanagari script'}. If the member writes in another of English, Hindi or Marathi (or Hinglish / Marathi in English letters), reply in that same language and style instead. Keep common gym words (sets, reps, protein, cardio) as they are.
 
-STYLE: Short and practical (under 180 words). Use bullet points for plans (exercise - sets x reps). End with one line of motivation. For a fully personal plan, suggest asking their RV Fitness trainer at the gym.`;
+STYLE: Reply like a friendly chat message, short and simple:
+- Start with a one-line direct answer.
+- Then at most 4 short bullet points ("- "), one line each. For workouts: exercise - sets x reps.
+- Keep the whole reply under 80 words. No tables, no headings, no long meal plans or day-by-day charts unless the member asks for a full plan.
+- Use **bold** only for the key number or tip.
+- Finish with one short line of motivation. For a fully personal plan, suggest asking their RV Fitness trainer at the gym.`;
 }
 
 /** English rules (kept for older callers and tests). */
@@ -54,10 +59,19 @@ export const MAX_CHARS = 1000;
 export const requestSchema = z.object({
   messages: z
     .array(
-      z.object({
-        role: z.enum(['user', 'assistant']),
-        content: z.string().trim().min(1).max(MAX_CHARS, `Messages can be up to ${MAX_CHARS} characters.`),
-      }),
+      z
+        .object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string().trim().min(1).max(20_000),
+        })
+        // Only the member's own question has a limit. The trainer's earlier (sometimes long)
+        // answers come back as history: shorten them instead of rejecting the next question.
+        .superRefine((m, ctx) => {
+          if (m.role === 'user' && m.content.length > MAX_CHARS) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Messages can be up to ${MAX_CHARS} characters.` });
+          }
+        })
+        .transform((m) => (m.role === 'assistant' ? { ...m, content: m.content.slice(0, MAX_CHARS * 2) } : m)),
     )
     .min(1)
     .max(40)

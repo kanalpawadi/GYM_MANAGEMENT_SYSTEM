@@ -22,7 +22,11 @@ export async function askHealthAssistant(turns: AssistantTurn[], language: Train
     res = await fetch(`${API_BASE}/health-assistant`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ messages: turns.slice(-12), language }),
+      // Earlier long answers are shortened: they are only context, and the API limits message size.
+      body: JSON.stringify({
+        messages: turns.slice(-12).map((t) => (t.role === 'assistant' ? { ...t, content: t.content.slice(0, ASSISTANT_MAX_CHARS) } : t)),
+        language,
+      }),
     });
   } catch {
     throw new Error('Could not reach the health assistant. Check your internet and try again.');

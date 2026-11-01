@@ -136,3 +136,49 @@ describe('GET /health-assistant setup check', () => {
     expect(fetchSpy.mock.calls[0][0]).toBe('https://api.groq.com/openai/v1/models');
   });
 });
+
+describe('Reply style', () => {
+  it('asks for short, simple chat-style answers without tables', async () => {
+    const { systemPrompt } = await import('@/lib/healthAssistant');
+    const prompt = systemPrompt('en');
+    expect(prompt).toMatch(/under 80 words/);
+    expect(prompt).toMatch(/at most 4 short bullet points/);
+    expect(prompt).toMatch(/No tables/);
+  });
+});
+
+describe('Long earlier answers', () => {
+  it('a follow-up question works after a long answer (was "Messages can be up to 1000 characters")', async () => {
+    process.env.XAI_API_KEY = 'gsk_abc';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({ choices: [{ message: { content: 'Yes, 2 eggs is fine.' } }] }));
+    const res = await POST(
+      new Request('http://localhost/api/v1/health-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token-1' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'user', content: 'How much protein do I need?' },
+            { role: 'assistant', content: 'x'.repeat(2500) },
+            { role: 'user', content: 'Are eggs good?' },
+          ],
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const sent = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
+    expect(sent.messages[2].content.length).toBe(2000);
+  });
+
+  it("the member's own question is still limited to 1000 characters", async () => {
+    process.env.XAI_API_KEY = 'gsk_abc';
+    const res = await POST(
+      new Request('http://localhost/api/v1/health-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token-1' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: 'y'.repeat(1001) }] }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.message).toBe('Messages can be up to 1000 characters.');
+  });
+});
