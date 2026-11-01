@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { GymCheckIn } from './GymCheckIn';
@@ -74,6 +74,59 @@ describe('Trainer shows the check-in QR', () => {
     await user.click(screen.getByRole('button', { name: /^full screen/i }));
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it("uses the browser's real full screen, and the phone's Back button closes it", async () => {
+    let fsElement: Element | null = null;
+    const requestFullscreen = vi.fn(async () => {
+      fsElement = document.documentElement;
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
+    const exitFullscreen = vi.fn(async () => {
+      fsElement = null;
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
+    Object.defineProperty(document, 'fullscreenElement', { get: () => fsElement, configurable: true });
+    Object.defineProperty(document, 'exitFullscreen', { value: exitFullscreen, configurable: true });
+    Object.defineProperty(document.documentElement, 'requestFullscreen', { value: requestFullscreen, configurable: true });
+    try {
+      signInAs(coach);
+      renderPortal(<Routes><Route path="*" element={<AttendanceScanner />} /></Routes>);
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /show check-in qr/i }));
+      await user.click(await screen.findByRole('button', { name: /^full screen/i }));
+      expect(requestFullscreen).toHaveBeenCalled();
+      expect(screen.getByRole('dialog', { name: 'Check-in QR' })).toBeInTheDocument();
+
+      // Back button / Esc: the browser leaves full screen, and the QR layer closes with it.
+      await act(async () => {
+        fsElement = null;
+        document.dispatchEvent(new Event('fullscreenchange'));
+      });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /^full screen/i }));
+      await user.click(screen.getByRole('button', { name: /exit full screen/i }));
+      expect(exitFullscreen).toHaveBeenCalled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      delete (document as any).fullscreenElement;
+      delete (document as any).exitFullscreen;
+      delete (document.documentElement as any).requestFullscreen;
+    }
+  });
+
+  it('shows a fresh code when the screen comes back on', async () => {
+    signInAs(coach);
+    renderPortal(<Routes><Route path="*" element={<AttendanceScanner />} /></Routes>);
+    await userEvent.setup().click(screen.getByRole('button', { name: /show check-in qr/i }));
+    await screen.findByTestId('gym-qr');
+    const calls = () => supabaseMock.rpc.mock.calls.filter((c: unknown[]) => c[0] === 'my_gym_qr_token').length;
+    const before = calls();
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(calls()).toBe(before + 1);
   });
 
   it('the old member-pass scanner is still there', async () => {

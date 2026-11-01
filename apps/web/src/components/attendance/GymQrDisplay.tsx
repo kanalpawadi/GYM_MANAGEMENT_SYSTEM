@@ -46,27 +46,58 @@ export const GymQrDisplay: React.FC<GymQrDisplayProps> = ({ today, onRefreshToda
     void refresh();
     const tick = window.setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     const poll = window.setInterval(() => refreshTodayRef.current(), 5000);
-    // Keep the screen on while the QR is shown (where the browser allows it).
+    // Keep the screen on while the QR is shown (where the browser allows it). Phones drop
+    // the lock when the screen is switched off or the app is left, so take it again on return.
     let lock: { release: () => Promise<void> } | null = null;
-    (navigator as any).wakeLock?.request?.('screen').then((l: any) => (lock = l)).catch(() => undefined);
+    const keepAwake = () => {
+      (navigator as any).wakeLock?.request?.('screen').then((l: any) => (lock = l)).catch(() => undefined);
+    };
+    keepAwake();
+    // Background tabs pause timers: show a fresh code as soon as the screen is back.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      keepAwake();
+      void refresh();
+      refreshTodayRef.current();
+    };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.clearTimeout(timer.current);
       window.clearInterval(tick);
       window.clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
       lock?.release().catch(() => undefined);
     };
   }, [showing, refresh]);
 
-  // Full screen: Esc closes it and the page behind doesn't scroll.
+  // Uses the browser's real full screen too (hides the address bar on Android, tablets and
+  // computers). iPhones don't allow it for web pages, so there the cover layer alone is used.
+  const enterFullScreen = () => {
+    setFullScreen(true);
+    document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })?.catch(() => undefined);
+  };
+  const exitFullScreen = () => {
+    setFullScreen(false);
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
+  };
+
+  // Full screen: Esc or the phone's Back button closes it, and the page behind doesn't scroll.
   useEffect(() => {
     if (!fullScreen) return undefined;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFullScreen(false);
+    // Back / Esc leave the browser's full screen first; close the QR layer with it.
+    const onFsChange = () => {
+      if (!document.fullscreenElement) setFullScreen(false);
+    };
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
+    document.addEventListener('fullscreenchange', onFsChange);
     return () => {
       document.body.style.overflow = overflow;
       window.removeEventListener('keydown', onKey);
+      document.removeEventListener('fullscreenchange', onFsChange);
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
     };
   }, [fullScreen]);
 
@@ -82,21 +113,22 @@ export const GymQrDisplay: React.FC<GymQrDisplayProps> = ({ today, onRefreshToda
   const body = (
     <div className="flex flex-col items-center gap-3 w-full">
       {token ? (
-        <div className="bg-white p-3 rounded-2xl">
+        // Full screen: as big as fits (phone, tablet or desk monitor), leaving room for the text.
+        <div className="bg-white p-3 rounded-2xl" style={{ width: fullScreen ? 'min(88vw, 62vh)' : 'min(264px, 75vw)' }}>
           <QRCodeSVG
             value={gymQrLink(token)}
-            size={fullScreen ? 320 : 240}
+            size={512}
             marginSize={2}
             level="M"
             data-testid="gym-qr"
-            className="w-full h-auto max-w-[80vw] max-h-[60vh]"
+            className="block w-full h-auto"
           />
         </div>
       ) : (
         <div className="w-60 h-60 rounded-2xl bg-gym-card animate-pulse" aria-label="Loading QR" />
       )}
       <p className="text-sm text-white font-heading text-center">Members: open RV Fitness → Attendance → Scan gym QR</p>
-      <p className="text-xs text-gym-muted" aria-live="polite">New code in {secondsLeft}s</p>
+      <p className="text-xs text-gym-muted">New code in {secondsLeft}s</p>
       {error && <p role="alert" className="text-sm text-gym-danger">{error}</p>}
       {latest.length > 0 && (
         <ul className="w-full max-w-sm text-sm divide-y divide-gym-border" aria-label="Latest check-ins">
@@ -120,7 +152,7 @@ export const GymQrDisplay: React.FC<GymQrDisplayProps> = ({ today, onRefreshToda
       <div role="dialog" aria-modal="true" aria-label="Check-in QR" className="fixed inset-0 z-[90] bg-gym-bg overflow-y-auto">
         <button
           type="button"
-          onClick={() => setFullScreen(false)}
+          onClick={exitFullScreen}
           aria-label="Close full screen"
           className="fixed top-3 right-3 z-[91] w-11 h-11 rounded-full bg-gym-surface border border-gym-border text-white flex items-center justify-center hover:border-gym-primary"
         >
@@ -131,7 +163,7 @@ export const GymQrDisplay: React.FC<GymQrDisplayProps> = ({ today, onRefreshToda
             Scan to <span className="text-gym-primary">check in</span>
           </h2>
           {body}
-          <Button variant="outline" onClick={() => setFullScreen(false)} leftIcon={<Minimize2 className="w-4 h-4" />}>Exit full screen</Button>
+          <Button variant="outline" onClick={exitFullScreen} leftIcon={<Minimize2 className="w-4 h-4" />}>Exit full screen</Button>
         </div>
       </div>,
       document.body,
@@ -142,7 +174,7 @@ export const GymQrDisplay: React.FC<GymQrDisplayProps> = ({ today, onRefreshToda
     <div className="flex flex-col items-center gap-3">
       {body}
       <div className="flex flex-wrap gap-2 justify-center">
-        <Button variant="outline" size="sm" onClick={() => setFullScreen(true)} leftIcon={<Maximize2 className="w-4 h-4" />}>Full screen</Button>
+        <Button variant="outline" size="sm" onClick={enterFullScreen} leftIcon={<Maximize2 className="w-4 h-4" />}>Full screen</Button>
         <Button variant="outline" size="sm" onClick={() => setShowing(false)} leftIcon={<X className="w-4 h-4" />}>Hide QR</Button>
       </div>
     </div>
