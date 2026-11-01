@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { AssistantError, allowRequest, askGrok, requestSchema } from '@/lib/healthAssistant';
+import { AssistantError, allowRequest, askGrok, checkAssistantCached, requestSchema } from '@/lib/healthAssistant';
 
 const fail = (status: number, code: string, message: string) => NextResponse.json({ error: { code, message } }, { status });
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204 });
+}
+
+/**
+ * GET /api/v1/health-assistant
+ * Setup check for the gym owner: open it in a browser to see whether the AI key is accepted
+ * and the model exists. Never shows the key.
+ */
+export async function GET() {
+  return NextResponse.json(await checkAssistantCached(), { headers: { 'Cache-Control': 'no-store' } });
 }
 
 /**

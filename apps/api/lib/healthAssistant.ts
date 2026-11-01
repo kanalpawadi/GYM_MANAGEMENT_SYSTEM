@@ -94,35 +94,100 @@ export class AssistantError extends Error {
   }
 }
 
-/** Sends the conversation (last MAX_TURNS turns) to Grok and returns the reply text. */
-export async function askGrok(turns: ChatTurn[], fetchImpl: typeof fetch = fetch, language: Language = 'en'): Promise<string> {
-  const apiKey = process.env.XAI_API_KEY;
-  if (!apiKey) throw new AssistantError('The health assistant is not set up yet. Please ask the gym to add the Grok API key.', 503);
+type Provider = 'groq' | 'xai';
 
+const PROVIDERS: Record<Provider, { name: string; baseUrl: string; host: string; models: string[] }> = {
+  // Models tried in order when the configured one is not available.
+  groq: { name: 'Groq', baseUrl: 'https://api.groq.com/openai/v1', host: 'api.groq.com', models: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant'] },
+  xai: { name: 'Grok (xAI)', baseUrl: 'https://api.x.ai/v1', host: 'api.x.ai', models: ['grok-3-mini'] },
+};
+
+/** Vercel values pasted with spaces, quotes or line breaks still work. */
+const clean = (value: string | undefined) => (value ?? '').trim().replace(/^['"]|['"]$/g, '').trim();
+
+export interface AssistantConfig {
+  provider: Provider;
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  /** Settings that were wrong and have been corrected automatically. */
+  fixes: string[];
+}
+
+/**
+ * Reads the AI settings. A Groq key (gsk_...) or a Grok key (xai-...) decides where to send
+ * questions, so a missing or wrong XAI_BASE_URL doesn't break it. GROQ_* names work too.
+ */
+export function assistantConfig(env: Record<string, string | undefined> = process.env): AssistantConfig | null {
+  const apiKey = clean(env.GROQ_API_KEY) || clean(env.XAI_API_KEY);
+  if (!apiKey) return null;
+  const fixes: string[] = [];
+  const rawBase = clean(env.GROQ_BASE_URL) || clean(env.XAI_BASE_URL);
+  const provider: Provider =
+    apiKey.startsWith('gsk_') || clean(env.GROQ_API_KEY) ? 'groq' : apiKey.startsWith('xai-') ? 'xai' : rawBase.includes('groq.com') ? 'groq' : 'xai';
+  const info = PROVIDERS[provider];
+
+  // "https://api.groq.com/openai/v1/", ".../chat/completions" or another provider's address.
+  let baseUrl = rawBase.replace(/\/+$/, '').replace(/\/chat\/completions$/, '').replace(/\/+$/, '');
+  if (!baseUrl) baseUrl = info.baseUrl;
+  else if (!baseUrl.includes(info.host)) {
+    fixes.push(`XAI_BASE_URL points to ${baseUrl} but the key is a ${info.name} key; using ${info.baseUrl}`);
+    baseUrl = info.baseUrl;
+  } else if (baseUrl !== rawBase) fixes.push(`XAI_BASE_URL tidied to ${baseUrl}`);
+
+  let model = clean(env.GROQ_MODEL) || clean(env.XAI_MODEL);
+  if (!model) model = info.models[0];
+  else if (provider === 'groq' && /^grok/i.test(model)) {
+    fixes.push(`XAI_MODEL "${model}" is a Grok model, not a Groq one; using ${info.models[0]}`);
+    model = info.models[0];
+  }
+  return { provider, apiKey, baseUrl, model, fixes };
+}
+
+/** Reasoning models put their thinking in <think> tags; members only see the answer. */
+const stripThinking = (text: string) => text.replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
+
+const isModelProblem = (status: number, body: string) =>
+  (status === 400 || status === 404) && /model|decommission|does not exist|not found/i.test(body);
+
+/** Sends the conversation (last MAX_TURNS turns) to Grok / Groq and returns the reply text. */
+export async function askGrok(turns: ChatTurn[], fetchImpl: typeof fetch = fetch, language: Language = 'en'): Promise<string> {
+  const config = assistantConfig();
+  if (!config) throw new AssistantError('The health assistant is not set up yet. Please ask the gym to add the Grok or Groq API key.', 503);
+  for (const fix of config.fixes) console.warn('Health assistant setting:', fix);
+
+  // The configured model first, then the provider's known models if that one is rejected.
+  const models = [config.model, ...PROVIDERS[config.provider].models.filter((m) => m !== config.model)];
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30_000);
   try {
-    const res = await fetchImpl(`${process.env.XAI_BASE_URL || 'https://api.x.ai/v1'}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: process.env.XAI_MODEL || 'grok-3-mini',
-        temperature: 0.3,
-        max_tokens: 600,
-        messages: [{ role: 'system', content: systemPrompt(language) }, ...turns.slice(-MAX_TURNS)],
-      }),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      console.error('Grok API error', res.status, await res.text().catch(() => ''));
-      if (res.status === 401 || res.status === 403) throw new AssistantError('The health assistant key is not valid. Please tell the gym.', 503);
-      if (res.status === 429) throw new AssistantError('The health assistant is busy right now. Please try again in a minute.', 503);
-      throw new AssistantError('The health assistant could not answer right now. Please try again.', 502);
+    for (const model of models) {
+      const res = await fetchImpl(`${config.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.3,
+          max_tokens: 1000,
+          messages: [{ role: 'system', content: systemPrompt(language) }, ...turns.slice(-MAX_TURNS)],
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        console.error('Grok API error', res.status, model, detail.slice(0, 500));
+        if (res.status === 401 || res.status === 403) throw new AssistantError('The health assistant key is not valid. Please tell the gym.', 503);
+        if (res.status === 429) throw new AssistantError('The health assistant is busy right now. Please try again in a minute.', 503);
+        if (isModelProblem(res.status, detail)) continue;
+        throw new AssistantError('The health assistant could not answer right now. Please try again.', 502);
+      }
+      const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      const reply = stripThinking(data.choices?.[0]?.message?.content ?? '');
+      if (!reply) throw new AssistantError('The health assistant could not answer right now. Please try again.', 502);
+      if (model !== config.model) console.warn(`Health assistant: model "${config.model}" was not available; answered with "${model}". Update XAI_MODEL.`);
+      return reply;
     }
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const reply = data.choices?.[0]?.message?.content?.trim();
-    if (!reply) throw new AssistantError('The health assistant could not answer right now. Please try again.', 502);
-    return reply;
+    throw new AssistantError('The health assistant is not set up correctly (AI model not available). Please tell the gym.', 503);
   } catch (err) {
     if (err instanceof AssistantError) throw err;
     if ((err as Error).name === 'AbortError') throw new AssistantError('The health assistant took too long. Please try again.', 504);
@@ -131,4 +196,59 @@ export async function askGrok(turns: ChatTurn[], fetchImpl: typeof fetch = fetch
   } finally {
     clearTimeout(timer);
   }
+}
+
+export interface AssistantStatus {
+  configured: boolean;
+  provider?: string;
+  address?: string;
+  model?: string;
+  key?: 'valid' | 'not valid' | 'could not check';
+  model_available?: boolean;
+  fixes?: string[];
+  advice?: string;
+}
+
+/**
+ * Setup check for the gym owner (no secrets): is a key set, does the provider accept it,
+ * and does the chosen model exist. Uses the provider's free model list, not a chat request.
+ */
+export async function checkAssistant(fetchImpl: typeof fetch = fetch): Promise<AssistantStatus> {
+  const config = assistantConfig();
+  if (!config) return { configured: false, advice: 'Add XAI_API_KEY (your gsk_... Groq key) to the API project in Vercel, then redeploy.' };
+  const info = PROVIDERS[config.provider];
+  const status: AssistantStatus = { configured: true, provider: info.name, address: config.baseUrl, model: config.model, fixes: config.fixes };
+  try {
+    const res = await fetchImpl(`${config.baseUrl}/models`, { headers: { Authorization: `Bearer ${config.apiKey}` } });
+    if (res.status === 401 || res.status === 403) {
+      return { ...status, key: 'not valid', advice: `The ${info.name} key was refused. Create a new key, paste it into XAI_API_KEY on the API project, and redeploy.` };
+    }
+    if (!res.ok) return { ...status, key: 'could not check', advice: `${info.name} answered ${res.status}. Try again in a minute.` };
+    const list = (await res.json()) as { data?: { id: string }[] };
+    const ids = (list.data ?? []).map((m) => m.id);
+    const available = ids.includes(config.model);
+    const working = info.models.find((m) => ids.includes(m));
+    return {
+      ...status,
+      key: 'valid',
+      model_available: available,
+      advice: available
+        ? 'Everything looks right.'
+        : `The model "${config.model}" is not available on ${info.name}. Set XAI_MODEL to ${working ?? info.models[0]} and redeploy (the assistant uses it automatically meanwhile).`,
+    };
+  } catch {
+    return { ...status, key: 'could not check', advice: `Could not reach ${info.name}. Try again in a minute.` };
+  }
+}
+
+// The check result is kept for a minute so opening the page repeatedly doesn't call the provider each time.
+let lastCheck: { at: number; status: AssistantStatus } | null = null;
+
+export async function checkAssistantCached(fetchImpl: typeof fetch = fetch, now = Date.now()): Promise<AssistantStatus> {
+  if (!lastCheck || now - lastCheck.at > 60_000) lastCheck = { at: now, status: await checkAssistant(fetchImpl) };
+  return lastCheck.status;
+}
+
+export function resetAssistantCheck() {
+  lastCheck = null;
 }
