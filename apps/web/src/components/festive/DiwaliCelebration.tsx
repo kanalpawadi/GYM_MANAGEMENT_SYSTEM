@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -13,7 +13,6 @@ export const isDiwaliTime = (now = new Date()) => {
 };
 
 const COLORS = ['#FDE68A', '#D4AF37', '#FFB347', '#FF6B35', '#FF4D8D', '#FFFFFF', '#7CFFB2'];
-const DURATION_MS = 6500;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -23,18 +22,16 @@ type Spark = { x: number; y: number; vx: number; vy: number; life: number; color
 
 /**
  * Full-screen fireworks drawn on a canvas: rockets rise from the bottom and burst into
- * sparks. It never blocks taps (pointer-events: none) and ends by itself.
+ * sparks, in a loop for as long as the page is open. It never blocks taps
+ * (pointer-events: none), and browsers pause it while the tab is in the background.
  */
-const Fireworks: React.FC<{ onDone: () => void }> = ({ onDone }) => {
+const Fireworks: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext?.('2d');
-    if (!canvas || !ctx) {
-      onDone();
-      return undefined;
-    }
+    if (!canvas || !ctx) return undefined;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const resize = () => {
       canvas.width = window.innerWidth * dpr;
@@ -46,7 +43,6 @@ const Fireworks: React.FC<{ onDone: () => void }> = ({ onDone }) => {
 
     const rockets: Rocket[] = [];
     const sparks: Spark[] = [];
-    const start = performance.now();
     let lastLaunch = 0;
     let frame = 0;
     const w = () => window.innerWidth;
@@ -63,9 +59,8 @@ const Fireworks: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     };
 
     const tick = (now: number) => {
-      const elapsed = now - start;
-      // Launch rockets for most of the show, then let the last sparks fade.
-      if (elapsed < DURATION_MS - 1800 && now - lastLaunch > 280 + Math.random() * 380) {
+      // A rocket every ~0.5-1 s: lively, but the page stays readable.
+      if (now - lastLaunch > 500 + Math.random() * 600) {
         lastLaunch = now;
         rockets.push({ x: w() * (0.12 + Math.random() * 0.76), y: h(), vy: -(9 + Math.random() * 4), targetY: h() * (0.15 + Math.random() * 0.35), color: pick() });
       }
@@ -107,61 +102,17 @@ const Fireworks: React.FC<{ onDone: () => void }> = ({ onDone }) => {
       }
       ctx.globalAlpha = 1;
 
-      if (elapsed < DURATION_MS || sparks.length) frame = requestAnimationFrame(tick);
-      else onDone();
+      frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener('resize', resize);
     };
-  }, [onDone]);
+  }, []);
 
   return createPortal(
     <canvas ref={canvasRef} data-testid="diwali-fireworks" aria-hidden="true" className="fixed inset-0 w-full h-full z-[75] pointer-events-none" />,
-    document.body,
-  );
-};
-
-const BALLOON_COLORS = ['#FF4D8D', '#D4AF37', '#FF6B35', '#7C3AED', '#22C55E', '#38BDF8', '#F43F5E', '#FDE68A'];
-
-/** Balloons floating up across the screen while the fireworks play. */
-const Balloons: React.FC = () => {
-  // Fixed spread so they cover the width; small random wobble so each show looks fresh.
-  const balloons = React.useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        left: 4 + i * 8 + Math.random() * 4,
-        // Every balloon is gone before the fireworks end (about 7.5 s).
-        delay: (i % 4) * 0.3 + Math.random() * 0.4,
-        duration: 4.8 + Math.random() * 1.2,
-        size: 34 + Math.random() * 18,
-        color: BALLOON_COLORS[i % BALLOON_COLORS.length],
-      })),
-    [],
-  );
-  return createPortal(
-    <div data-testid="diwali-balloons" aria-hidden="true" className="fixed inset-0 z-[74] pointer-events-none overflow-hidden">
-      {balloons.map((b, i) => (
-        <svg
-          key={i}
-          viewBox="0 0 40 80"
-          className="diwali-balloon absolute"
-          style={{ left: `${b.left}%`, width: b.size, animationDelay: `${b.delay}s`, animationDuration: `${b.duration}s` }}
-        >
-          <defs>
-            <radialGradient id={`rvb${i}`} cx="35%" cy="30%" r="70%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.75" />
-              <stop offset="25%" stopColor={b.color} />
-              <stop offset="100%" stopColor={b.color} stopOpacity="0.85" />
-            </radialGradient>
-          </defs>
-          <ellipse cx="20" cy="20" rx="17" ry="20" fill={`url(#rvb${i})`} />
-          <path d="M17 39 L23 39 L20 43 Z" fill={b.color} />
-          <path d="M20 43 C16 52 24 58 19 66 C15 72 22 76 20 80" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="0.8" fill="none" />
-        </svg>
-      ))}
-    </div>,
     document.body,
   );
 };
@@ -181,21 +132,13 @@ const Diya: React.FC<{ delay?: number }> = ({ delay = 0 }) => (
 );
 
 /**
- * Diwali greeting card with diyas, plus fireworks and balloons over the page every time
- * it opens during the festival. Hidden outside the Diwali days.
+ * Diwali greeting card with diyas, plus fireworks over the page in a loop while it is
+ * open during the festival. Closing the card stops them. Hidden outside the Diwali days.
  */
 export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> = ({ name, now }) => {
   const [hidden, setHidden] = useState(false);
-  const [playing, setPlaying] = useState(false);
   const reduced = prefersReducedMotion();
   const active = isDiwaliTime(now);
-
-  // Plays every time the page opens (and on every refresh).
-  useEffect(() => {
-    if (active && !reduced) setPlaying(true);
-  }, [active, reduced]);
-
-  const done = useCallback(() => setPlaying(false), []);
 
   if (!active || hidden) return null;
   const first = name?.trim().split(/\s+/)[0];
@@ -207,16 +150,7 @@ export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> =
         @keyframes diya-pulse { 0%,100% { opacity: .18; } 50% { opacity: .45; } }
         .diya-flame { transform-origin: 24px 15px; animation: diya-flicker 1.1s ease-in-out infinite; }
         .diya-glow { animation: diya-pulse 1.6s ease-in-out infinite; }
-        @keyframes diwali-balloon-rise {
-          0% { transform: translate(0, 0) rotate(-4deg); opacity: 0; }
-          8% { opacity: 1; }
-          30% { transform: translate(14px, -38vh) rotate(5deg); }
-          60% { transform: translate(-12px, -78vh) rotate(-5deg); }
-          88% { opacity: 1; }
-          100% { transform: translate(8px, -125vh) rotate(4deg); opacity: 0; }
-        }
-        .diwali-balloon { bottom: -90px; opacity: 0; animation-name: diwali-balloon-rise; animation-timing-function: ease-in; animation-fill-mode: forwards; }
-        @media (prefers-reduced-motion: reduce) { .diya-flame, .diya-glow, .diwali-balloon { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .diya-flame, .diya-glow { animation: none; } }
       `}</style>
       <section
         aria-label="Happy Diwali"
@@ -248,12 +182,7 @@ export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> =
           </div>
         </div>
       </section>
-      {playing && (
-        <>
-          <Balloons />
-          <Fireworks onDone={done} />
-        </>
-      )}
+      {!reduced && <Fireworks />}
     </>
   );
 };

@@ -5,15 +5,28 @@ import { DiwaliCelebration, isDiwaliTime } from './DiwaliCelebration';
 
 const DURING = new Date('2026-11-06T10:00:00+05:30');
 const AFTER = new Date('2026-11-20T10:00:00+05:30');
+let frames: FrameRequestCallback[] = [];
 
 beforeEach(() => {
-  localStorage.clear();
-  // jsdom has no canvas: give it a do-nothing drawing context and hold the animation frames.
+  frames = [];
+  // jsdom has no canvas: give it a do-nothing drawing context and collect animation frames.
   const ctx = new Proxy({}, { get: () => () => undefined, set: () => true });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never);
-  vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    frames.push(cb);
+    return frames.length;
+  });
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
 });
 afterEach(() => vi.restoreAllMocks());
+
+/** Runs the queued animation frames, like the browser does every ~16 ms. */
+const runFrames = (count: number, startMs: number) => {
+  for (let i = 0; i < count; i++) {
+    const next = frames.shift();
+    next?.(startMs + i * 16);
+  }
+};
 
 describe('Diwali celebration', () => {
   it('only during the Diwali days (India time)', () => {
@@ -23,23 +36,28 @@ describe('Diwali celebration', () => {
     expect(isDiwaliTime(AFTER)).toBe(false);
   });
 
-  it('greets the member and plays fireworks and balloons every time the page opens', () => {
-    const first = render(<DiwaliCelebration name="Prashant Kanal" now={DURING} />);
-    expect(screen.getByRole('heading', { name: /happy\s*diwali.*prashant/i })).toBeInTheDocument();
-    expect(screen.getByTestId('diwali-fireworks')).toHaveClass('pointer-events-none');
-    expect(screen.getByTestId('diwali-balloons').querySelectorAll('svg')).toHaveLength(12);
-    first.unmount();
-
-    // Opening the page again (or refreshing) plays them again.
+  it('shows the Happy Diwali message and fireworks, without balloons or a button', () => {
     render(<DiwaliCelebration name="Prashant Kanal" now={DURING} />);
-    expect(screen.getByTestId('diwali-fireworks')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /happy\s*diwali.*prashant/i })).toBeInTheDocument();
+    expect(screen.getByText(/festival of lights/i)).toBeInTheDocument();
+    expect(screen.getByTestId('diwali-fireworks')).toHaveClass('pointer-events-none');
+    expect(screen.queryByTestId('diwali-balloons')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /light a firecracker/i })).not.toBeInTheDocument();
   });
 
-  it('the greeting card can be closed', async () => {
+  it('the fireworks keep going in a loop (still running after a minute)', () => {
+    render(<DiwaliCelebration name="Prashant" now={DURING} />);
+    // 60 s of frames at ~16 ms each.
+    runFrames(3750, 0);
+    expect(frames.length).toBe(1);
+    expect(screen.getByTestId('diwali-fireworks')).toBeInTheDocument();
+  });
+
+  it('closing the greeting also stops the fireworks', async () => {
     render(<DiwaliCelebration name="Prashant" now={DURING} />);
     await userEvent.setup().click(screen.getByRole('button', { name: /close diwali greeting/i }));
     expect(screen.queryByRole('region', { name: /happy diwali/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('diwali-fireworks')).not.toBeInTheDocument();
   });
 
   it('appears on the public home page too, without a name', () => {
@@ -57,8 +75,7 @@ describe('Diwali celebration', () => {
   it('no fireworks for people who turned off motion in their phone settings', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation((q) => ({ matches: q.includes('reduce'), media: q, addEventListener() {}, removeEventListener() {} }) as never);
     render(<DiwaliCelebration name="Prashant" now={DURING} />);
-    expect(screen.getByRole('heading', { name: /happy diwali/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /happy\s*diwali/i })).toBeInTheDocument();
     expect(screen.queryByTestId('diwali-fireworks')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /light a firecracker/i })).not.toBeInTheDocument();
   });
 });
