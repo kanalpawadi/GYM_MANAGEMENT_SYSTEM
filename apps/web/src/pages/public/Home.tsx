@@ -10,6 +10,7 @@ import { useGymSettings } from '../../content/useGymSettings';
 import { applyDiscount } from '../../services/gym';
 import { formatINR, mapEmbedSrc } from '../../config/site';
 import { useContent, usePlans, useSiteInfo } from '../../content/ContentContext';
+import { DiwaliCelebration } from '../../components/festive/DiwaliCelebration';
 
 const HIGHLIGHT_ICONS = [Dumbbell, Trophy, UserCheck, TrendingUp];
 
@@ -98,6 +99,10 @@ export const Home: React.FC = () => {
             </div>
           </div>
         </section>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <DiwaliCelebration />
+        </div>
 
         {/* WHY RV FITNESS (HIGHLIGHTS) */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

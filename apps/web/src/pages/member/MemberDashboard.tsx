@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { MyTrainerCard } from '../../components/account/MyTrainerCard';
 import { NoticeBoard } from '../../components/notices/NoticeBoard';
 import { TodayPlanPopup } from '../../components/engagement/TodayPlanPopup';
+import { DiwaliCelebration } from '../../components/festive/DiwaliCelebration';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceRow, Membership, attendanceStreak, currentMembership, daysLeft, listAttendance, listMemberships, localDay } from '../../services/gym';
 import { ProgressEntry, listProgress } from '../../services/portal';
@@ -61,6 +62,8 @@ export const MemberDashboard: React.FC = () => {
             {profile?.full_name?.split(' ')[0] || 'Member'} <span className="text-gym-primary">DASHBOARD</span>
           </h1>
         </div>
+
+        <DiwaliCelebration name={profile?.full_name} />
 
         {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
 

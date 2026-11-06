@@ -19,10 +19,13 @@ import {
   localDay,
 } from '../../services/gym';
 import type { UserProfile } from '../../types';
+import { DiwaliCelebration } from '../../components/festive/DiwaliCelebration';
+import { useAuth } from '../../context/AuthContext';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
 export const AdminDashboard: React.FC = () => {
+  const { profile } = useAuth();
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -110,6 +113,8 @@ export const AdminDashboard: React.FC = () => {
             </Link>
           </div>
         </div>
+
+        <DiwaliCelebration name={profile?.full_name} />
 
         {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
 

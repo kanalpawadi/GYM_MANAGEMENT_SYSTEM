@@ -17,6 +17,7 @@ import { ProgressEntry, listProgress, listTrainees } from '../../services/portal
 import { ProgressTimeline } from '../../components/progress/ProgressTimeline';
 import { useUnreadMessages } from '../../components/chat/useUnreadMessages';
 import type { UserProfile } from '../../types';
+import { DiwaliCelebration } from '../../components/festive/DiwaliCelebration';
 
 export const TrainerDashboard: React.FC = () => {
   const { profile, logout } = useAuth();
@@ -135,6 +136,8 @@ export const TrainerDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <DiwaliCelebration name={profile?.full_name} />
 
         {successMsg && (
           <div role="status" className="bg-gym-success/20 border border-gym-success text-gym-success p-4 rounded-xl flex items-center gap-2">
