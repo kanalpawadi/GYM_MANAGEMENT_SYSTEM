@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 /** Diwali days when the greeting and fireworks show (India time). */
 export const DIWALI_FROM = '2026-11-01';
@@ -12,7 +12,6 @@ export const isDiwaliTime = (now = new Date()) => {
   return d >= DIWALI_FROM && d <= DIWALI_TO;
 };
 
-const SEEN_KEY = 'rv_diwali_fireworks_seen';
 const COLORS = ['#FDE68A', '#D4AF37', '#FFB347', '#FF6B35', '#FF4D8D', '#FFFFFF', '#7CFFB2'];
 const DURATION_MS = 6500;
 
@@ -182,9 +181,8 @@ const Diya: React.FC<{ delay?: number }> = ({ delay = 0 }) => (
 );
 
 /**
- * Diwali greeting card with diyas, plus fireworks and balloons over the page once a day
- * during the festival (shared by every page). "Light a firecracker" plays them again.
- * Hidden outside the Diwali days.
+ * Diwali greeting card with diyas, plus fireworks and balloons over the page every time
+ * it opens during the festival. Hidden outside the Diwali days.
  */
 export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> = ({ name, now }) => {
   const [hidden, setHidden] = useState(false);
@@ -192,18 +190,10 @@ export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> =
   const reduced = prefersReducedMotion();
   const active = isDiwaliTime(now);
 
+  // Plays every time the page opens (and on every refresh).
   useEffect(() => {
-    if (!active || reduced) return;
-    const day = todayIST(now);
-    let seen: string | null = null;
-    try {
-      seen = localStorage.getItem(SEEN_KEY);
-      localStorage.setItem(SEEN_KEY, day);
-    } catch {
-      // storage unavailable: just play
-    }
-    if (seen !== day) setPlaying(true);
-  }, [active, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (active && !reduced) setPlaying(true);
+  }, [active, reduced]);
 
   const done = useCallback(() => setPlaying(false), []);
 
@@ -257,16 +247,6 @@ export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> =
             <Diya delay={0.6} />
           </div>
         </div>
-        {!reduced && (
-          <button
-            type="button"
-            onClick={() => setPlaying(true)}
-            disabled={playing}
-            className="relative mt-4 inline-flex items-center gap-2 min-h-[40px] px-4 rounded-xl bg-gold-gradient text-black font-heading text-sm disabled:opacity-60"
-          >
-            <Sparkles className="w-4 h-4" /> {playing ? 'Fireworks on!' : 'Light a firecracker'}
-          </button>
-        )}
       </section>
       {playing && (
         <>

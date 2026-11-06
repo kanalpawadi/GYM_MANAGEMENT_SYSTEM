@@ -23,27 +23,22 @@ describe('Diwali celebration', () => {
     expect(isDiwaliTime(AFTER)).toBe(false);
   });
 
-  it('greets the member and plays fireworks once a day', () => {
+  it('greets the member and plays fireworks and balloons every time the page opens', () => {
     const first = render(<DiwaliCelebration name="Prashant Kanal" now={DURING} />);
     expect(screen.getByRole('heading', { name: /happy\s*diwali.*prashant/i })).toBeInTheDocument();
-    expect(screen.getByTestId('diwali-fireworks')).toBeInTheDocument();
+    expect(screen.getByTestId('diwali-fireworks')).toHaveClass('pointer-events-none');
     expect(screen.getByTestId('diwali-balloons').querySelectorAll('svg')).toHaveLength(12);
     first.unmount();
 
+    // Opening the page again (or refreshing) plays them again.
     render(<DiwaliCelebration name="Prashant Kanal" now={DURING} />);
-    expect(screen.queryByTestId('diwali-fireworks')).not.toBeInTheDocument();
+    expect(screen.getByTestId('diwali-fireworks')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /light a firecracker/i })).not.toBeInTheDocument();
   });
 
-  it('"Light a firecracker" plays them again, and the card can be closed', async () => {
-    localStorage.setItem('rv_diwali_fireworks_seen', '2026-11-06');
+  it('the greeting card can be closed', async () => {
     render(<DiwaliCelebration name="Prashant" now={DURING} />);
-    const user = userEvent.setup();
-    expect(screen.queryByTestId('diwali-fireworks')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /light a firecracker/i }));
-    expect(screen.getByTestId('diwali-fireworks')).toBeInTheDocument();
-    expect(screen.getByTestId('diwali-fireworks')).toHaveClass('pointer-events-none');
-
-    await user.click(screen.getByRole('button', { name: /close diwali greeting/i }));
+    await userEvent.setup().click(screen.getByRole('button', { name: /close diwali greeting/i }));
     expect(screen.queryByRole('region', { name: /happy diwali/i })).not.toBeInTheDocument();
   });
 
