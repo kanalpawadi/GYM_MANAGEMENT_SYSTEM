@@ -14,6 +14,25 @@ export const isDiwaliTime = (now = new Date()) => {
 
 const COLORS = ['#FDE68A', '#D4AF37', '#FFB347', '#FF6B35', '#FF4D8D', '#FFFFFF', '#7CFFB2'];
 
+/** Closing a Diwali greeting turns the fireworks off for the rest of this visit. */
+const OFF_KEY = 'rv_diwali_fireworks_off';
+const OFF_EVENT = 'rv-diwali-fireworks-off';
+const fireworksOff = () => {
+  try {
+    return sessionStorage.getItem(OFF_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const turnFireworksOff = () => {
+  try {
+    sessionStorage.setItem(OFF_KEY, '1');
+  } catch {
+    // storage unavailable: still stops on this page
+  }
+  window.dispatchEvent(new Event(OFF_EVENT));
+};
+
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -117,6 +136,21 @@ const Fireworks: React.FC = () => {
   );
 };
 
+/**
+ * Fireworks over every page of the website during Diwali, rendered once for the whole
+ * app. Off after the festival, for reduced motion, or once a greeting has been closed.
+ */
+export const DiwaliFireworks: React.FC<{ now?: Date }> = ({ now }) => {
+  const [off, setOff] = useState(fireworksOff);
+  useEffect(() => {
+    const stop = () => setOff(true);
+    window.addEventListener(OFF_EVENT, stop);
+    return () => window.removeEventListener(OFF_EVENT, stop);
+  }, []);
+  if (off || !isDiwaliTime(now) || prefersReducedMotion()) return null;
+  return <Fireworks />;
+};
+
 /** A glowing clay lamp (diya). */
 const Diya: React.FC<{ delay?: number }> = ({ delay = 0 }) => (
   <svg viewBox="0 0 48 40" className="w-9 h-8 sm:w-11 sm:h-10" aria-hidden="true">
@@ -132,12 +166,11 @@ const Diya: React.FC<{ delay?: number }> = ({ delay = 0 }) => (
 );
 
 /**
- * Diwali greeting card with diyas, plus fireworks over the page in a loop while it is
- * open during the festival. Closing the card stops them. Hidden outside the Diwali days.
+ * Diwali greeting card with diyas (the fireworks come from DiwaliFireworks, on every
+ * page). Closing the card also turns the fireworks off. Hidden outside the Diwali days.
  */
 export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> = ({ name, now }) => {
   const [hidden, setHidden] = useState(false);
-  const reduced = prefersReducedMotion();
   const active = isDiwaliTime(now);
 
   if (!active || hidden) return null;
@@ -160,7 +193,10 @@ export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> =
         <div className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-pink-500/15 blur-3xl" aria-hidden="true" />
         <button
           type="button"
-          onClick={() => setHidden(true)}
+          onClick={() => {
+            setHidden(true);
+            turnFireworksOff();
+          }}
           aria-label="Close Diwali greeting"
           className="absolute top-3 right-3 w-8 h-8 rounded-full text-gym-muted hover:text-white hover:bg-white/10 flex items-center justify-center"
         >
@@ -182,7 +218,6 @@ export const DiwaliCelebration: React.FC<{ name?: string | null; now?: Date }> =
           </div>
         </div>
       </section>
-      {!reduced && <Fireworks />}
     </>
   );
 };

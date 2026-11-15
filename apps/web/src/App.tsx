@@ -57,14 +57,15 @@ import { AdminLeads } from './pages/admin/AdminLeads';
 import { AdminRequests } from './pages/admin/AdminRequests';
 import { AttendanceScanner } from './pages/staff/AttendanceScanner';
 import { GymCheckIn } from './pages/member/GymCheckIn';
+import { DiwaliFireworks } from './components/festive/DiwaliCelebration';
 import { MemberDetail } from './pages/staff/MemberDetail';
 import { InvoicePage } from './pages/InvoicePage';
 import { ReceiptPage } from './pages/ReceiptPage';
 import { AdminPlans } from './pages/admin/AdminPlans';
 import { AdminFinancials } from './pages/admin/AdminFinancials';
 import { AdminReports } from './pages/admin/AdminReports';
-import { AdminSettings } from './pages/admin/AdminSettings';
 import { AdminCalendar } from './pages/admin/AdminCalendar';
+import { AdminSettings } from './pages/admin/AdminSettings';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminContent } from './pages/admin/AdminContent';
 
@@ -94,6 +95,8 @@ export const App: React.FC = () => {
         <AuthProvider>
           <ContentProvider>
           <BrowserRouter>
+            {/* Diwali fireworks over every page during the festival. */}
+            <DiwaliFireworks />
             <Routes>
               {/* MEMBER PORTAL PROTECTED ROUTES */}
               <Route
@@ -155,10 +158,10 @@ export const App: React.FC = () => {
                         <Route path="attendance" element={<AttendanceScanner />} />
                         <Route path="financials" element={<AdminFinancials />} />
                         <Route path="reports" element={<AdminReports />} />
+                        <Route path="calendar" element={<AdminCalendar />} />
                         <Route path="settings" element={<AdminSettings />} />
                         <Route
                           path="users"
-                        <Route path="calendar" element={<AdminCalendar />} />
                           element={
                             <ProtectedRoute allowedRoles={ADMIN_ROLES}>
                               <AdminUsers />
