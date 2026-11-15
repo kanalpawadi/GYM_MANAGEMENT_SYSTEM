@@ -1,14 +1,24 @@
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DiwaliCelebration, isDiwaliTime } from './DiwaliCelebration';
+import { DiwaliCelebration, DiwaliFireworks, isDiwaliTime } from './DiwaliCelebration';
 
 const DURING = new Date('2026-11-06T10:00:00+05:30');
 const AFTER = new Date('2026-11-20T10:00:00+05:30');
 let frames: FrameRequestCallback[] = [];
 
+/** As in the app: fireworks once for the whole site (App.tsx), greeting on the page. */
+const Page: React.FC<{ name?: string; now: Date }> = ({ name, now }) => (
+  <>
+    <DiwaliFireworks now={now} />
+    <DiwaliCelebration name={name} now={now} />
+  </>
+);
+
 beforeEach(() => {
   frames = [];
+  sessionStorage.clear();
   // jsdom has no canvas: give it a do-nothing drawing context and collect animation frames.
   const ctx = new Proxy({}, { get: () => () => undefined, set: () => true });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never);
@@ -37,7 +47,7 @@ describe('Diwali celebration', () => {
   });
 
   it('shows the Happy Diwali message and fireworks, without balloons or a button', () => {
-    render(<DiwaliCelebration name="Prashant Kanal" now={DURING} />);
+    render(<Page name="Prashant Kanal" now={DURING} />);
     expect(screen.getByRole('heading', { name: /happy\s*diwali.*prashant/i })).toBeInTheDocument();
     expect(screen.getByText(/festival of lights/i)).toBeInTheDocument();
     expect(screen.getByTestId('diwali-fireworks')).toHaveClass('pointer-events-none');
@@ -46,7 +56,7 @@ describe('Diwali celebration', () => {
   });
 
   it('the fireworks keep going in a loop (still running after a minute)', () => {
-    render(<DiwaliCelebration name="Prashant" now={DURING} />);
+    render(<Page name="Prashant" now={DURING} />);
     // 60 s of frames at ~16 ms each.
     runFrames(3750, 0);
     expect(frames.length).toBe(1);
@@ -54,7 +64,8 @@ describe('Diwali celebration', () => {
   });
 
   it('closing the greeting also stops the fireworks', async () => {
-    render(<DiwaliCelebration name="Prashant" now={DURING} />);
+    render(<Page name="Prashant" now={DURING} />);
+    expect(screen.getByTestId('diwali-fireworks')).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: /close diwali greeting/i }));
     expect(screen.queryByRole('region', { name: /happy diwali/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('diwali-fireworks')).not.toBeInTheDocument();
@@ -67,14 +78,14 @@ describe('Diwali celebration', () => {
   });
 
   it('shows nothing after the festival', () => {
-    const { container } = render(<DiwaliCelebration name="Prashant" now={AFTER} />);
+    const { container } = render(<Page name="Prashant" now={AFTER} />);
     expect(container).toBeEmptyDOMElement();
     expect(screen.queryByTestId('diwali-fireworks')).not.toBeInTheDocument();
   });
 
   it('no fireworks for people who turned off motion in their phone settings', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation((q) => ({ matches: q.includes('reduce'), media: q, addEventListener() {}, removeEventListener() {} }) as never);
-    render(<DiwaliCelebration name="Prashant" now={DURING} />);
+    render(<Page name="Prashant" now={DURING} />);
     expect(screen.getByRole('heading', { name: /happy\s*diwali/i })).toBeInTheDocument();
     expect(screen.queryByTestId('diwali-fireworks')).not.toBeInTheDocument();
   });
