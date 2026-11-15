@@ -1,18 +1,5 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  async headers() {
-    return [
-      {
-        source: "/api/v1/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: process.env.ALLOWED_ORIGIN || "http://localhost:5173" },
-          { key: "Access-Control-Allow-Methods", value: "GET,DELETE,PATCH,POST,PUT,OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, x-cron-secret" },
-        ],
-      },
-    ];
-  },
-};
+// CORS headers for /api/v1 are set in middleware.ts (ALLOWED_ORIGIN may list several websites).
+const nextConfig = {};
 
 export default nextConfig;

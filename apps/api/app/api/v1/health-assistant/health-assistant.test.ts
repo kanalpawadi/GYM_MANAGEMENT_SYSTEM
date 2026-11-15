@@ -56,6 +56,19 @@ describe('POST /health-assistant', () => {
     expect(sent.messages[1]).toEqual({ role: 'user', content: 'How much protein do I need?' });
   });
 
+  it('automatically routes gsk_ keys to Groq API and default model', async () => {
+    process.env.XAI_API_KEY = 'gsk_test_groq_key';
+    const fetchSpy = grokReply('Eat 20g protein after workouts.');
+    const res = await ask([{ role: 'user', content: 'Post workout food?' }]);
+
+    expect(res.status).toBe(200);
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://api.groq.com/openai/v1/chat/completions');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer gsk_test_groq_key');
+    const sent = JSON.parse(init.body as string);
+    expect(sent.model).toBe('llama-3.3-70b-versatile');
+  });
+
   it('the rules tell Grok to refuse anything outside health and fitness', () => {
     expect(SYSTEM_PROMPT).toContain(OFF_TOPIC_REPLY);
     expect(SYSTEM_PROMPT).toMatch(/coding, maths, homework, politics/);

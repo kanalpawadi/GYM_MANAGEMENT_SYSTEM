@@ -44,7 +44,7 @@ The database, logins and photo storage are in **Supabase**, which is already set
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | your Supabase project URL |
    | `SUPABASE_SERVICE_ROLE_KEY` | your Supabase **service_role** key |
-   | `ALLOWED_ORIGIN` | the website URL from Step 2, e.g. `https://rv-fitness.vercel.app` (no slash at the end). If you don't know it yet, put a placeholder and update it after Step 2. |
+   | `ALLOWED_ORIGIN` | the website URL from Step 2, e.g. `https://rv-fitness.vercel.app` (no slash at the end). To allow several sites, separate them with commas, e.g. `https://rv-fitness.vercel.app,http://localhost:5173`. If you don't know it yet, put a placeholder and update it after Step 2. |
    | `XAI_API_KEY` | your Grok API key from [console.x.ai](https://console.x.ai), for the member health assistant |
    | `XAI_MODEL` | optional, the Grok model to use (default `grok-3-mini`) |
    | `XAI_BASE_URL` | only for a **Groq** key (`gsk_…`): `https://api.groq.com/openai/v1`, with `XAI_MODEL` = `llama-3.3-70b-versatile` |
@@ -139,13 +139,13 @@ To use your own domain (e.g. `rvfitnessgym.in`):
 
 Every push to the `main` branch on GitHub redeploys both projects automatically. Pull requests get their own preview links.
 
-> Preview links have a different address. Forms on a preview site are blocked by CORS unless you temporarily set `ALLOWED_ORIGIN` to that preview URL.
+> Preview links have a different address. Forms on a preview site are blocked by CORS unless you add that preview URL to `ALLOWED_ORIGIN` (comma-separated).
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| Contact / visit form says it can't reach the server | `VITE_API_BASE_URL` is missing or wrong (it must end in `/api/v1`), or `ALLOWED_ORIGIN` on the API doesn't exactly match the website URL. Redeploy after changing variables. |
+| Contact / visit form says it can't reach the server | `VITE_API_BASE_URL` is missing or wrong (it must end in `/api/v1`), or the website URL is not in `ALLOWED_ORIGIN` on the API. The health assistant then says "Could not reach the health assistant". Redeploy after changing variables. |
 | Form says "We couldn't send your enquiry right now" | The API can't write to Supabase: check `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` on the API project. |
 | Login does nothing / console says "Supabase is not configured" | Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` on the website project and redeploy. |
 | Reset-password email opens localhost | Set the Supabase **Site URL** and **Redirect URLs** (Step 3). |
