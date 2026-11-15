@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   Tags,
+  CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -112,6 +113,11 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
       name: 'Reports',
       path: '/admin/reports',
       icon: <BarChart3 className="w-5 h-5" />,
+    },
+    {
+      name: 'Calendar',
+      path: '/admin/calendar',
+      icon: <CalendarDays className="w-5 h-5" />,
     },
     {
       name: 'Trainer Panel',

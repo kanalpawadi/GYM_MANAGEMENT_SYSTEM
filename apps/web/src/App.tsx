@@ -64,6 +64,7 @@ import { AdminPlans } from './pages/admin/AdminPlans';
 import { AdminFinancials } from './pages/admin/AdminFinancials';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { AdminCalendar } from './pages/admin/AdminCalendar';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminContent } from './pages/admin/AdminContent';
 
@@ -157,6 +158,7 @@ export const App: React.FC = () => {
                         <Route path="settings" element={<AdminSettings />} />
                         <Route
                           path="users"
+                        <Route path="calendar" element={<AdminCalendar />} />
                           element={
                             <ProtectedRoute allowedRoles={ADMIN_ROLES}>
                               <AdminUsers />
