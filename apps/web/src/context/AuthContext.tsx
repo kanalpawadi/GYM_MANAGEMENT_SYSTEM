@@ -4,6 +4,15 @@ import { supabase } from '../lib/supabase';
 import { UserProfile, UserRole } from '../types';
 import { demoProfiles, isDemoAuthEnabled } from './demoProfiles';
 import { STAFF_ROLES } from '../config/roles';
+import {
+  LOCK_MINUTES,
+  MAX_ATTEMPTS,
+  checkLoginAllowed,
+  clearFinanceUnlock,
+  formatCountdown,
+  recordLoginFailure,
+  recordLoginSuccess,
+} from '../services/security';
 
 export interface SignUpInput {
   email: string;
@@ -13,6 +22,11 @@ export interface SignUpInput {
 }
 
 type AuthResult = { error: string | null };
+/** A password sign-in result: how many tries are left, or how long the email is locked. */
+export type SignInResult = AuthResult & { attemptsLeft?: number; lockedSeconds?: number };
+
+export const lockedMessage = (seconds: number) =>
+  `Too many wrong attempts. For your safety, sign-in for this email is locked. Try again in ${formatCountdown(seconds)}, or reset your password.`;
 
 interface AuthContextType {
   user: User | null;
@@ -21,7 +35,8 @@ interface AuthContextType {
   loading: boolean;
   /** Why a signed-in user has no profile (shown on the Login page). */
   profileError: string | null;
-  signIn: (email: string, password: string) => Promise<AuthResult>;
+  /** Email + password sign-in. 3 wrong passwords lock that email for 15 minutes. */
+  signIn: (email: string, password: string) => Promise<SignInResult>;
   /** Sign in or sign up with a Google account (Supabase OAuth). New users start as members. */
   signInWithGoogle: () => Promise<AuthResult>;
   signUp: (input: SignUpInput) => Promise<AuthResult & { needsConfirmation: boolean }>;
@@ -140,9 +155,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: error?.message ?? null };
   };
 
-  const signIn = async (email: string, password: string): Promise<AuthResult> => {
+  const signIn = async (email: string, password: string): Promise<SignInResult> => {
+    const key = email.trim().toLowerCase();
+    const gate = await checkLoginAllowed(key);
+    if (gate.lockedSeconds > 0) return { error: lockedMessage(gate.lockedSeconds), attemptsLeft: 0, lockedSeconds: gate.lockedSeconds };
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    if (!error) {
+      void recordLoginSuccess().catch(() => undefined);
+      return { error: null };
+    }
+    // Only a wrong email / password counts, not a network problem or an unconfirmed email.
+    if (!/invalid login credentials/i.test(error.message)) return { error: error.message };
+    const after = await recordLoginFailure(key);
+    if (!after) return { error: error.message };
+    if (after.lockedSeconds > 0) return { error: lockedMessage(after.lockedSeconds), attemptsLeft: 0, lockedSeconds: after.lockedSeconds };
+    const left = after.attemptsLeft;
+    return {
+      error: `Wrong email or password. ${left} attempt${left === 1 ? '' : 's'} left before sign-in is locked for ${LOCK_MINUTES} minutes.`,
+      attemptsLeft: Math.min(left, MAX_ATTEMPTS),
+    };
   };
 
   const signUp = async ({ email, password, fullName, phone }: SignUpInput) => {
@@ -204,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // ignore
     }
     setDemoRole(null);
+    clearFinanceUnlock();
     await supabase.auth.signOut();
     latestUserId.current = null;
     setSession(null);

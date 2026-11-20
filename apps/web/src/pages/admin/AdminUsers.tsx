@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Search, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Search, ShieldCheck, CheckCircle2, KeyRound } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Avatar } from '../../components/account/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { ROLE_LABELS, assignableRoles, canManageData, canManageUser } from '../../config/roles';
+import { ROLE_LABELS, assignableRoles, canManageData, canManageUser, isOwnerLevel, isStaffRole } from '../../config/roles';
+import { resetFinancePin } from '../../services/security';
 import { assignTrainer, listUsers, updateUserRole } from '../../services/portal';
 import type { UserProfile, UserRole } from '../../types';
 import { useCardTable } from '../../utils/useCardTable';
@@ -51,6 +52,19 @@ export const AdminUsers: React.FC = () => {
       setNotice(`${user.full_name} is now ${ROLE_LABELS[role]}.`);
     } catch (err: any) {
       setError(err.message || 'Could not change role');
+    }
+  };
+
+  // Owner / Super Admin: a staff member who forgot their security PIN sets a new one next time.
+  const canResetPins = isOwnerLevel(profile?.role);
+  const resetPin = async (user: UserProfile) => {
+    setError('');
+    setNotice('');
+    try {
+      await resetFinancePin(user.id);
+      setNotice(`${user.full_name}'s security PIN was reset. They will set a new one the next time they open money information.`);
+    } catch (err: any) {
+      setError(err.message || 'Could not reset the PIN');
     }
   };
 
@@ -167,6 +181,16 @@ export const AdminUsers: React.FC = () => {
                           <span className="inline-flex items-center gap-1.5 text-xs font-heading uppercase text-gym-primary">
                             <ShieldCheck className="w-4 h-4" /> {ROLE_LABELS[u.role]}
                           </span>
+                        )}
+                        {canResetPins && u.id !== profile?.id && isStaffRole(u.role) && canManageData(profile, u) && (
+                          <button
+                            type="button"
+                            onClick={() => resetPin(u)}
+                            className="mt-2 flex items-center gap-1 text-[11px] text-gym-muted hover:text-gym-primary"
+                            aria-label={`Reset security PIN for ${u.full_name}`}
+                          >
+                            <KeyRound className="w-3.5 h-3.5" /> Reset security PIN
+                          </button>
                         )}
                       </td>
                       <td className="p-4 min-w-[190px]">

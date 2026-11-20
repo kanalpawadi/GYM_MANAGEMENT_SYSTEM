@@ -5,7 +5,7 @@ import { Dumbbell, Lock, Mail, ArrowRight, UserCheck, Shield, Key } from 'lucide
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { homePathForRole, useAuth } from '../../context/AuthContext';
+import { homePathForRole, lockedMessage, useAuth } from '../../context/AuthContext';
 import { GoogleButton, OrDivider } from '../../components/account/GoogleButton';
 import { isDemoAuthEnabled } from '../../context/demoProfiles';
 import { oauthErrorFromUrl } from '../../utils/authErrors';
@@ -24,6 +24,24 @@ export const Login: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState(() => oauthErrorFromUrl(location.search, location.hash) ?? '');
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
   const showDemoSwitcher = isDemoAuthEnabled();
+  // After 3 wrong passwords this email is locked; count down until it opens again.
+  const [lock, setLock] = useState<{ email: string; until: number } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const lockedSecondsLeft = lock && lock.email === email.trim().toLowerCase() ? Math.max(0, Math.ceil((lock.until - now) / 1000)) : 0;
+  const isLocked = lockedSecondsLeft > 0;
+
+  useEffect(() => {
+    if (!lock) return;
+    const timer = window.setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= lock.until) {
+        setLock(null);
+        setErrorMsg('');
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [lock]);
 
   // Once a session and its profile are loaded, send the user where they were headed.
   useEffect(() => {
@@ -45,9 +63,16 @@ export const Login: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
     setSubmitting(true);
     setErrorMsg('');
-    const { error } = await signIn(email.trim(), password);
+    const { error, lockedSeconds } = await signIn(email.trim(), password);
+    if (lockedSeconds) {
+      const t = Date.now();
+      setNow(t);
+      setLock({ email: email.trim().toLowerCase(), until: t + lockedSeconds * 1000 });
+      setPassword('');
+    }
     if (error) setErrorMsg(error);
     setSubmitting(false);
   };
@@ -83,7 +108,10 @@ export const Login: React.FC = () => {
               type="email"
               placeholder="member@rvfitnessgym.in"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (lock) setErrorMsg('');
+              }}
               leftIcon={<Mail className="w-4 h-4 text-gym-primary" />}
               required
             />
@@ -106,9 +134,19 @@ export const Login: React.FC = () => {
               </Link>
             </div>
 
-            {errorMsg && <span role="alert" className="text-xs text-gym-danger font-medium">{errorMsg}</span>}
+            {errorMsg && (
+              <span role="alert" className="text-xs text-gym-danger font-medium">
+                {isLocked ? lockedMessage(lockedSecondsLeft) : errorMsg}
+              </span>
+            )}
 
-            <Button type="submit" variant="primary" isLoading={submitting || (loading && !!session)} rightIcon={<ArrowRight className="w-4 h-4" />}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isLocked}
+              isLoading={submitting || (loading && !!session)}
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+            >
               Sign In to Portal
             </Button>
           </form>

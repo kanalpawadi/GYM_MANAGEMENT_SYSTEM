@@ -10,12 +10,14 @@ import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../config/site';
 import { Expense, Payment, addExpense, listExpenses, listPayments, localDay, markPaymentPaid, payerName } from '../../services/gym';
 import { useCardTable } from '../../utils/useCardTable';
+import { FinanceGate, useFinancePin } from '../../components/security/FinancePin';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export const AdminFinancials: React.FC = () => {
   const paymentsTable = useCardTable();
   const { profile } = useAuth();
+  const { unlocked } = useFinancePin();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filter, setFilter] = useState<'all' | 'due' | 'paid'>('all');
@@ -89,11 +91,16 @@ export const AdminFinancials: React.FC = () => {
               FINANCIAL <span className="text-gym-primary">LEDGER</span>
             </h1>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowExpense(true)} leftIcon={<Plus className="w-4 h-4" />}>Record Expense</Button>
-          </div>
+          {unlocked && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowExpense(true)} leftIcon={<Plus className="w-4 h-4" />}>Record Expense</Button>
+            </div>
+          )}
         </div>
         <p className="text-xs text-gym-muted -mt-3">Membership payments are created when you approve a plan request (Requests page).</p>
+
+        <FinanceGate>
+        <div className="flex flex-col gap-6">
 
         {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
 
@@ -189,6 +196,8 @@ export const AdminFinancials: React.FC = () => {
             </ul>
           )}
         </Card>
+        </div>
+        </FinanceGate>
 
         <Modal isOpen={showExpense} onClose={() => setShowExpense(false)} title="RECORD EXPENSE">
           <form onSubmit={saveExpense} className="flex flex-col gap-3">

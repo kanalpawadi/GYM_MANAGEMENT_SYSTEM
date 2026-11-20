@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { AttendanceRow, Membership, Payment, listAttendance, listMembers, listMemberships, listPayments, localDay, payerName } from '../../services/gym';
 import { ExportMenu } from '../../components/ui/ExportMenu';
 import type { UserProfile } from '../../types';
+import { FinanceGate } from '../../components/security/FinancePin';
 
 /** Plan popularity and CSV / PDF / HTML exports from real gym data. */
 export const AdminReports: React.FC = () => {
@@ -104,7 +105,9 @@ export const AdminReports: React.FC = () => {
           <Card hoverEffect={false} className="flex flex-col gap-3" aria-label="Exports">
             <h3 className="font-heading text-white">Download reports</h3>
             <p className="text-xs text-gym-muted">CSV for Excel / Google Sheets, PDF to print or share, HTML as a web page.</p>
-            <ExportMenu variant="primary" getSpec={paymentsSpec} disabled={!payments.length} label={`Payments & invoices (${payments.length})`} />
+            <FinanceGate title="Payments download is locked" className="p-4">
+              <ExportMenu variant="primary" getSpec={paymentsSpec} disabled={!payments.length} label={`Payments & invoices (${payments.length})`} />
+            </FinanceGate>
             <ExportMenu getSpec={attendanceSpec} disabled={!attendance.length} label={`Attendance, last 90 days (${attendance.length})`} />
           </Card>
         </div>

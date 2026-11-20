@@ -46,6 +46,7 @@ import {
 } from '../../services/gym';
 import type { UserProfile } from '../../types';
 import { useCardTable } from '../../utils/useCardTable';
+import { FinanceGate } from '../../components/security/FinancePin';
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 type Tab = 'overview' | 'profile' | 'plans' | 'supplements' | 'progress' | 'payments' | 'attendance';
@@ -366,6 +367,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
           ))}
 
         {tab === 'payments' && (
+          <FinanceGate title="Payments are locked">
           <div className="flex flex-col gap-4">
           <PaymentTotals payments={payments} />
           {staff && member.role === 'member' && (
@@ -451,6 +453,7 @@ export const MemberDetail: React.FC<{ backTo: string }> = ({ backTo }) => {
           </Card>
           <ReceiptList receipts={receipts} />
           </div>
+          </FinanceGate>
         )}
 
         <DeletePaymentModal

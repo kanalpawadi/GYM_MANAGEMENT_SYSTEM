@@ -11,6 +11,7 @@ import { loadGymSettings, useGymSettings } from '../../content/useGymSettings';
 import { useAuth } from '../../context/AuthContext';
 import { canEditContent, isOwnerLevel } from '../../config/roles';
 import { DiscountSetting, GeofenceSetting, currentPosition, saveSetting } from '../../services/gym';
+import { SecurityPinSettings } from '../../components/security/FinancePin';
 
 const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }> = ({ checked, onChange, label, disabled }) => (
   <button
@@ -118,6 +119,8 @@ export const AdminSettings: React.FC = () => {
           </div>
         )}
         {error && <div role="alert" className="bg-gym-danger/10 border border-gym-danger text-gym-danger p-3 rounded-xl text-sm">{error}</div>}
+
+        <SecurityPinSettings />
 
         <Card hoverEffect={false} className="space-y-4" aria-label="Discount">
           <div className="flex items-start justify-between gap-4">

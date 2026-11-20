@@ -21,11 +21,13 @@ import {
 import type { UserProfile } from '../../types';
 import { DiwaliCelebration } from '../../components/festive/DiwaliCelebration';
 import { useAuth } from '../../context/AuthContext';
+import { FinanceGate, useMoney } from '../../components/security/FinancePin';
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
 export const AdminDashboard: React.FC = () => {
   const { profile } = useAuth();
+  const money = useMoney();
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -85,7 +87,7 @@ export const AdminDashboard: React.FC = () => {
     { label: 'Active members', value: stats.activeMembers, hint: `${members.length} registered`, icon: Users },
     { label: 'New this month', value: stats.newJoins, hint: 'Sign-ups', icon: UserPlus },
     { label: 'Expiring in 7 days', value: stats.expiring.length, hint: 'Remind them to renew', icon: Clock },
-    { label: 'Revenue this month', value: formatINR(stats.revenueThisMonth), hint: `${stats.duePayments} payment(s) due`, icon: IndianRupee },
+    { label: 'Revenue this month', value: money(formatINR(stats.revenueThisMonth)), hint: `${stats.duePayments} payment(s) due`, icon: IndianRupee },
     { label: "Today's check-ins", value: attendance.length, hint: 'QR, selfie or desk', icon: QrCode },
     { label: 'Pending requests', value: requests.length, hint: 'Plan renewals / changes', icon: Inbox },
   ];
@@ -136,6 +138,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <Card hoverEffect={false} className="lg:col-span-8">
             <h3 className="text-lg font-heading text-white mb-4">Revenue (last 6 months)</h3>
+            <FinanceGate className="border-none shadow-none bg-transparent p-0">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.chart}>
@@ -151,6 +154,7 @@ export const AdminDashboard: React.FC = () => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            </FinanceGate>
           </Card>
 
           <Card hoverEffect={false} className="lg:col-span-4 flex flex-col gap-3" aria-label="Expiring memberships">

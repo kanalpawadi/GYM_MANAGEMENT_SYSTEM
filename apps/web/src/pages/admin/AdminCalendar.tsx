@@ -5,10 +5,11 @@ import { Card } from '../../components/ui/Card';
 import { ExportMenu } from '../../components/ui/ExportMenu';
 import { localDay } from '../../services/gym';
 import { DayData, dayTotals, emptyDay, loadMonth } from '../../services/calendar';
+import { useFinancePin, useMoney } from '../../components/security/FinancePin';
 
 const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const rupees = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+const rupeesText = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -16,6 +17,10 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export const AdminCalendar: React.FC = () => {
   const today = localDay();
   const now = new Date(`${today}T00:00:00`);
+  // Money shows as "₹ ••••" until the security PIN is entered.
+  const { unlocked } = useFinancePin();
+  const money = useMoney();
+  const rupees = (n: number) => money(rupeesText(n));
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selected, setSelected] = useState(today);
@@ -70,8 +75,8 @@ export const AdminCalendar: React.FC = () => {
     filename: `rv-fitness-day-${selected}`,
     rows: [
       ...day.entries.map((e) => ({ section: 'New member', time: time(e.at), name: e.name, member_id: e.member_code ?? '', detail: e.approval_status ?? '', amount: '' })),
-      ...day.receipts.map((r) => ({ section: 'Payment received', time: time(r.at), name: r.member, member_id: r.member_code ?? '', detail: `${r.receipt_no} · ${r.mode.toUpperCase()}`, amount: r.amount })),
-      ...day.supplements.map((s) => ({ section: 'Supplement', time: '', name: s.member, member_id: s.member_code ?? '', detail: [s.supplement, s.brand, s.quantity].filter(Boolean).join(' · '), amount: s.price ?? '' })),
+      ...day.receipts.map((r) => ({ section: 'Payment received', time: time(r.at), name: r.member, member_id: r.member_code ?? '', detail: `${r.receipt_no} · ${r.mode.toUpperCase()}`, amount: unlocked ? r.amount : '' })),
+      ...day.supplements.map((s) => ({ section: 'Supplement', time: '', name: s.member, member_id: s.member_code ?? '', detail: [s.supplement, s.brand, s.quantity].filter(Boolean).join(' · '), amount: unlocked ? s.price ?? '' : '' })),
       ...day.visits.map((v) => ({ section: 'Attendance', time: time(v.at), name: v.member, member_id: v.member_code ?? '', detail: v.method, amount: '' })),
     ],
   });
