@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
-import { addUser, failNextRpc, makeProfile, resetSupabaseMock, signInAs, signInWithoutProfile, supabaseMock } from '../../test/supabaseMock';
+import { addUser, failNextRpc, makeProfile, resetSupabaseMock, securityState, signInAs, signInWithoutProfile, supabaseMock } from '../../test/supabaseMock';
 import { Login } from './Login';
 import { Signup } from './Signup';
 import { ForgotPassword } from './ForgotPassword';
@@ -122,12 +122,72 @@ describe('Login', () => {
     expect(await screen.findByText('landed on /admin/members as owner')).toBeInTheDocument();
   });
 
-  it('shows the Supabase error for wrong credentials and stays on the login page', async () => {
+  it('says how many attempts are left after a wrong password and stays on the login page', async () => {
     addUser(makeProfile('member'), 'right-password');
     renderAuth('/login');
     await fillLogin('member@example.com', 'wrong-password');
-    expect(await screen.findByText('Invalid login credentials')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Wrong email or password. 2 attempts left before sign-in is locked for 15 minutes.');
     expect(screen.getByRole('heading', { name: /portal login/i })).toBeInTheDocument();
+    expect(supabaseMock.rpc).toHaveBeenCalledWith('record_login_failure', { p_email: 'member@example.com' });
+  });
+
+  it('locks sign-in for 15 minutes after 3 wrong passwords, even with the right password', async () => {
+    addUser(makeProfile('member'), 'right-password');
+    const first = renderAuth('/login');
+    const user = userEvent.setup();
+    const email = screen.getByLabelText(/email address/i);
+    const password = screen.getByLabelText(/^password/i);
+    const submit = screen.getByRole('button', { name: /sign in to portal/i });
+    await user.type(email, 'member@example.com');
+
+    for (const left of ['2 attempts left', '1 attempt left']) {
+      await user.clear(password);
+      await user.type(password, 'wrong-password');
+      await user.click(submit);
+      expect(await screen.findByRole('alert')).toHaveTextContent(left);
+    }
+    await user.clear(password);
+    await user.type(password, 'wrong-password');
+    await user.click(submit);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Too many wrong attempts.*Try again in 1[45]:\d\d/);
+    expect(screen.getByRole('button', { name: /sign in to portal/i })).toBeDisabled();
+    expect(supabaseMock.auth.signInWithPassword).toHaveBeenCalledTimes(3);
+
+    // A new visit to the page: the database still refuses, without asking Supabase Auth.
+    first.unmount();
+    supabaseMock.auth.signInWithPassword.mockClear();
+    renderAuth('/login');
+    await fillLogin('member@example.com', 'right-password');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Too many wrong attempts/);
+    expect(supabaseMock.auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('a correct password clears earlier wrong attempts', async () => {
+    addUser(makeProfile('member', { email: 'asha@example.com' }), 'right-password');
+    renderAuth('/login');
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText(/email address/i), 'Asha@example.com');
+    await user.type(screen.getByLabelText(/^password/i), 'wrong-password');
+    await user.click(screen.getByRole('button', { name: /sign in to portal/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('2 attempts left');
+    expect(securityState.loginAttempts('asha@example.com')?.count).toBe(1);
+
+    await user.clear(screen.getByLabelText(/email address/i));
+    await user.type(screen.getByLabelText(/email address/i), 'asha@example.com');
+    await user.clear(screen.getByLabelText(/^password/i));
+    await user.type(screen.getByLabelText(/^password/i), 'right-password');
+    await user.click(screen.getByRole('button', { name: /sign in to portal/i }));
+    expect(await screen.findByText('landed on /portal/dashboard as member')).toBeInTheDocument();
+    expect(securityState.loginAttempts('asha@example.com')).toBeNull();
+  });
+
+  it('still signs in when the login-lock database update has not been run', async () => {
+    addUser(makeProfile('member'), 'right-password');
+    failNextRpc('check_login_allowed', 'Could not find the function public.check_login_allowed(p_email) in the schema cache');
+    renderAuth('/login');
+    await fillLogin('member@example.com', 'right-password');
+    expect(await screen.findByText('landed on /portal/dashboard as member')).toBeInTheDocument();
   });
 
   it('redirects an already signed-in user away from the login page', async () => {

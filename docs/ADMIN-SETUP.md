@@ -35,8 +35,9 @@ Run each file in `supabase/migrations/` in the Supabase SQL editor, or with `sup
 18. `18_membership_expiry_and_staff_progress.sql`: ended plans go back to admission approval, 5-day renewal reminders, and staff adding progress photos (section 31).
 19. `19_gym_qr_check_in.sql`: the trainer shows a check-in QR and members scan it (section 32).
 20. `20_freeze_and_food_type.sql`: freeze a member's account with a reason, and Pure Veg / Non-Veg / Veg + Egg diet plans (section 33).
+21. `21_login_attempts_and_finance_pin.sql`: sign-in locks for 15 minutes after 3 wrong passwords, and a security PIN hides money information (section 34).
 
-> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `20`.
+> **If you already set the database up with `supabase/schema_complete.sql`**, you only need to run `06` to `21`.
 > Until `07` is run, the new screens show "This feature needs the latest database update".
 
 ## 3. Make yourself Super Admin
@@ -518,3 +519,24 @@ Members without a personal diet plan see the common plan for **their** food type
 
 Your existing common diet plan became the **Pure Veg** plan. Open Common Diet → choose a type to add the other two.
 
+## 34. Login lock and security PIN for money
+Run `21_login_attempts_and_finance_pin.sql` once in Supabase → SQL Editor.
+
+### Login lock (everyone)
+- After a wrong password the login page says how many tries are left.
+- **3 wrong passwords in a row** lock sign-in for that email for **15 minutes**, even with the right password. The page counts down and the Sign In button is greyed out.
+- A correct sign-in clears the count. **Forgot Password?** still works during a lock.
+- Google sign-in is not affected (Google checks it).
+- Until migration 21 is run, sign-in works as before (no lock).
+
+### Security PIN (staff in the admin area)
+- The first time you open a page with money (Overview, Financials, Calendar, Reports, a member's Payments tab) you are asked to **set a 4-6 digit PIN** and type it twice.
+- After that, revenue, payments, expenses and receipts show as **₹ ••••** until you enter the PIN. The money stays visible for **15 minutes** in that browser tab, then hides again. Press **Lock** at the top to hide it at once. Signing out also hides it.
+- Use **Unlock** at the top of any admin page to enter the PIN.
+- **3 wrong PINs** lock the PIN for 15 minutes.
+- **Change PIN:** Gym Settings → **Security PIN for money information** (needs the current PIN).
+- **Forgot PIN:** the **Gym Owner** or **Super Admin** opens Users & Roles and presses **Reset security PIN** under that person's role. They set a new PIN next time.
+- Each person has their own PIN. Only a scrambled (hashed) copy is stored; nobody can read it.
+- Plan prices are not hidden (they are on the public website).
+
+> The PIN hides money on the screen. It does not stop someone who already has staff access from reading the data with technical tools.

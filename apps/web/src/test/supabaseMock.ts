@@ -21,6 +21,16 @@ const state = {
   uploads: [] as { bucket: string; path: string; file: unknown }[],
   removed: [] as { bucket: string; path: string }[],
   membershipCheck: { expired: false, days_left: null as number | null, ends_on: null as string | null },
+  // Migration 21: login lock and security PIN (plain PINs here; the database stores a hash).
+  loginAttempts: {} as Record<string, { count: number; lockedUntil: number }>,
+  financePins: {} as Record<string, { pin: string; count: number; lockedUntil: number }>,
+};
+
+/** Test helpers for migration 21. */
+export const securityState = {
+  setPin: (userId: string, pin: string) => (state.financePins[userId] = { pin, count: 0, lockedUntil: 0 }),
+  pin: (userId: string) => state.financePins[userId] ?? null,
+  loginAttempts: (email: string) => state.loginAttempts[email.toLowerCase()] ?? null,
 };
 
 /** What check_my_membership returns in the next test (plan expiry / days left). */
@@ -247,6 +257,8 @@ export function resetSupabaseMock() {
   state.uploads = [];
   state.removed = [];
   state.membershipCheck = { expired: false, days_left: null, ends_on: null };
+  state.loginAttempts = {};
+  state.financePins = {};
 
   // Fresh vi.fn()s per test so implementations survive vi.restoreAllMocks() in setup.ts.
   supabaseMock.auth = {
@@ -593,6 +605,60 @@ export function resetSupabaseMock() {
         else rows.push({ key: d.key, value: d.value });
       }
       return ok(null);
+    }
+    // Migration 21: login lock (3 wrong passwords → 15 minutes) and the staff security PIN.
+    const LOCK_MS = 15 * 60_000;
+    const secondsLeft = (until: number) => Math.max(0, Math.ceil((until - Date.now()) / 1000));
+    if (fn === 'check_login_allowed') {
+      const r = state.loginAttempts[String(args.p_email).toLowerCase()];
+      if (r && r.lockedUntil > Date.now()) return ok({ allowed: false, attempts_left: 0, locked_seconds: secondsLeft(r.lockedUntil) });
+      return ok({ allowed: true, attempts_left: 3 - (r && !r.lockedUntil ? r.count : 0), locked_seconds: 0 });
+    }
+    if (fn === 'record_login_failure') {
+      const key = String(args.p_email).toLowerCase();
+      const r = state.loginAttempts[key];
+      if (r && r.lockedUntil > Date.now()) return ok({ attempts_left: 0, locked_seconds: secondsLeft(r.lockedUntil) });
+      const count = (r && !r.lockedUntil ? r.count : 0) + 1;
+      state.loginAttempts[key] = { count, lockedUntil: count >= 3 ? Date.now() + LOCK_MS : 0 };
+      return ok({ attempts_left: Math.max(3 - count, 0), locked_seconds: count >= 3 ? 900 : 0 });
+    }
+    if (fn === 'record_login_success') {
+      if (state.session) delete state.loginAttempts[state.session.user.email.toLowerCase()];
+      return ok(null);
+    }
+    if (['finance_pin_status', 'verify_finance_pin', 'set_finance_pin', 'reset_finance_pin'].includes(fn)) {
+      const myRole = table('profiles').find((p) => p.id === uid)?.role;
+      if (!uid || !['receptionist', 'manager', 'owner', 'super_admin'].includes(myRole)) return fail('Only gym staff use the security PIN');
+      const mine = state.financePins[uid];
+      const verify = (pin: string) => {
+        if (!mine) return null;
+        if (mine.lockedUntil > Date.now()) return { ok: false, attempts_left: 0, locked_seconds: secondsLeft(mine.lockedUntil) };
+        if (pin === mine.pin) {
+          Object.assign(mine, { count: 0, lockedUntil: 0 });
+          return { ok: true, attempts_left: 3, locked_seconds: 0 };
+        }
+        const count = (mine.lockedUntil ? 0 : mine.count) + 1;
+        Object.assign(mine, count >= 3 ? { count: 0, lockedUntil: Date.now() + LOCK_MS } : { count, lockedUntil: 0 });
+        return { ok: false, attempts_left: Math.max(3 - count, 0), locked_seconds: count >= 3 ? 900 : 0 };
+      };
+      if (fn === 'finance_pin_status') return ok({ has_pin: !!mine, locked_seconds: mine ? secondsLeft(mine.lockedUntil) : 0 });
+      if (fn === 'verify_finance_pin') return mine ? ok(verify(args.p_pin)) : fail('Set your security PIN first');
+      if (fn === 'set_finance_pin') {
+        if (!/^\d{4,6}$/.test(args.p_pin ?? '')) return fail('The PIN must be 4 to 6 digits');
+        if (mine) {
+          const check = verify(args.p_current ?? '')!;
+          if (!check.ok) return ok(check);
+          mine.pin = args.p_pin;
+        } else {
+          state.financePins[uid] = { pin: args.p_pin, count: 0, lockedUntil: 0 };
+        }
+        return ok({ ok: true, attempts_left: 3, locked_seconds: 0 });
+      }
+      if (!['owner', 'super_admin'].includes(myRole)) return fail('Only the owner or Super Admin can reset a security PIN');
+      if (args.p_user === uid) return fail('You can only reset the PIN of staff below you');
+      const had = !!state.financePins[args.p_user];
+      delete state.financePins[args.p_user];
+      return ok(had);
     }
     return fail(`Unknown function ${fn}`);
   });

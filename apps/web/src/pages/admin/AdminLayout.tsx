@@ -32,6 +32,7 @@ import { ROLE_LABELS, canEditContent, isAdminRole } from '../../config/roles';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { useUnreadMessages } from '../../components/chat/useUnreadMessages';
 import { runMembershipExpiry } from '../../services/gym';
+import { FinanceLockButton, FinancePinProvider } from '../../components/security/FinancePin';
 
 export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, logout } = useAuth();
@@ -225,6 +226,7 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   return (
+    <FinancePinProvider>
     <div className="min-h-screen bg-gym-bg flex">
       {/* Desktop / tablet sidebar */}
       <aside
@@ -288,6 +290,7 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
           </div>
 
           <div className="flex items-center justify-end gap-1 sm:gap-2 ml-auto shrink-0">
+            <FinanceLockButton />
             <NotificationBell />
             <Link to="/" title="Open the public website" aria-label="Open the public website">
               <Button variant="ghost" size="sm" leftIcon={<Globe className="w-4 h-4" />}>
@@ -306,5 +309,6 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
         <ChangePasswordModal isOpen={showPassword} onClose={() => setShowPassword(false)} />
       </div>
     </div>
+    </FinancePinProvider>
   );
 };
